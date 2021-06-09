@@ -14,11 +14,11 @@ __copyright__ = 'Copyright 2021, Rushiraj Nenuji, University of California Santa
 
 import unittest
 
-from qgis.PyQt.QtGui import QDialogButtonBox, QDialog
+from qgis.PyQt.QtWidgets import QDialogButtonBox, QDialog
 
 from kwg_geoenrichment_dialog import kwg_geoenrichmentDialog
 
-from utilities import get_qgis_app
+from .utilities import get_qgis_app
 QGIS_APP = get_qgis_app()
 
 
