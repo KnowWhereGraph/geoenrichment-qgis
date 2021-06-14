@@ -142,3 +142,6 @@ cython_debug/
 
 # MAC files
 .DS_Store
+
+# Installation files
+kwg_geoenrichment.zip
