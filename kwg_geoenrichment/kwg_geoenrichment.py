@@ -40,7 +40,8 @@ from .kwg_geoenrichment_dialog import kwg_geoenrichmentDialog
 from .drawtools import DrawPoint, DrawRect, DrawLine, DrawCircle, DrawPolygon,\
     SelectPoint, XYDialog, DMSDialog
 from .qdrawsettings import QdrawSettings
-from .qdrawlayerdialog import QDrawLayerDialog
+
+from configparser import ConfigParser
 
 import os.path
 
@@ -87,6 +88,10 @@ class kwg_geoenrichment:
         self.toolbar.setObjectName('KWG Geoenrichment')
         self.bGeom = None
         self.settings = QdrawSettings()
+
+        # Set up the config file
+        conf = ConfigParser()
+        self._config = conf.read('config.ini')
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -573,69 +578,19 @@ then select an entity on the map.'
                 errBuffer_noAtt = True
 
         if ok and not warning:
-            name = ''
-            ok = True
-            add = False
-            index = 0
-            layers = []
-            while not name.strip() and not add and ok:
-                dlg = QDrawLayerDialog(self.iface, self.drawShape)
-                name, add, index, layers, ok = dlg.getName(
-                    self.iface, self.drawShape)
-        if ok and not warning:
-            layer = None
-            if add:
-                layer = layers[index]
-                if self.drawShape in ['point', 'XYpoint']:
-                    g = g.centroid()
-            else:
-                if self.drawShape == 'point':
-                    layer = QgsVectorLayer("Point?crs="+self.iface.mapCanvas().mapSettings().destinationCrs().authid()+"&field="+self.tr('Drawings')+":string(255)", name, "memory")
-                    g = g.centroid()  # force geometry as point
-                elif self.drawShape == 'XYpoint':
-                    layer = QgsVectorLayer("Point?crs="+self.XYcrs.authid()+"&field="+self.tr('Drawings')+":string(255)", name, "memory")
-                    g = g.centroid()
-                elif self.drawShape == 'line':
-                    layer = QgsVectorLayer("LineString?crs="+self.iface.mapCanvas().mapSettings().destinationCrs().authid()+"&field="+self.tr('Drawings')+":string(255)", name, "memory")
-                    # fix_print_with_import
-                    print("LineString?crs="+self.iface.mapCanvas().mapSettings().destinationCrs().authid()+"&field="+self.tr('Drawings')+":string(255)")
-                else:
-                    layer = QgsVectorLayer("Polygon?crs="+self.iface.mapCanvas().mapSettings().destinationCrs().authid()+"&field="+self.tr('Drawings')+":string(255)", name, "memory")
-            layer.startEditing()
-            symbols = layer.renderer().symbols(QgsRenderContext())  # todo which context ?
-            symbols[0].setColor(self.settings.getColor())
-            feature = QgsFeature()
-            feature.setGeometry(g)
-            feature.setAttributes([name])
-            layer.dataProvider().addFeatures([feature])
-            layer.commitChanges()
-            if not add:
-                pjt = QgsProject.instance()
-                pjt.addMapLayer(layer, False)
-                if pjt.layerTreeRoot().findGroup(self.tr('Drawings')) is None:
-                    pjt.layerTreeRoot().insertChildNode(
-                        0, QgsLayerTreeGroup(self.tr('Drawings')))
-                group = pjt.layerTreeRoot().findGroup(
-                    self.tr('Drawings'))
-                group.insertLayer(0, layer)
-            self.iface.layerTreeView().refreshLayerSymbology(layer.id())
-            self.iface.mapCanvas().refresh()
-        else:
-            if warning:
-                if errBuffer_noAtt:
-                    self.iface.messageBar().pushWarning(
-                        self.tr('Warning'),
-                        self.tr('You didn\'t click on a layer\'s attribute !'))
-                elif errBuffer_Vertices:
-                    self.iface.messageBar().pushWarning(
-                        self.tr('Warning'),
-                        self.tr('You must give a non-null value for a \
-point\'s or line\'s perimeter !'))
-                else:
-                    self.iface.messageBar().pushWarning(
-                        self.tr('Warning'),
-                        self.tr('There is no selected layer, or it is not \
-vector nor visible !'))
+
+            self.dlg = kwg_geoenrichmentDialog()
+
+            # show the dialog
+            self.dlg.show()
+            # Run the dialog event loop
+            result = self.dlg.exec_()
+            # See if OK was pressed
+            if result:
+                # Do something useful here - delete the line containing pass and
+                # substitute with your code.
+                pass
+
         self.tool.reset()
         self.resetSB()
         self.bGeom = None

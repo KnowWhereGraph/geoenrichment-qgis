@@ -34,7 +34,7 @@ class QdrawSettings(QWidget):
     def __init__(self):
         QWidget.__init__(self)
 
-        self.setWindowTitle(self.tr('Qdraw - Settings'))
+        self.setWindowTitle(self.tr('KWG feature drawing - Settings'))
         self.setFixedSize(320, 100)
         self.center()
 
