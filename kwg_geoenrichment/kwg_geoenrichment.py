@@ -25,10 +25,10 @@ from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, qVersion
 from qgis.PyQt.QtWidgets import QAction, QMessageBox, QMenu, QInputDialog
 from qgis.PyQt.QtGui import QIcon
 
-from qgis.core import QgsFeature, QgsProject, QgsGeometry,\
-    QgsCoordinateTransform, QgsCoordinateTransformContext, QgsMapLayer,\
-    QgsFeatureRequest, QgsVectorLayer, QgsLayerTreeGroup, QgsRenderContext,\
-    QgsCoordinateReferenceSystem, QgsWkbTypes
+from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
+    QgsCoordinateTransform, QgsCoordinateTransformContext, QgsMapLayer, \
+    QgsFeatureRequest, QgsVectorLayer, QgsLayerTreeGroup, QgsRenderContext, \
+    QgsCoordinateReferenceSystem, QgsWkbTypes, QgsMessageLog, Qgis
 from qgis.gui import QgsRubberBand
 
 # Initialize Qt resources from file resources.py
@@ -579,6 +579,53 @@ then select an entity on the map.'
 
         if ok and not warning:
 
+            name = "geo_enrichment_polygon"
+
+            # save the buffer
+            if self.drawShape == 'point':
+                layer = QgsVectorLayer(
+                    "Point?crs=" + self.iface.mapCanvas().mapSettings().destinationCrs().authid() + "&field=" + self.tr(
+                        'Drawings') + ":string(255)", name, "memory")
+                g = g.centroid()  # force geometry as point
+            elif self.drawShape == 'XYpoint':
+                layer = QgsVectorLayer(
+                    "Point?crs=" + self.XYcrs.authid() + "&field=" + self.tr('Drawings') + ":string(255)", name,
+                    "memory")
+                g = g.centroid()
+            elif self.drawShape == 'line':
+                layer = QgsVectorLayer(
+                    "LineString?crs=" + self.iface.mapCanvas().mapSettings().destinationCrs().authid() + "&field=" + self.tr(
+                        'Drawings') + ":string(255)", name, "memory")
+                # fix_print_with_import
+                print(
+                    "LineString?crs=" + self.iface.mapCanvas().mapSettings().destinationCrs().authid() + "&field=" + self.tr(
+                        'Drawings') + ":string(255)")
+            else:
+                layer = QgsVectorLayer(
+                    "Polygon?crs=" + self.iface.mapCanvas().mapSettings().destinationCrs().authid() + "&field=" + self.tr(
+                        'Drawings') + ":string(255)", name, "memory")
+
+            layer.startEditing()
+            symbols = layer.renderer().symbols(QgsRenderContext())  # todo which context ?
+            symbols[0].setColor(self.settings.getColor())
+            feature = QgsFeature()
+            feature.setGeometry(g)
+            feature.setAttributes([name])
+            layer.dataProvider().addFeatures([feature])
+            layer.commitChanges()
+
+            pjt = QgsProject.instance()
+            pjt.addMapLayer(layer, False)
+            if pjt.layerTreeRoot().findGroup(self.tr('GeoEnrichment_A')) is None:
+                pjt.layerTreeRoot().insertChildNode(
+                    0, QgsLayerTreeGroup(self.tr('GeoEnrichment_A')))
+            group = pjt.layerTreeRoot().findGroup(
+                self.tr('GeoEnrichment_A'))
+
+            self.iface.layerTreeView().refreshLayerSymbology(layer.id())
+            self.iface.mapCanvas().refresh()
+            QgsMessageLog.logMessage("Your polygon has been saved to a layer", "kwg_geoenrichment", level=Qgis.Info)
+
             self.dlg = kwg_geoenrichmentDialog()
 
             # show the dialog
@@ -590,6 +637,8 @@ then select an entity on the map.'
                 # Do something useful here - delete the line containing pass and
                 # substitute with your code.
                 pass
+
+
 
         self.tool.reset()
         self.resetSB()
