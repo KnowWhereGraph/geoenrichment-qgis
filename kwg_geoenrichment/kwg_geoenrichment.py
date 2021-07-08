@@ -95,10 +95,9 @@ class kwg_geoenrichment:
         # Set up the config file
         conf = ConfigParser()
         self._config = conf.read('config.ini')
-        # logging.basicConfig(filename='/Users/nenuji/Documents/Github/kwg-qgis-geoenrichment/kwg_geoenrichment/kwg_geoenrichment.log', encoding='utf-8', level=logging.DEBUG)
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.DEBUG)  # or whatever
-        handler = logging.FileHandler('/Users/nenuji/Documents/Github/kwg-qgis-geoenrichment/kwg_geoenrichment/kwg_geoenrichment.log', 'w', 'utf-8')  # or whatever
+        handler = logging.FileHandler('/var/local/QGIS/kwg_geoenrichment.log', 'w', 'utf-8')  # or whatever
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')  # or whatever
         handler.setFormatter(formatter)  # Pass handler as a parameter, not assign
         self.logger.addHandler(handler)
@@ -646,7 +645,10 @@ then select an entity on the map.'
             self.logger.debug(type(wkt_literal))
             geoSPARQLResponse = self.sparqlQuery.TypeAndGeoSPARQLQuery(query_geo_wkt=wkt_literal)
 
-            self.logger.debug(json.dumps(geoSPARQLResponse))
+            # self.logger.debug(json.dumps(geoSPARQLResponse))
+            QgsMessageLog.logMessage("GeoJSON response received from the server", "kwg_geoenrichment",
+                                     level=Qgis.Info)
+            self.handleGeoJSON(geoSPARQLResponse)
 
 
             self.dlg = kwg_geoenrichmentDialog()
@@ -687,7 +689,12 @@ then select an entity on the map.'
         wkt_rep = ""
         wkt_rep = wkt_literal_list[0].upper() + wkt_literal_list[1]
 
-
         QgsMessageLog.logMessage("wkt representation :  " + wkt_rep , "kwg_geoenrichment", level=Qgis.Info)
 
         return wkt_rep
+
+
+    def handleGeoJSON(selfself, geoJSON):
+        QgsMessageLog.logMessage("Handling geoJSON response from the server", level=Qgis.Info)
+
+        pass

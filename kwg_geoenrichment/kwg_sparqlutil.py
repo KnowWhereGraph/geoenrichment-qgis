@@ -9,7 +9,7 @@ class kwg_sparqlutil:
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.DEBUG)  # or whatever
         handler = logging.FileHandler(
-            '/Users/nenuji/Documents/Github/kwg-qgis-geoenrichment/kwg_geoenrichment/kwg_geoenrichment.log', 'w',
+            '/var/local/QGIS/kwg_geoenrichment.log', 'w',
             'utf-8')  # or whatever
         formatter = logging.Formatter(
             '%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')  # or whatever
@@ -103,34 +103,38 @@ class kwg_sparqlutil:
         }
 
 
-        self.logger.info("query ")
-        self.logger.info(query)
+        self.logger.debug("query: ")
+        self.logger.debug(query)
 
         if sparql_endpoint is None:
             sparql_endpoint = self.SPARQL_ENDPOINT
 
         sparqlParam = {'query': query, 'format': 'json', 'infer': "true" if doInference else "false"}
-        # headers = {'Accept': 'application/sparql-results+json'}
-        headers = {'Content-type': 'application/json', 'Accept': 'application/sparql-results+json'}
+        headers = {'Accept': 'application/sparql-results+json'}
+        # headers = {'Content-type': 'application/json', 'Accept': 'application/sparql-results+json'}
 
         try:
             if request_method == 'post':
                 sparqlRequest = requests.post(url="http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire", data=sparqlParam, headers=headers)
                 if sparqlRequest.status_code == 200:
                     entityTypeJson = sparqlRequest.json()  # ["results"]["bindings"]
+                    self.logger.debug("HTTP request OK")
                 else:
-                    print(sparqlRequest.text)
+                    self.logger.debug("!200")
+                    self.logger.debug(sparqlRequest.text)
             elif request_method == 'get':
                 sparqlRequest = requests.get(url="http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire", params=sparqlParam, headers=headers)
                 if sparqlRequest.status_code == 200:
                     entityTypeJson = sparqlRequest.json()  # ["results"]["bindings"]
+                    self.logger.debug("HTTP request OK")
                 else:
-                    print(sparqlRequest.text)
+                    self.logger.debug("!200")
+                    self.logger.debug(sparqlRequest.text)
             else:
                 raise Exception(f"request method {request_method} not found")
 
         except Exception as e:
-            print(e)
+            self.logger.exception(e)
 
 
         return entityTypeJson
