@@ -39,14 +39,14 @@ class QdrawSettings(QWidget):
         self.center()
 
         # default color
-        self.color = QColor(60, 151, 255, 255)
+        self.color = QColor(60, 151, 255, 77)
 
         self.sld_opacity = QSlider(Qt.Horizontal, self)
         self.sld_opacity.setRange(0, 255)
         self.sld_opacity.setValue(255)
         self.sld_opacity.tracking = True
         self.sld_opacity.valueChanged.connect(self.handler_opacitySliderValue)
-        self.lbl_opacity = QLabel(self.tr('Opacity') + ': 100%', self)
+        self.lbl_opacity = QLabel(self.tr('Opacity') + ': 30%', self)
 
         self.dlg_color = QColorDialog(self)
         btn_chColor = QPushButton(self.tr('Change the drawing color'), self)

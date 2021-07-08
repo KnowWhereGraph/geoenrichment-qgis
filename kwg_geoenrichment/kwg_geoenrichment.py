@@ -227,24 +227,24 @@ class kwg_geoenrichment:
             callback=self.drawLine,
             parent=self.iface.mainWindow()
         )
-        icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawR.png'
-        self.add_action(
-            icon_path,
-            text=self.tr('Rectangle drawing tool'),
-            checkable=True,
-            add_to_toolbar=True,
-            callback=self.drawRect,
-            parent=self.iface.mainWindow()
-        )
-        icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawC.png'
-        self.add_action(
-            icon_path,
-            text=self.tr('Circle drawing tool'),
-            checkable=True,
-            add_to_toolbar=True,
-            callback=self.drawCircle,
-            parent=self.iface.mainWindow()
-        )
+        # icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawR.png'
+        # self.add_action(
+        #     icon_path,
+        #     text=self.tr('Rectangle drawing tool'),
+        #     checkable=True,
+        #     add_to_toolbar=True,
+        #     callback=self.drawRect,
+        #     parent=self.iface.mainWindow()
+        # )
+        # icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawC.png'
+        # self.add_action(
+        #     icon_path,
+        #     text=self.tr('Circle drawing tool'),
+        #     checkable=True,
+        #     add_to_toolbar=True,
+        #     callback=self.drawCircle,
+        #     parent=self.iface.mainWindow()
+        # )
         icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawP.png'
         self.add_action(
             icon_path,
@@ -373,29 +373,32 @@ class kwg_geoenrichment:
         self.toolname = 'drawLine'
         self.resetSB()
 
-    def drawRect(self):
-        if self.tool:
-            self.tool.reset()
-        self.tool = DrawRect(self.iface, self.settings.getColor())
-        self.tool.setAction(self.actions[2])
-        self.tool.selectionDone.connect(self.draw)
-        self.tool.move.connect(self.updateSB)
-        self.iface.mapCanvas().setMapTool(self.tool)
-        self.drawShape = 'polygon'
-        self.toolname = 'drawRect'
-        self.resetSB()
+    # rectangle drawing procedure
+    # def drawRect(self):
+    #     if self.tool:
+    #         self.tool.reset()
+    #     self.tool = DrawRect(self.iface, self.settings.getColor())
+    #     self.tool.setAction(self.actions[2])
+    #     self.tool.selectionDone.connect(self.draw)
+    #     self.tool.move.connect(self.updateSB)
+    #     self.iface.mapCanvas().setMapTool(self.tool)
+    #     self.drawShape = 'polygon'
+    #     self.toolname = 'drawRect'
+    #     self.resetSB()
+    #
 
-    def drawCircle(self):
-        if self.tool:
-            self.tool.reset()
-        self.tool = DrawCircle(self.iface, self.settings.getColor(), 40)
-        self.tool.setAction(self.actions[3])
-        self.tool.selectionDone.connect(self.draw)
-        self.tool.move.connect(self.updateSB)
-        self.iface.mapCanvas().setMapTool(self.tool)
-        self.drawShape = 'polygon'
-        self.toolname = 'drawCircle'
-        self.resetSB()
+    # circle drawing procedure
+    # def drawCircle(self):
+    #     if self.tool:
+    #         self.tool.reset()
+    #     self.tool = DrawCircle(self.iface, self.settings.getColor(), 40)
+    #     self.tool.setAction(self.actions[3])
+    #     self.tool.selectionDone.connect(self.draw)
+    #     self.tool.move.connect(self.updateSB)
+    #     self.iface.mapCanvas().setMapTool(self.tool)
+    #     self.drawShape = 'polygon'
+    #     self.toolname = 'drawCircle'
+    #     self.resetSB()
 
     def drawPolygon(self):
         if self.tool:
@@ -585,25 +588,25 @@ then select an entity on the map.'
             if self.drawShape == 'point':
                 layer = QgsVectorLayer(
                     "Point?crs=" + self.iface.mapCanvas().mapSettings().destinationCrs().authid() + "&field=" + self.tr(
-                        'Drawings') + ":string(255)", name, "memory")
+                        'Geometry') + ":string(255)", name, "memory")
                 g = g.centroid()  # force geometry as point
             elif self.drawShape == 'XYpoint':
                 layer = QgsVectorLayer(
-                    "Point?crs=" + self.XYcrs.authid() + "&field=" + self.tr('Drawings') + ":string(255)", name,
+                    "Point?crs=" + self.XYcrs.authid() + "&field=" + self.tr('Geometry') + ":string(255)", name,
                     "memory")
                 g = g.centroid()
             elif self.drawShape == 'line':
                 layer = QgsVectorLayer(
                     "LineString?crs=" + self.iface.mapCanvas().mapSettings().destinationCrs().authid() + "&field=" + self.tr(
-                        'Drawings') + ":string(255)", name, "memory")
+                        'Geometry') + ":string(255)", name, "memory")
                 # fix_print_with_import
                 print(
                     "LineString?crs=" + self.iface.mapCanvas().mapSettings().destinationCrs().authid() + "&field=" + self.tr(
-                        'Drawings') + ":string(255)")
+                        'Geometry') + ":string(255)")
             else:
                 layer = QgsVectorLayer(
                     "Polygon?crs=" + self.iface.mapCanvas().mapSettings().destinationCrs().authid() + "&field=" + self.tr(
-                        'Drawings') + ":string(255)", name, "memory")
+                        'Geometry') + ":string(255)", name, "memory")
 
             layer.startEditing()
             symbols = layer.renderer().symbols(QgsRenderContext())  # todo which context ?
@@ -616,12 +619,12 @@ then select an entity on the map.'
 
             pjt = QgsProject.instance()
             pjt.addMapLayer(layer, False)
-            if pjt.layerTreeRoot().findGroup(self.tr('GeoEnrichment_A')) is None:
+            if pjt.layerTreeRoot().findGroup(self.tr('Geometry')) is None:
                 pjt.layerTreeRoot().insertChildNode(
-                    0, QgsLayerTreeGroup(self.tr('GeoEnrichment_A')))
+                    0, QgsLayerTreeGroup(self.tr('Geometry')))
             group = pjt.layerTreeRoot().findGroup(
-                self.tr('GeoEnrichment_A'))
-
+                self.tr('Geometry'))
+            group.insertLayer(0, layer)
             self.iface.layerTreeView().refreshLayerSymbology(layer.id())
             self.iface.mapCanvas().refresh()
             QgsMessageLog.logMessage("Your polygon has been saved to a layer", "kwg_geoenrichment", level=Qgis.Info)
@@ -637,8 +640,6 @@ then select an entity on the map.'
                 # Do something useful here - delete the line containing pass and
                 # substitute with your code.
                 pass
-
-
 
         self.tool.reset()
         self.resetSB()
