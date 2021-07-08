@@ -44,6 +44,7 @@ from .qdrawsettings import QdrawSettings
 from configparser import ConfigParser
 
 import os.path
+import logging
 
 class kwg_geoenrichment:
     """QGIS Plugin Implementation."""
@@ -92,6 +93,7 @@ class kwg_geoenrichment:
         # Set up the config file
         conf = ConfigParser()
         self._config = conf.read('config.ini')
+        logging.basicConfig(filename='/var/local/QGIS/kwg_geoenrichment.log', encoding='utf-8', level=logging.DEBUG)
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -629,6 +631,9 @@ then select an entity on the map.'
             self.iface.mapCanvas().refresh()
             QgsMessageLog.logMessage("Your polygon has been saved to a layer", "kwg_geoenrichment", level=Qgis.Info)
 
+            wkt_literal = self.performWKTConversion()
+
+
             self.dlg = kwg_geoenrichmentDialog()
 
             # show the dialog
@@ -637,6 +642,7 @@ then select an entity on the map.'
             result = self.dlg.exec_()
             # See if OK was pressed
             if result:
+
                 # Do something useful here - delete the line containing pass and
                 # substitute with your code.
                 pass
@@ -644,3 +650,24 @@ then select an entity on the map.'
         self.tool.reset()
         self.resetSB()
         self.bGeom = None
+
+
+    def performWKTConversion(self):
+        layers = QgsProject.instance().mapLayers().values()
+        QgsMessageLog.logMessage("Reading all the layers", "kwg_geoenrichment", level=Qgis.Info)
+
+        # crs = QgsCoordinateReferenceSystem("EPSG:4326")
+        for layer in layers:
+            # logging.debug(layer.name())
+            if layer.name() == "geo_enrichment_polygon":
+                QgsMessageLog.logMessage("Retrieving features from the geoenrichment layer", "kwg_geoenrichment", level=Qgis.Info)
+                feat = layer.getFeatures()
+                for f in feat:
+                    geom = f.geometry()
+                    QgsMessageLog.logMessage("Geometry found", "kwg_geoenrichment", level=Qgis.Info)
+                    wkt_literal = geom.asWkt()
+                break
+
+        QgsMessageLog.logMessage("wkt representation :  " + wkt_literal , "kwg_geoenrichment", level=Qgis.Info)
+
+        return wkt_literal
