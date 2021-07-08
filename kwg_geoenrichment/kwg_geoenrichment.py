@@ -640,17 +640,6 @@ then select an entity on the map.'
             self.iface.mapCanvas().refresh()
             QgsMessageLog.logMessage("Your polygon has been saved to a layer", "kwg_geoenrichment", level=Qgis.Info)
 
-            wkt_literal = self.performWKTConversion()
-            self.logger.debug(wkt_literal)
-            self.logger.debug(type(wkt_literal))
-            geoSPARQLResponse = self.sparqlQuery.TypeAndGeoSPARQLQuery(query_geo_wkt=wkt_literal)
-
-            # self.logger.debug(json.dumps(geoSPARQLResponse))
-            QgsMessageLog.logMessage("GeoJSON response received from the server", "kwg_geoenrichment",
-                                     level=Qgis.Info)
-            self.handleGeoJSON(geoSPARQLResponse)
-
-
             self.dlg = kwg_geoenrichmentDialog()
 
             # show the dialog
@@ -659,9 +648,18 @@ then select an entity on the map.'
             result = self.dlg.exec_()
             # See if OK was pressed
             if result:
+                QgsMessageLog.logMessage("Contacting the server with the geoSPARQL request", "kwg_geoenrichment",
+                                         level=Qgis.Info)
 
-                # Do something useful here - delete the line containing pass and
-                # substitute with your code.
+                wkt_literal = self.performWKTConversion()
+                self.logger.debug(wkt_literal)
+                self.logger.debug(type(wkt_literal))
+                geoSPARQLResponse = self.sparqlQuery.TypeAndGeoSPARQLQuery(query_geo_wkt=wkt_literal)
+
+                # self.logger.debug(json.dumps(geoSPARQLResponse))
+                QgsMessageLog.logMessage("GeoJSON response received from the server", "kwg_geoenrichment",
+                                         level=Qgis.Info)
+                self.handleGeoJSON(geoSPARQLResponse)
                 pass
 
         self.tool.reset()
