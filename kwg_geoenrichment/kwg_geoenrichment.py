@@ -35,6 +35,7 @@ from qgis.gui import QgsRubberBand
 from .resources import *
 # Import the code for the dialog
 from .kwg_geoenrichment_dialog import kwg_geoenrichmentDialog
+from .kwg_sparqlquery import kwg_sparqlquery
 
 # Import QDraw settings
 from .drawtools import DrawPoint, DrawRect, DrawLine, DrawCircle, DrawPolygon,\
@@ -43,6 +44,7 @@ from .qdrawsettings import QdrawSettings
 
 from configparser import ConfigParser
 
+import json
 import os.path
 import logging
 
@@ -93,7 +95,15 @@ class kwg_geoenrichment:
         # Set up the config file
         conf = ConfigParser()
         self._config = conf.read('config.ini')
-        logging.basicConfig(filename='/var/local/QGIS/kwg_geoenrichment.log', encoding='utf-8', level=logging.DEBUG)
+        # logging.basicConfig(filename='/Users/nenuji/Documents/Github/kwg-qgis-geoenrichment/kwg_geoenrichment/kwg_geoenrichment.log', encoding='utf-8', level=logging.DEBUG)
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.DEBUG)  # or whatever
+        handler = logging.FileHandler('/Users/nenuji/Documents/Github/kwg-qgis-geoenrichment/kwg_geoenrichment/kwg_geoenrichment.log', 'w', 'utf-8')  # or whatever
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')  # or whatever
+        handler.setFormatter(formatter)  # Pass handler as a parameter, not assign
+        self.logger.addHandler(handler)
+
+        self.sparqlQuery = kwg_sparqlquery()
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -632,6 +642,11 @@ then select an entity on the map.'
             QgsMessageLog.logMessage("Your polygon has been saved to a layer", "kwg_geoenrichment", level=Qgis.Info)
 
             wkt_literal = self.performWKTConversion()
+            self.logger.debug(wkt_literal)
+            self.logger.debug(type(wkt_literal))
+            geoSPARQLResponse = self.sparqlQuery.TypeAndGeoSPARQLQuery(query_geo_wkt=wkt_literal)
+
+            self.logger.debug(json.dumps(geoSPARQLResponse))
 
 
             self.dlg = kwg_geoenrichmentDialog()
@@ -658,16 +673,21 @@ then select an entity on the map.'
 
         # crs = QgsCoordinateReferenceSystem("EPSG:4326")
         for layer in layers:
-            # logging.debug(layer.name())
+            # self.logger.debug(layer.name())
             if layer.name() == "geo_enrichment_polygon":
                 QgsMessageLog.logMessage("Retrieving features from the geoenrichment layer", "kwg_geoenrichment", level=Qgis.Info)
                 feat = layer.getFeatures()
                 for f in feat:
                     geom = f.geometry()
                     QgsMessageLog.logMessage("Geometry found", "kwg_geoenrichment", level=Qgis.Info)
-                    wkt_literal = geom.asWkt()
+                    wkt = geom.asWkt()
                 break
 
-        QgsMessageLog.logMessage("wkt representation :  " + wkt_literal , "kwg_geoenrichment", level=Qgis.Info)
+        wkt_literal_list = wkt.split(" ", 1)
+        wkt_rep = ""
+        wkt_rep = wkt_literal_list[0].upper() + wkt_literal_list[1]
 
-        return wkt_literal
+
+        QgsMessageLog.logMessage("wkt representation :  " + wkt_rep , "kwg_geoenrichment", level=Qgis.Info)
+
+        return wkt_rep

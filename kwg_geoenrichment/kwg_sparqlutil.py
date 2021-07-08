@@ -1,7 +1,23 @@
+import logging
+
 import requests
 
 
 class kwg_sparqlutil:
+
+    def __init__(self):
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.DEBUG)  # or whatever
+        handler = logging.FileHandler(
+            '/Users/nenuji/Documents/Github/kwg-qgis-geoenrichment/kwg_geoenrichment/kwg_geoenrichment.log', 'w',
+            'utf-8')  # or whatever
+        formatter = logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')  # or whatever
+        handler.setFormatter(formatter)  # Pass handler as a parameter, not assign
+        self.logger.addHandler(handler)
+
+
+
     NAME_SPACE = "http://stko-roy.geog.ucsb.edu/"
     # NAME_SPACE = "http://stko-kwg.geog.ucsb.edu/"
 
@@ -85,6 +101,10 @@ class kwg_sparqlutil:
                 "bindings": {}
             }
         }
+
+
+        self.logger.info("query ")
+        self.logger.info(query)
 
         if sparql_endpoint is None:
             sparql_endpoint = self.SPARQL_ENDPOINT
