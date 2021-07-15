@@ -47,7 +47,7 @@ class kwg_sparqlquery:
     def TypeAndGeoSPARQLQuery(self, query_geo_wkt, selectedURL="",
                               isDirectInstance=False,
                               geosparql_func=["geo:sfIntersects"],
-                              sparql_endpoint="http://stko-roy.geog.ucsb.edu:7200/repositories/kwg-seed-graph-v2"):
+                              sparql_endpoint="http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire"):
         '''
         Format GeoSPARQL query by given query_geo_wkt and type
         Args:

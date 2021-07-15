@@ -656,12 +656,14 @@ then select an entity on the map.'
             result = self.dlg.exec_()
             # See if OK was pressed
             if result:
+                params = self.getInputs()
+
                 QgsMessageLog.logMessage("Contacting the server with the geoSPARQL request", "kwg_geoenrichment",
                                          level=Qgis.Info)
 
                 wkt_literal = self.performWKTConversion()
                 self.logger.debug(wkt_literal)
-                geoSPARQLResponse = self.sparqlQuery.TypeAndGeoSPARQLQuery(query_geo_wkt=wkt_literal)
+                geoSPARQLResponse = self.sparqlQuery.TypeAndGeoSPARQLQuery(query_geo_wkt=wkt_literal, geosparql_func=params["geosparql_func"])
 
                 # self.logger.debug(json.dumps(geoSPARQLResponse))
                 QgsMessageLog.logMessage("GeoJSON response received from the server", "kwg_geoenrichment",
@@ -673,6 +675,30 @@ then select an entity on the map.'
         self.resetSB()
         self.bGeom = None
 
+
+    def getInputs(self):
+        params = {}
+        params["end_point"] = self.dlg.lineEdit.text()
+        params["place_type"] = self.dlg.comboBox.currentText()
+        params["relation_type"] = self.dlg.comboBox_2.currentText()
+        params["is_direct_instance"] = self.dlg.checkBox.isChecked()
+
+        # get the function
+        geosparql_func = list()
+        if params["relation_type"] == "Contain + Intersect":
+            geosparql_func = ["geo:sfContains", "geo:sfIntersects"]
+        elif params["relation_type"] == "Contain":
+            geosparql_func = ["geo:sfContains"]
+        elif params["relation_type"] == "Within":
+            geosparql_func = ["geo:sfWithin"]
+        elif params["relation_type"] == "Intersect":
+            geosparql_func = ["geo:sfIntersects"]
+        else:
+            QgsMessageLog.logMessage("The spatial relation is not supported!", "kwg_geoenrichment", level=Qgis.Critical)
+
+        params["geosparql_func"] = geosparql_func
+
+        return params
 
     def performWKTConversion(self):
         layers = QgsProject.instance().mapLayers().values()
