@@ -92,6 +92,7 @@ class kwg_sparqlquery:
                     ?place geo:hasGeometry ?geometry .
                     ?place rdfs:label ?placeLabel .
                     ?geometry geo:asWKT ?wkt.
+                    ?place rdf:type ?placeFlatType .
                     { '''
                 <http://www.opengis.net/def/crs/OGC/1.3/CRS84>
                 """ + query_geo_wkt + """

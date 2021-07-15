@@ -21,14 +21,14 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, qVersion
+from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, qVersion, QVariant
 from qgis.PyQt.QtWidgets import QAction, QMessageBox, QMenu, QInputDialog
 from qgis.PyQt.QtGui import QIcon
 
 from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
     QgsCoordinateTransform, QgsCoordinateTransformContext, QgsMapLayer, \
     QgsFeatureRequest, QgsVectorLayer, QgsLayerTreeGroup, QgsRenderContext, \
-    QgsCoordinateReferenceSystem, QgsWkbTypes, QgsMessageLog, Qgis
+    QgsCoordinateReferenceSystem, QgsWkbTypes, QgsMessageLog, Qgis, QgsFields, QgsField, QgsVectorFileWriter
 from qgis.gui import QgsRubberBand
 
 # Initialize Qt resources from file resources.py
@@ -36,6 +36,8 @@ from .resources import *
 # Import the code for the dialog
 from .kwg_geoenrichment_dialog import kwg_geoenrichmentDialog
 from .kwg_sparqlquery import kwg_sparqlquery
+from .kwg_util import kwg_util as UTIL
+from .kwg_json2field import kwf_json2field as Json2Field
 
 # Import QDraw settings
 from .drawtools import DrawPoint, DrawRect, DrawLine, DrawCircle, DrawPolygon,\
@@ -47,6 +49,12 @@ from configparser import ConfigParser
 import json
 import os.path
 import logging
+import geojson
+# import geopandas as gpd
+# from osgeo import gdal
+
+# import gdal
+import subprocess
 
 class kwg_geoenrichment:
     """QGIS Plugin Implementation."""
@@ -653,13 +661,12 @@ then select an entity on the map.'
 
                 wkt_literal = self.performWKTConversion()
                 self.logger.debug(wkt_literal)
-                self.logger.debug(type(wkt_literal))
                 geoSPARQLResponse = self.sparqlQuery.TypeAndGeoSPARQLQuery(query_geo_wkt=wkt_literal)
 
                 # self.logger.debug(json.dumps(geoSPARQLResponse))
                 QgsMessageLog.logMessage("GeoJSON response received from the server", "kwg_geoenrichment",
                                          level=Qgis.Info)
-                self.handleGeoJSON(geoSPARQLResponse)
+                self.handleGeoJSONObject(geoResult=geoSPARQLResponse)
                 pass
 
         self.tool.reset()
@@ -692,7 +699,116 @@ then select an entity on the map.'
         return wkt_rep
 
 
-    def handleGeoJSON(selfself, geoJSON):
-        QgsMessageLog.logMessage("Handling geoJSON response from the server", level=Qgis.Info)
+    def handleGeoJSON(self, geoResult):
+        QgsMessageLog.logMessage("Handling response from the server", "kwg_geoenrichment", level=Qgis.Info)
+
+        with open('/var/local/QGIS/kwg_data.geojson', 'w') as f:
+            geojson.dump(geoResult, f)
+
+        # conversion_cmd = ['ogr2ogr -f \'ESRI Shapefile\' /var/local/QGIS/kwg_geoSPARQL.shp /var/local/QGIS/kwg_data.json']
+        # subprocess.call(conversion_cmd, shell=True)
+
+        # gdf = gpd.read_file('/var/local/QGIS/kwg_data.geojson')
+        # gdf.to_file('/var/local/QGIS/kwg_data.shp')
+
+        # ds = gdal.VectorTranslate('/var/local/QGIS/kwg_data.shp', geoJSON, format='ESRI Shapefile')
+
+        QgsMessageLog.logMessage("Successfully created a geojson file", "kwg_geoenrichment", level=Qgis.Info)
 
         pass
+
+
+    def handleGeoJSONObject(self, geoResult):
+        QgsMessageLog.logMessage("handleGeoJSONObject", "kwg_geoenrichment", level=Qgis.Info)
+
+        with open('/var/local/QGIS/kwg_data.geojson', 'w') as f:
+            geojson.dump(geoResult, f)
+
+        self.createShapeFileFromSPARQLResult(geoResult)
+
+        QgsMessageLog.logMessage("Successfully created a shape file", "kwg_geoenrichment", level=Qgis.Info)
+
+        pass
+
+    def createShapeFileFromSPARQLResult(self, GeoQueryResult, out_path="/var/local/QGIS/kwg_results.shp", inPlaceType="", selectedURL="",
+                                           isDirectInstance=False):
+        '''
+        GeoQueryResult: a sparql query result json obj serialized as a list of dict()
+                    SPARQL query like this:
+                    select distinct ?place ?placeLabel ?placeFlatType ?wkt
+                    where
+                    {...}
+        out_path: the output path for the create geo feature class
+        inPlaceType: the label of user spercified type IRI
+        selectedURL: the user spercified type IRI
+        isDirectInstance: True: use placeFlatType as the type of geo-entity
+                          False: use selectedURL as the type of geo-entity
+        '''
+        # a set of unique WKT for each found places
+        placeIRISet = set()
+        placeList = []
+        geom_type = None
+
+        layerFields = QgsFields()
+        layerFields.append(QgsField('place_iri', QVariant.String))
+        layerFields.append(QgsField('label', QVariant.String))
+        layerFields.append(QgsField('type_iri', QVariant.String))
+
+        writer = QgsVectorFileWriter(out_path, 'UTF-8', layerFields, QgsWkbTypes.Polygon,
+                                     QgsCoordinateReferenceSystem('EPSG:4326'), 'ESRI Shapefile')
+
+        for idx, item in enumerate(GeoQueryResult):
+            wkt_literal = item["wkt"]["value"]
+            # for now, make sure all geom has the same geometry type
+            if idx == 0:
+                geom_type = UTIL.get_geometry_type_from_wkt(wkt_literal)
+            else:
+                assert geom_type == UTIL.get_geometry_type_from_wkt(wkt_literal)
+
+            if isDirectInstance == False:
+                placeType = item["placeFlatType"]["value"]
+            else:
+                placeType = selectedURL
+            print("{}\t{}\t{}".format(
+                item["place"]["value"], item["placeLabel"]["value"], placeType))
+            if len(placeIRISet) == 0 or item["place"]["value"] not in placeIRISet:
+                placeIRISet.add(item["place"]["value"])
+                placeList.append(
+                    [item["place"]["value"], item["placeLabel"]["value"], placeType, wkt_literal])
+
+        if geom_type is None:
+            raise Exception("geometry type not find")
+
+        if len(placeList) == 0:
+            QgsMessageLog.logMessage("No {0} within the provided polygon can be finded!".format(inPlaceType), level=Qgis.Info)
+        else:
+
+            if out_path == None:
+                QgsMessageLog.logMessage("No data will be added to the map document.", level=Qgis.Info)
+            else:
+
+
+                # labelFieldLength = Json2Field.fieldLengthDecide(GeoQueryResult, "placeLabel")
+                #
+                # urlFieldLength = Json2Field.fieldLengthDecide(GeoQueryResult, "place")
+                #
+                # if isDirectInstance == False:
+                #     classFieldLength = Json2Field.fieldLengthDecide(GeoQueryResult, "placeFlatType")
+                # else:
+                #     classFieldLength = len(selectedURL) + 50
+
+                for item in placeList:
+                    place_iri, label, type_iri, wkt_literal = item
+                    wkt = wkt_literal.replace("<http://www.opengis.net/def/crs/OGC/1.3/CRS84>", "")
+
+                    feat = QgsFeature()
+                    feat.setGeometry(QgsGeometry.fromWkt(wkt))
+                    feat.setAttributes(item[0:3])
+
+                    writer.addFeature(feat)
+
+                self.iface.addVectorLayer(out_path, 'kwg_results', 'ogr')
+
+        del(writer)
+
+        return
