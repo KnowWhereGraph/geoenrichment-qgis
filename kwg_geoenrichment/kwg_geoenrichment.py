@@ -348,18 +348,35 @@ class kwg_geoenrichment:
             self.first_start = False
             self.dlgPropertyEnrichment = kwg_property_geoenrichmentDialog()
 
+        QgsMessageLog.logMessage("Retrieving common properties based on geometry selection", "kwg_geoenrichment",
+                                 level=Qgis.Info)
         # show the dialog
         self.dlgPropertyEnrichment.show()
+
+        kpe = kwg_property_enrichment()
+        results = kpe.getCommonProperties()
+        self.updateParamsPropertyEnrichment(results)
+        QgsMessageLog.logMessage("Common properties retrieved successfully", "kwg_geoenrichment", level=Qgis.Info)
+
         # Run the dialog event loop
         result = self.dlgPropertyEnrichment.exec_()
         # See if OK was pressed
         if result:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
-            kpe = kwg_property_enrichment()
-            results = kpe.execute()
-            QgsMessageLog.logMessage(results, "kwg_geoenrichment", level=Qgis.Info)
+            items = self.dlgPropertyEnrichment.listWidget.selectedItems()
+            for item, val in enumerate(items):
+                QgsMessageLog.logMessage( "selected: " + val.text(), "kwg_geoenrichment",
+                                         level=Qgis.Info)
             pass
+
+
+    def updateParamsPropertyEnrichment(self, commonPropertiesDict):
+        listWidget = self.dlgPropertyEnrichment.listWidget
+        for key in commonPropertiesDict:
+            listWidget.addItem(key)
+
+        return
 
     def drawPoint(self):
         if self.tool:
@@ -461,6 +478,7 @@ class kwg_geoenrichment:
         self.toolname = 'drawPolygon'
         self.resetSB()
 
+
     def drawBuffer(self):
         self.bGeom = None
         if self.tool:
@@ -487,6 +505,7 @@ class kwg_geoenrichment:
         self.toolname = 'drawBuffer'
         self.resetSB()
 
+
     def drawPolygonBuffer(self):
         self.bGeom = None
         if self.tool:
@@ -511,14 +530,17 @@ class kwg_geoenrichment:
         self.toolname = 'drawBuffer'
         self.resetSB()
 
+
     def showSettingsWindow(self):
         self.settings.settingsChanged.connect(self.settingsChangedSlot)
         self.settings.show()
+
 
     # triggered when a setting is changed
     def settingsChangedSlot(self):
         if self.tool:
             self.tool.rb.setColor(self.settings.getColor())
+
 
     def resetSB(self):
         message = {
@@ -533,6 +555,7 @@ confirm.',
 then select an entity on the map.'
         }
         self.sb.showMessage(self.tr(message[self.toolname]))
+
 
     def updateSB(self):
         g = self.geomTransform(
@@ -553,12 +576,14 @@ then select an entity on the map.'
                 self.sb.showMessage(self.tr('Area')+': '+"0 m"+u'²')
         self.iface.mapCanvas().mapSettings().destinationCrs().authid()
 
+
     def geomTransform(self, geom, crs_orig, crs_dest):
         g = QgsGeometry(geom)
         crsTransform = QgsCoordinateTransform(
             crs_orig, crs_dest, QgsCoordinateTransformContext())  # which context ?
         g.transform(crsTransform)
         return g
+
 
     def selectBuffer(self):
         rb = self.tool.rb
@@ -596,6 +621,7 @@ then select an entity on the map.'
                 rb.setToGeometry(self.bGeom, layer)
         if isinstance(self.tool, DrawPolygon):
             self.draw()
+
 
     def draw(self):
         rb = self.tool.rb
@@ -730,6 +756,7 @@ then select an entity on the map.'
 
         return params
 
+
     def performWKTConversion(self):
         layers = QgsProject.instance().mapLayers().values()
         QgsMessageLog.logMessage("Reading all the layers", "kwg_geoenrichment", level=Qgis.Info)
@@ -774,6 +801,7 @@ then select an entity on the map.'
             QgsMessageLog.logMessage("Error while writing geopackage", "kwg_geoenrichment", level=Qgis.Error)
 
         pass
+
 
     def createShapeFileFromSPARQLResult(self, GeoQueryResult, out_path="/var/local/QGIS/kwg_results.shp", inPlaceType="", selectedURL="",
                                            isDirectInstance=False):
@@ -859,6 +887,7 @@ then select an entity on the map.'
         return
 
 
+
     def createGeoPackageFromSPARQLResult(self, GeoQueryResult, out_path="/var/local/QGIS/kwg_results.gpkg", inPlaceType="", selectedURL="",
                                            isDirectInstance=False):
         '''
@@ -917,16 +946,6 @@ then select an entity on the map.'
             if out_path == None:
                 QgsMessageLog.logMessage("No data will be added to the map document.", level=Qgis.Info)
             else:
-
-
-                # labelFieldLength = Json2Field.fieldLengthDecide(GeoQueryResult, "placeLabel")
-                #
-                # urlFieldLength = Json2Field.fieldLengthDecide(GeoQueryResult, "place")
-                #
-                # if isDirectInstance == False:
-                #     classFieldLength = Json2Field.fieldLengthDecide(GeoQueryResult, "placeFlatType")
-                # else:
-                #     classFieldLength = len(selectedURL) + 50
 
                 for item in placeList:
                     place_iri, label, type_iri, wkt_literal = item
