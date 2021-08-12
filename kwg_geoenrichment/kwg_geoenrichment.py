@@ -35,6 +35,7 @@ from qgis.gui import QgsRubberBand
 from .resources import *
 # Import the code for the dialog
 from .kwg_geoenrichment_dialog import kwg_geoenrichmentDialog
+from .kwg_property_geoenrichment_dialog import kwg_property_geoenrichmentDialog
 from .kwg_sparqlquery import kwg_sparqlquery
 from .kwg_util import kwg_util as UTIL
 from .kwg_json2field import kwf_json2field as Json2Field
@@ -219,6 +220,12 @@ class kwg_geoenrichment:
             callback=self.run,
             parent=self.iface.mainWindow())
 
+        self.add_action(
+            icon_path,
+            text=self.tr(u'Property Enrichment Query'),
+            callback=self.runPropertyEnrichment,
+            parent=self.iface.mainWindow())
+
         # Adding menu to toolbar
         pointMenu = QMenu()
         pointMenu.addAction(
@@ -325,6 +332,25 @@ class kwg_geoenrichment:
         self.dlg.show()
         # Run the dialog event loop
         result = self.dlg.exec_()
+        # See if OK was pressed
+        if result:
+            # Do something useful here - delete the line containing pass and
+            # substitute with your code.
+            pass
+
+    def runPropertyEnrichment(self):
+        """Run method that performs all the real work"""
+
+        # Create the dialog with elements (after translation) and keep reference
+        # Only create GUI ONCE in callback, so that it will only load when the plugin is started
+        if self.first_start == True:
+            self.first_start = False
+            self.dlgPropertyEnrichment = kwg_property_geoenrichmentDialog()
+
+        # show the dialog
+        self.dlgPropertyEnrichment.show()
+        # Run the dialog event loop
+        result = self.dlgPropertyEnrichment.exec_()
         # See if OK was pressed
         if result:
             # Do something useful here - delete the line containing pass and
