@@ -1,3 +1,6 @@
+from .kwg_sparqlutil import kwg_sparqlutil
+
+
 class kwg_util:
 
     def __init__(self):
@@ -18,4 +21,25 @@ class kwg_util:
             return "POLYGON"
         else:
             raise Exception("Unrecognized geometry type: {}".format(wkt))
+
+
+    def extractCommonPropertyJSON(self, commonPropertyJSON,
+                                  p_url_list=[], p_name_list=[], url_dict={},
+                                  p_var="p", plabel_var="pLabel", numofsub_var="NumofSub"):
+        SPARQLUtil = kwg_sparqlutil()
+        for jsonItem in commonPropertyJSON:
+            propertyURL = jsonItem[p_var]["value"]
+            if propertyURL not in p_url_list:
+                p_url_list.append(propertyURL)
+                label = ""
+                if plabel_var in jsonItem:
+                    label = jsonItem[plabel_var]["value"]
+                if label.strip() == "":
+                    label = SPARQLUtil.make_prefixed_iri(propertyURL)
+                propertyName = f"""{label} [{jsonItem[numofsub_var]["value"]}]"""
+                p_name_list.append(propertyName)
+
+        url_dict = dict(zip(p_name_list, p_url_list))
+
+        return url_dict
 

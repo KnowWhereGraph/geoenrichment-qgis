@@ -52,7 +52,24 @@ class kwg_property_enrichment:
         commonPropertyJSONObj = kwg_sparqlquery_obj.commonPropertyQuery(inplaceIRIList=inplaceIRIList,
                                                                 doSameAs=False)
         commonPropertyJSON = commonPropertyJSONObj["results"]["bindings"]
-        return json.dumps(commonPropertyJSON)
+
+        UTIL_obj = UTIL()
+        if len(commonPropertyJSON) == 0:
+            QgsMessageLog.logMessage("Couldn't find common properties", "kwg_geoenrichment", level=Qgis.Error)
+
+        else:
+            kwg_property_enrichment.propertyURLList = []
+            kwg_property_enrichment.propertyNameList = []
+            kwg_property_enrichment.propertyURLDict = dict()
+
+            kwg_property_enrichment.propertyURLDict = UTIL_obj.extractCommonPropertyJSON(commonPropertyJSON,
+                                                                                             p_url_list=kwg_property_enrichment.propertyURLList,
+                                                                                             p_name_list=kwg_property_enrichment.propertyNameList,
+                                                                                             url_dict=kwg_property_enrichment.propertyURLDict,
+                                                                                             p_var="p",
+                                                                                             plabel_var="pLabel",
+                                                                                             numofsub_var="NumofSub")
+        return json.dumps(kwg_property_enrichment.propertyURLDict)
 
 
     def loadIRIList(self):
