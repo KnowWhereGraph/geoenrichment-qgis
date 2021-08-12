@@ -36,6 +36,7 @@ from .resources import *
 # Import the code for the dialog
 from .kwg_geoenrichment_dialog import kwg_geoenrichmentDialog
 from .kwg_property_geoenrichment_dialog import kwg_property_geoenrichmentDialog
+from .kwg_property_enrichment import kwg_property_enrichment
 from .kwg_sparqlquery import kwg_sparqlquery
 from .kwg_util import kwg_util as UTIL
 from .kwg_json2field import kwf_json2field as Json2Field
@@ -355,6 +356,9 @@ class kwg_geoenrichment:
         if result:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
+            kpe = kwg_property_enrichment()
+            results = kpe.execute()
+            QgsMessageLog.logMessage(results, "kwg_geoenrichment", level=Qgis.Info)
             pass
 
     def drawPoint(self):

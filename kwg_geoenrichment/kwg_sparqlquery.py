@@ -3,6 +3,8 @@ import logging
 
 from .kwg_sparqlutil import kwg_sparqlutil
 
+from qgis.core import QgsMessageLog, Qgis
+
 class kwg_sparqlquery:
 
     def __init__(self):
@@ -43,6 +45,7 @@ class kwg_sparqlquery:
         GeoQueryResult = GeoQueryResult["results"]["bindings"]
         print(json.dumps(GeoQueryResult, indent=2))
         return GeoQueryResult
+
 
     def TypeAndGeoSPARQLQuery(self, query_geo_wkt, selectedURL="",
                               isDirectInstance=False,
@@ -154,6 +157,74 @@ class kwg_sparqlquery:
         GeoQueryResult = GeoQueryResult["results"]["bindings"]
         return GeoQueryResult
 
+
+    def commonPropertyQuery(self, inplaceIRIList, sparql_endpoint="http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire", doSameAs=True):
+
+        kwg_sparqlutil_obj = kwg_sparqlutil()
+        queryPrefix = kwg_sparqlutil_obj.make_sparql_prefix()
+
+        iri_list = ""
+        for IRI in inplaceIRIList:
+            iri_list = iri_list + "<" + IRI + "> \n"
+
+        if sparql_endpoint == kwg_sparqlutil._WIKIDATA_SPARQL_ENDPOINT:
+            commonPropertyQuery = queryPrefix + """SELECT ?p ?prop ?propLabel ?NumofSub WHERE 
+                                        {
+                                            {
+                                                SELECT ?prop ?p (COUNT(DISTINCT ?s) AS ?NumofSub) WHERE 
+                                                {
+
+                                                    hint:Query hint:optimizer "None" .
+
+                                                    ?s ?p ?o .
+                                                    ?prop wikibase:directClaim ?p .
+
+                                                    VALUES ?s
+                                                    {
+            """
+            commonPropertyQuery += iri_list
+            commonPropertyQuery += """
+                                                    }
+                                                }  GROUP BY ?prop ?p
+                                            }
+
+                                            SERVICE wikibase:label {
+                                                bd:serviceParam wikibase:language "en" .
+                                            }
+
+                                        } ORDER BY DESC (?NumofSub)
+            """
+
+        else:
+            if doSameAs:
+                commonPropertyQuery = queryPrefix + """select distinct ?p (count(distinct ?s) as ?NumofSub)
+                                            where
+                                            {
+                                            ?s owl:sameAs ?wikidataSub.
+                                            ?s ?p ?o.
+                                            VALUES ?wikidataSub
+                                            {"""
+            else:
+                commonPropertyQuery = queryPrefix + """select distinct ?p (count(distinct ?s) as ?NumofSub)
+                                            where
+                                            {
+                                            ?s ?p ?o.
+                                            VALUES ?s
+                                            {"""
+            commonPropertyQuery += iri_list
+
+            commonPropertyQuery += """
+                                            }
+                                            }
+                                            group by ?p
+                                            order by DESC(?NumofSub)
+                                            """
+
+        QgsMessageLog.logMessage(commonPropertyQuery, "kwg_geoenrichment", level=Qgis.Info)
+        res_json = kwg_sparqlutil_obj.sparql_requests(query=commonPropertyQuery,
+                                              sparql_endpoint=sparql_endpoint,
+                                              doInference=False)
+        return res_json
 
 if __name__ == "__main__":
     SQ = kwg_sparqlquery()
