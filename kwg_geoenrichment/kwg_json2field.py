@@ -4,7 +4,7 @@ from .kwg_util import kwg_util
 
 import math
 
-class kwf_json2field:
+class kwg_json2field:
 
     def __init__(self):
         pass
