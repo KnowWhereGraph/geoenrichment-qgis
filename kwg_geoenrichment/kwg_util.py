@@ -43,3 +43,15 @@ class kwg_util:
 
         return url_dict
 
+
+    def getPropertyName(self, propertyURL):
+        # give a URL of property, get the property name (without prefix)
+        if "#" in propertyURL:
+            lastIndex = propertyURL.rfind("#")
+            propertyName = propertyURL[(lastIndex + 1):]
+        else:
+            lastIndex = propertyURL.rfind("/")
+            propertyName = propertyURL[(lastIndex + 1):]
+
+        return propertyName
+
