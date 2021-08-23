@@ -22,7 +22,7 @@
  ***************************************************************************/
 """
 from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, qVersion, QVariant
-from qgis.PyQt.QtWidgets import QAction, QMessageBox, QMenu, QInputDialog
+from qgis.PyQt.QtWidgets import QAction, QMessageBox, QMenu, QInputDialog, QAbstractItemView
 from qgis.PyQt.QtGui import QIcon
 
 from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
@@ -39,7 +39,7 @@ from .kwg_property_geoenrichment_dialog import kwg_property_geoenrichmentDialog
 from .kwg_property_enrichment import kwg_property_enrichment
 from .kwg_sparqlquery import kwg_sparqlquery
 from .kwg_util import kwg_util as UTIL
-from .kwg_json2field import kwf_json2field as Json2Field
+from .kwg_json2field import kwg_json2field as Json2Field
 
 # Import QDraw settings
 from .drawtools import DrawPoint, DrawRect, DrawLine, DrawCircle, DrawPolygon,\
@@ -354,30 +354,44 @@ class kwg_geoenrichment:
         self.dlgPropertyEnrichment.show()
 
         kwgpropeenrichment = kwg_property_enrichment()
+
+        # get common properties
         results = kwgpropeenrichment.getCommonProperties()
         self.updateParamsPropertyEnrichment(results)
+
+        # get sosa obs properties
+        results = kwgpropeenrichment.getsosaObsPropNameList()
+        self.updateParamsPropertyEnrichment(results)
+
         QgsMessageLog.logMessage("Common properties retrieved successfully", "kwg_geoenrichment", level=Qgis.Info)
 
         # Run the dialog event loop
         result = self.dlgPropertyEnrichment.exec_()
         # See if OK was pressed
         if result:
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
+            params = {}
+
+            params["sparql_endpoint"] = self.dlgPropertyEnrichment.lineEdit.text()
+
+
             items = self.dlgPropertyEnrichment.listWidget.selectedItems()
-            params = []
+
+            propertySelectList = []
             for item, val in enumerate(items):
                 QgsMessageLog.logMessage( "selected: " + val.text(), "kwg_geoenrichment",
                                          level=Qgis.Info)
-                params.append(val.text())
+                propertySelectList.append(val.text())
+            params["propertySelect"] = propertySelectList
 
-            kwgpropeenrichment.execute(parameters = params)
+
+            kwgpropeenrichment.execute(parameters=params)
 
 
-    def updateParamsPropertyEnrichment(self, commonPropertiesDict):
+    def updateParamsPropertyEnrichment(self, propertiesDict):
         listWidget = self.dlgPropertyEnrichment.listWidget
-        for key in commonPropertiesDict:
+        for key in propertiesDict:
             listWidget.addItem(key)
+        listWidget.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         return
 
