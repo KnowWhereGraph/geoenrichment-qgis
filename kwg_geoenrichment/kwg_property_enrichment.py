@@ -46,24 +46,22 @@ class kwg_property_enrichment:
         # propertyNameList = []
         kwg_property_enrichment.count += 1
         self.SPARQLQuery = kwg_sparqlquery()
+        self.inplaceIRIList = []
+        self.loadIRIList()
 
 
     def getCommonProperties(self):
-        inplaceIRIList = self.loadIRIList()
 
         # get the direct common property
-        commonPropertyJSONObj = self.SPARQLQuery.commonPropertyQuery(inplaceIRIList=inplaceIRIList,
+        commonPropertyJSONObj = self.SPARQLQuery.commonPropertyQuery(inplaceIRIList=self.inplaceIRIList,
                                                                 doSameAs=False)
         commonPropertyJSON = commonPropertyJSONObj["results"]["bindings"]
 
         UTIL_obj = UTIL()
         if len(commonPropertyJSON) == 0:
-            QgsMessageLog.logMessage("Couldn't find common properties", "kwg_geoenrichment", level=Qgis.Error)
+            QgsMessageLog.logMessage("Couldn't find common properties", "kwg_geoenrichment", level=Qgis.Warning)
 
         else:
-            self.propertyURLList = []
-            self.propertyNameList = []
-            self.propertyURLDict = dict()
 
             self.propertyURLDict = UTIL_obj.extractCommonPropertyJSON(commonPropertyJSON,
                                                                                              p_url_list=kwg_property_enrichment.propertyURLList,
@@ -77,16 +75,11 @@ class kwg_property_enrichment:
 
 
     def getsosaObsPropNameList(self):
-        inplaceIRIList = self.loadIRIList()
-
-        # query for common sosa observable property
-        self.sosaObsPropURLList = []
-        self.sosaObsPropNameList = []
-        self.sosaObsPropURLDict = dict()
 
         if len(self.propertyURLDict) > 0:
 
-            commonSosaObsPropJSONObj = self.SPARQLQuery.commonSosaObsPropertyQuery(inplaceIRIList,
+            # query for common sosa observable property
+            commonSosaObsPropJSONObj = self.SPARQLQuery.commonSosaObsPropertyQuery(self.inplaceIRIList,
                                                                                    doSameAs=False)
 
             commonSosaObsPropJSON = commonSosaObsPropJSONObj["results"]["bindings"]
@@ -99,6 +92,28 @@ class kwg_property_enrichment:
                     p_var="p",
                     plabel_var="pLabel",
                     numofsub_var="NumofSub")
+
+        return
+
+
+    def getInverseCommonProp(self):
+
+        inverseCommonPropertyJSONObj = self.SPARQLQuery.inverseCommonPropertyQuery(self.inplaceIRIList, doSameAs=True)
+
+        inverseCommonPropertyJSON = inverseCommonPropertyJSONObj["results"]["bindings"]
+
+        if len(inverseCommonPropertyJSON) == 0:
+            QgsMessageLog.logMessage("No inverse property found!", "kwg_geoenrichment", level=Qgis.Warning)
+        else:
+
+            self.inversePropertyURLDict = UTIL.extractCommonPropertyJSON(
+                inverseCommonPropertyJSON,
+                p_url_list=self.inversePropertyURLList,
+                p_name_list=self.inversePropertyNameList,
+                url_dict=self.inversePropertyURLDict,
+                p_var="p",
+                plabel_var="pLabel",
+                numofsub_var="NumofSub")
 
         return
 
@@ -121,7 +136,9 @@ class kwg_property_enrichment:
 
         # QgsMessageLog.logMessage(" | ".join(iriList), "kwg_geoenrichment", level=Qgis.Info)
 
-        return iriList
+        self.inplaceIRIList = iriList
+
+        return
 
 
     def execute(self, parameters, messages, sparql_endpoint = "http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire"):
