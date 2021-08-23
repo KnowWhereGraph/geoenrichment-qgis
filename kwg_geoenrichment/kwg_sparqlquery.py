@@ -228,6 +228,66 @@ class kwg_sparqlquery:
         return res_json
 
 
+    def commonSosaObsPropertyQuery(self, inplaceIRIList, sparql_endpoint='https://dbpedia.org/sparql', doSameAs=False):
+        queryPrefix = self.sparqlUTIL.make_sparql_prefix()
+
+        commonPropertyQuery = queryPrefix + """select distinct ?p ?pLabel (count(distinct ?s) as ?NumofSub) 
+                                        where { 
+                                        ?s sosa:isFeatureOfInterestOf ?obscol .
+                                        ?obscol sosa:hasMember ?obs.
+                                        ?obs sosa:observedProperty ?p .
+                                        OPTIONAL {?p rdfs:label ?pLabel . }
+                                        VALUES ?s
+                                        {
+                                        """
+        for IRI in inplaceIRIList:
+            commonPropertyQuery = commonPropertyQuery + "<" + IRI + "> \n"
+
+        commonPropertyQuery = commonPropertyQuery + """
+                                        }
+                                        }
+                                        group by ?p ?pLabel 
+                                        order by DESC(?NumofSub)
+                                        """
+
+        res_json = self.sparqlUTIL.sparql_requests(query=commonPropertyQuery,
+                                              sparql_endpoint=sparql_endpoint,
+                                              doInference=False)
+        return res_json
+
+
+    def inverseCommonPropertyQuery(self, inplaceIRIList, sparql_endpoint='https://dbpedia.org/sparql', doSameAs=True):
+        queryPrefix = self.SPARQLUtil.make_sparql_prefix()
+
+        if doSameAs:
+            commonPropertyQuery = queryPrefix + """select distinct ?p (count(distinct ?s) as ?NumofSub)
+                                            where
+                                            { ?s owl:sameAs ?wikidataSub.
+                                            ?o ?p ?s.
+                                            VALUES ?wikidataSub
+                                            {"""
+        else:
+            commonPropertyQuery = queryPrefix + """select distinct ?p (count(distinct ?s) as ?NumofSub)
+                                        where
+                                        { 
+                                        ?o ?p ?s.
+                                        VALUES ?s
+                                        {"""
+        for IRI in inplaceIRIList:
+            commonPropertyQuery = commonPropertyQuery + "<" + IRI + "> \n"
+
+        commonPropertyQuery = commonPropertyQuery + """
+                                        }
+                                        }
+                                        group by ?p
+                                        order by DESC(?NumofSub)
+                                        """
+
+        res_json = self.sparqlUTIL.sparql_requests(query=commonPropertyQuery,
+                                              sparql_endpoint=sparql_endpoint,
+                                              doInference=False)
+        return res_json
+
     def functionalPropertyQuery(self, propertyURLList, sparql_endpoint='https://dbpedia.org/sparql'):
         # give a list of property, get a sublist which are functional property
 
@@ -447,6 +507,26 @@ class kwg_sparqlquery:
             i = i + 50
 
         return jsonBindingObject
+
+
+    def extractCommonPropertyJSON(self, commonPropertyJSON,
+                                  p_url_list=[], p_name_list=[], url_dict={},
+                                  p_var="p", plabel_var="pLabel", numofsub_var="NumofSub"):
+        for jsonItem in commonPropertyJSON:
+            propertyURL = jsonItem[p_var]["value"]
+            if propertyURL not in p_url_list:
+                p_url_list.append(propertyURL)
+                label = ""
+                if plabel_var in jsonItem:
+                    label = jsonItem[plabel_var]["value"]
+                if label.strip() == "":
+                    label = self.sparqlUTIL.make_prefixed_iri(propertyURL)
+                propertyName = f"""{label} [{jsonItem[numofsub_var]["value"]}]"""
+                p_name_list.append(propertyName)
+
+        url_dict = dict(zip(p_name_list, p_url_list))
+
+        return url_dict
     
 
 if __name__ == "__main__":
