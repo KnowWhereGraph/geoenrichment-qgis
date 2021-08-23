@@ -9,6 +9,8 @@ from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
     QgsCoordinateReferenceSystem, QgsWkbTypes, QgsMessageLog, Qgis, QgsFields, QgsField, QgsVectorFileWriter
 
 import json
+import re
+import os
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -43,13 +45,14 @@ class kwg_property_enrichment:
         # self.propertyURLList = []
         # propertyNameList = []
         kwg_property_enrichment.count += 1
+        self.SPARQLQuery = kwg_sparqlquery()
 
 
-    def execute(self):
+    def getCommonProperties(self):
         inplaceIRIList = self.loadIRIList()
-        kwg_sparqlquery_obj = kwg_sparqlquery()
+
         # get the direct common property
-        commonPropertyJSONObj = kwg_sparqlquery_obj.commonPropertyQuery(inplaceIRIList=inplaceIRIList,
+        commonPropertyJSONObj = self.SPARQLQuery.commonPropertyQuery(inplaceIRIList=inplaceIRIList,
                                                                 doSameAs=False)
         commonPropertyJSON = commonPropertyJSONObj["results"]["bindings"]
 
@@ -58,18 +61,46 @@ class kwg_property_enrichment:
             QgsMessageLog.logMessage("Couldn't find common properties", "kwg_geoenrichment", level=Qgis.Error)
 
         else:
-            kwg_property_enrichment.propertyURLList = []
-            kwg_property_enrichment.propertyNameList = []
-            kwg_property_enrichment.propertyURLDict = dict()
+            self.propertyURLList = []
+            self.propertyNameList = []
+            self.propertyURLDict = dict()
 
-            kwg_property_enrichment.propertyURLDict = UTIL_obj.extractCommonPropertyJSON(commonPropertyJSON,
+            self.propertyURLDict = UTIL_obj.extractCommonPropertyJSON(commonPropertyJSON,
                                                                                              p_url_list=kwg_property_enrichment.propertyURLList,
                                                                                              p_name_list=kwg_property_enrichment.propertyNameList,
                                                                                              url_dict=kwg_property_enrichment.propertyURLDict,
                                                                                              p_var="p",
                                                                                              plabel_var="pLabel",
                                                                                              numofsub_var="NumofSub")
-        return json.dumps(kwg_property_enrichment.propertyURLDict)
+
+        return
+
+
+    def getsosaObsPropNameList(self):
+        inplaceIRIList = self.loadIRIList()
+
+        # query for common sosa observable property
+        self.sosaObsPropURLList = []
+        self.sosaObsPropNameList = []
+        self.sosaObsPropURLDict = dict()
+
+        if len(self.propertyURLDict) > 0:
+
+            commonSosaObsPropJSONObj = self.SPARQLQuery.commonSosaObsPropertyQuery(inplaceIRIList,
+                                                                                   doSameAs=False)
+
+            commonSosaObsPropJSON = commonSosaObsPropJSONObj["results"]["bindings"]
+            if len(commonSosaObsPropJSON) > 0:
+                self.sosaObsPropURLDict = UTIL.extractCommonPropertyJSON(
+                    commonSosaObsPropJSON,
+                    p_url_list=self.sosaObsPropURLList,
+                    p_name_list=self.sosaObsPropNameList,
+                    url_dict=self.sosaObsPropURLDict,
+                    p_var="p",
+                    plabel_var="pLabel",
+                    numofsub_var="NumofSub")
+
+        return
 
 
     def loadIRIList(self):
@@ -88,9 +119,99 @@ class kwg_property_enrichment:
                 attrs = feature.attributes()
                 iriList.append(attrs[1])
 
-        QgsMessageLog.logMessage(" | ".join(iriList), "kwg_geoenrichment", level=Qgis.Info)
+        # QgsMessageLog.logMessage(" | ".join(iriList), "kwg_geoenrichment", level=Qgis.Info)
 
         return iriList
+
+
+    def execute(self, parameters, messages, sparql_endpoint = "http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire"):
+        """The source code of the tool."""
+        in_sparql_endpoint = sparql_endpoint
+        in_place_IRI = self.loadIRIList()
+        in_com_property = parameters[0]
+
+        QgsMessageLog.logMessage(" , ".join(in_place_IRI), "kwg_geoenrichment", level=Qgis.Info)
+
+        QgsMessageLog.logMessage("count: {0}".format(kwg_property_enrichment.count), "kwg_geoenrichment", level=Qgis.Info)
+
+        propertySelect = in_com_property.valueAsText
+        selectPropertyURLList = []
+        selectSosaObsPropURLList = []
+
+        # setting up the params
+        # get all the IRI from input point feature class of wikidata places
+        inplaceIRIList = []
+        inputFeatureClassName = in_place_IRI.valueAsText
+        featureClassName = "kwg_results"
+        sparql_endpoint = in_sparql_endpoint
+        in_place_IRI_desc = in_place_IRI
+
+        if propertySelect != None:
+            propertySplitList = re.split("[;]", propertySelect.replace("'", ""))
+            QgsMessageLog.logMessage("propertySplitList: {0}".format(propertySplitList), "kwg_geoenrichment", level=Qgis.Info)
+            for propertyItem in propertySplitList:
+                if propertyItem in kwg_property_enrichment.propertyURLDict:
+                    selectPropertyURLList.append(kwg_property_enrichment.propertyURLDict[propertyItem])
+                elif propertyItem in kwg_property_enrichment.sosaObsPropURLDict:
+                    selectSosaObsPropURLList.append(
+                        kwg_property_enrichment.sosaObsPropURLDict[propertyItem])
+
+            # send a SPARQL query to DBpedia endpoint to test whether the properties are functionalProperty
+            isFuncnalPropertyJSON = self.SPARQLQuery.functionalPropertyQuery(selectPropertyURLList,
+                                                                        sparql_endpoint=in_sparql_endpoint)
+            # isFuncnalPropertyJSON = isFuncnalPropertyJSONObj["results"]["bindings"]
+
+            FunctionalPropertySet = set()
+
+            for jsonItem in isFuncnalPropertyJSON:
+                functionalPropertyURL = jsonItem["property"]["value"]
+                FunctionalPropertySet.add(functionalPropertyURL)
+
+            QgsMessageLog.logMessage("FunctionalPropertySet: {0}".format(FunctionalPropertySet))
+
+            selectPropertyURLSet = set(selectPropertyURLList)
+            noFunctionalPropertySet = selectPropertyURLSet.difference(FunctionalPropertySet)
+            noFunctionalPropertyList = list(noFunctionalPropertySet)
+
+            for noFunctionalProperty in noFunctionalPropertyList:
+                noFunctionalPropertyJSON = self.SPARQLQuery.propertyValueQuery(inplaceIRIList, noFunctionalProperty,
+                                                                          sparql_endpoint=sparql_endpoint,
+                                                                          doSameAs=False)
+                # noFunctionalPropertyJSON = noFunctionalPropertyJSONObj["results"]["bindings"]
+                # create a seperate table to store one-to-many property value, return the created table name
+                tableName, keyPropertyFieldName, currentValuePropertyName = Json2Field.createMappingTableFromJSON(
+                    noFunctionalPropertyJSON, "wikidataSub", "o",
+                    noFunctionalProperty, inputFeatureClassName, "URL", False, False)
+                # creat relationship class between the original feature class and the created table
+
+                relationshipClassName = featureClassName + "_" + tableName + "_RelClass"
+
+                # check whether the object of propertyURL is geo-entity
+                # if it is create new feature class
+                # for propertyURL in selectPropertyURLList:
+                propertyURL = noFunctionalProperty
+                geoCheckJSON = self.SPARQLQuery.checkGeoPropertyquery(inplaceIRIList, propertyURL,
+                                                                 sparql_endpoint=in_sparql_endpoint,
+                                                                 doSameAs=False)
+                geometry_cnt = int(geoCheckJSON[0]["cnt"]["value"])
+                if geometry_cnt > 0:
+                    # OK, propertyURL is a property whose value is geo-entities
+                    # get their geometries, create a feature layer
+                    GeoQueryResult = self.SPARQLQuery.twoDegreePropertyValueWKTquery(inplaceIRIList, propertyURL,
+                                                                                sparql_endpoint=sparql_endpoint,
+                                                                                doSameAs=False)
+
+                    # in_place_IRI_desc = arcpy.Describe(in_place_IRI)
+
+
+                    prop_name = UTIL.getPropertyName(propertyURL)
+
+                    out_geo_feature_class_name = "{}_{}".format(featureClassName, prop_name)
+                    out_geo_feature_class_path = os.path.join(in_place_IRI_desc.path, out_geo_feature_class_name)
+                    Json2Field.createFeatureClassFromSPARQLResult(GeoQueryResult=GeoQueryResult,
+                                                                  out_path=out_geo_feature_class_path)
+
+        return
 
 
 if __name__ == '__main__':

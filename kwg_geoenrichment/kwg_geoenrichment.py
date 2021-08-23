@@ -353,8 +353,8 @@ class kwg_geoenrichment:
         # show the dialog
         self.dlgPropertyEnrichment.show()
 
-        kpe = kwg_property_enrichment()
-        results = kpe.getCommonProperties()
+        kwgpropeenrichment = kwg_property_enrichment()
+        results = kwgpropeenrichment.getCommonProperties()
         self.updateParamsPropertyEnrichment(results)
         QgsMessageLog.logMessage("Common properties retrieved successfully", "kwg_geoenrichment", level=Qgis.Info)
 
@@ -365,10 +365,13 @@ class kwg_geoenrichment:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
             items = self.dlgPropertyEnrichment.listWidget.selectedItems()
+            params = []
             for item, val in enumerate(items):
                 QgsMessageLog.logMessage( "selected: " + val.text(), "kwg_geoenrichment",
                                          level=Qgis.Info)
-            pass
+                params.append(val.text())
+
+            kwgpropeenrichment.execute(parameters = params)
 
 
     def updateParamsPropertyEnrichment(self, commonPropertiesDict):
