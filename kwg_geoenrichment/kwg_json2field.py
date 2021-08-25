@@ -1,4 +1,5 @@
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
+from decimal import Decimal
 
 from .kwg_util import kwg_util
 
@@ -7,6 +8,7 @@ import math
 class kwg_json2field:
 
     def __init__(self):
+        self.kwgUtil = kwg_util()
         pass
 
     def createFeatureClassFromSPARQLResult(self, GeoQueryResult, out_path="", inPlaceType="", selectedURL="",
@@ -164,6 +166,7 @@ class kwg_json2field:
         else:
             return "TEXT"
 
+
     def getLinkedDataType(self, jsonBindingObjectItem, propertyName):
         # according the the property name of this jsonBindingObjectItem, return the meaningful dataType
         rdfDataType = jsonBindingObjectItem[propertyName]["type"]
@@ -192,10 +195,27 @@ class kwg_json2field:
             return "string"
 
 
+    def buildDictFromJSONToModifyTable(self, jsonBindingObject, keyPropertyName, valuePropertyName):
+        valuePropertyList = []
+        keyPropertyList = []
+        for jsonItem in jsonBindingObject:
+            valuePropertyList.append(jsonItem[valuePropertyName]["value"])
+            keyPropertyList.append(jsonItem[keyPropertyName]["value"])
+
+        keyValueDict = dict(zip(keyPropertyList, valuePropertyList))
+        # arcpy.AddMessage("keyValueDict: {0}".format(keyValueDict))
+        return keyValueDict
 
 
-
-
-
-
-
+    def dataTypeCast(fieldValue, fieldDataType):
+        # according to the field data type, cast the data into corresponding data type
+        if fieldDataType == "TEXT":
+            return fieldValue
+        elif fieldDataType == "DATE":
+            return fieldValue
+        elif fieldDataType == "LONG":
+            return int(fieldValue)
+        elif fieldDataType == "DOUBLE":
+            return Decimal(fieldValue)
+        elif fieldDataType == "FLOAT":
+            return float(fieldValue)
