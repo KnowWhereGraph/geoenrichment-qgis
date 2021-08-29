@@ -386,13 +386,16 @@ class kwg_geoenrichment:
             params["propertySelect"] = propertySelectList
 
 
-            kwgpropeenrichment.execute(parameters=params)
+            kwgpropeenrichment.execute(parameters=params, ifaceObj=self.iface)
 
 
     def updateParamsPropertyEnrichment(self, propertiesDict):
         listWidget = self.dlgPropertyEnrichment.listWidget
+        itemsTextList = [str(listWidget.item(i).text()) for i in range(listWidget.count())]
+
         for key in propertiesDict:
-            listWidget.addItem(key)
+            if key not in itemsTextList:
+                listWidget.addItem(key)
         listWidget.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         return
