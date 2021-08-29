@@ -112,6 +112,8 @@ class kwg_geoenrichment:
 
         self.sparqlQuery = kwg_sparqlquery()
 
+        self.eventPlaceTypeDict = dict()
+
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
         """Get the translation for a string using Qt translation API.
@@ -650,6 +652,8 @@ then select an entity on the map.'
 
             self.dlg = kwg_geoenrichmentDialog()
 
+            self.populateEventPlaceTypes()
+
             # show the dialog
             self.dlg.show()
             # Run the dialog event loop
@@ -663,7 +667,7 @@ then select an entity on the map.'
 
                 wkt_literal = self.performWKTConversion()
                 self.logger.debug(wkt_literal)
-                geoSPARQLResponse = self.sparqlQuery.TypeAndGeoSPARQLQuery(query_geo_wkt=wkt_literal, geosparql_func=params["geosparql_func"])
+                geoSPARQLResponse = self.sparqlQuery.TypeAndGeoSPARQLQuery(query_geo_wkt=wkt_literal, selectedURL=params["place_type"], geosparql_func=params["geosparql_func"])
 
                 # self.logger.debug(json.dumps(geoSPARQLResponse))
                 QgsMessageLog.logMessage("GeoJSON response received from the server", "kwg_geoenrichment",
@@ -676,10 +680,24 @@ then select an entity on the map.'
         self.bGeom = None
 
 
+    def populateEventPlaceTypes(self):
+        sparqlResultJSON = self.sparqlQuery.EventTypeSPARQLQuery()
+        QgsMessageLog.logMessage(json.dumps(sparqlResultJSON), "kwg_geoenrichment",
+                                 level=Qgis.Info)
+        for obj in sparqlResultJSON:
+            if((obj["entityType"] is not None and obj["entityType"]["type"] is not None and obj["entityType"]["type"] == "uri" ) and
+                    (obj["entityTypeLabel"] is not None and obj["entityTypeLabel"]["type"] is not None and obj["entityTypeLabel"]["type"] == "literal" )):
+                self.eventPlaceTypeDict[obj["entityTypeLabel"]["value"]] = obj["entityType"]["value"]
+
+        for key in self.eventPlaceTypeDict:
+            self.dlg.comboBox.addItem(key)
+
+        return
+
     def getInputs(self):
         params = {}
         params["end_point"] = self.dlg.lineEdit.text()
-        params["place_type"] = self.dlg.comboBox.currentText()
+        params["place_type"] = self.eventPlaceTypeDict[self.dlg.comboBox.currentText()]  if (self.dlg.comboBox.currentText() in self.eventPlaceTypeDict) else self.dlg.comboBox.currentText()
         params["relation_type"] = self.dlg.comboBox_2.currentText()
         params["is_direct_instance"] = self.dlg.checkBox.isChecked()
 

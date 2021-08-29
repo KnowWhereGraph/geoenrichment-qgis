@@ -41,7 +41,7 @@ class kwg_sparqlquery:
                                                     doInference=False,
                                                     request_method="get")
         GeoQueryResult = GeoQueryResult["results"]["bindings"]
-        print(json.dumps(GeoQueryResult, indent=2))
+
         return GeoQueryResult
 
     def TypeAndGeoSPARQLQuery(self, query_geo_wkt, selectedURL="",

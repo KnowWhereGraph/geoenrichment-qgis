@@ -174,31 +174,6 @@
        <height>21</height>
       </rect>
      </property>
-     <item>
-      <property name="text">
-       <string>Debris Flow</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>Fire</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>Wildfire</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>Smoke Plume Daily Snapshot</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>Soil Polygon</string>
-      </property>
-     </item>
     </widget>
     <widget class="QComboBox" name="comboBox_2">
      <property name="enabled">
