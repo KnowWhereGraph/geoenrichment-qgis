@@ -55,3 +55,41 @@ class kwg_util:
 
         return propertyName
 
+
+    def getFieldNameWithTable(self, propertyName, featureClassName, gpkgLocation):
+        # give a property Name which have been sliced by getPropertyName(propertyURL)
+        # decide whether its lengh is larger than 10
+        # decide whether it is already in the feature class table
+        # return the final name of this field, if return -1, that mean the field name has more than 10 times in this table, you just do nothing
+        # if len(propertyName) > 10:
+        #     propertyName = propertyName[:9]
+
+        isfieldNameinTable = self.isFieldNameInTable(propertyName, inputFeatureClassName)
+        if isfieldNameinTable == False:
+            return propertyName
+        else:
+            return self.changeFieldNameWithTable(propertyName, inputFeatureClassName)
+
+
+    def isFieldNameInTable(self, fieldName, featureClassName, gpkgLocation):
+        # fieldList = arcpy.ListFields(inputFeatureClassName)
+        # TODO: QGIS implementation
+        fieldList = []
+
+        isfieldNameinFieldList = False
+        for field in fieldList:
+            if field.name == fieldName:
+                isfieldNameinFieldList = True
+                break
+
+        return isfieldNameinFieldList
+
+
+    def changeFieldNameWithTable(self, propertyName, featureClassName, gpkgLocation):
+        for i in range(1, 10):
+            propertyName = propertyName[:(len(propertyName) - 1)] + str(i)
+            isfieldNameinTable = self.isFieldNameInTable(propertyName, inputFeatureClassName)
+            if isfieldNameinTable == False:
+                return propertyName
+
+        return -1
