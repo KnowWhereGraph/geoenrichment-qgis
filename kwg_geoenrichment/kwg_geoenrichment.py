@@ -36,6 +36,7 @@ from .resources import *
 # Import the code for the dialog
 from .kwg_geoenrichment_dialog import kwg_geoenrichmentDialog
 from .kwg_property_geoenrichment_dialog import kwg_property_geoenrichmentDialog
+from .kwg_property_merge_dialog import kwg_property_mergeDialog
 from .kwg_property_enrichment import kwg_property_enrichment
 from .kwg_sparqlquery import kwg_sparqlquery
 from .kwg_util import kwg_util as UTIL
@@ -229,6 +230,12 @@ class kwg_geoenrichment:
             callback=self.runPropertyEnrichment,
             parent=self.iface.mainWindow())
 
+        self.add_action(
+            icon_path,
+            text=self.tr(u'Property Merge Tool'),
+            callback=self.runPropertyMerge,
+            parent=self.iface.mainWindow())
+
         # Adding menu to toolbar
         pointMenu = QMenu()
         pointMenu.addAction(
@@ -387,6 +394,30 @@ class kwg_geoenrichment:
 
 
             kwgpropeenrichment.execute(parameters=params, ifaceObj=self.iface)
+
+
+    def runPropertyMerge(self):
+        """KWG Property Merge tool"""
+
+        # Create the dialog with elements (after translation) and keep reference
+        # Only create GUI ONCE in callback, so that it will only load when the plugin is started
+        if self.first_start == True:
+            self.first_start = False
+            self.dlgPropertyMerge = kwg_property_mergeDialog()
+
+        QgsMessageLog.logMessage("KWG Property Merge tool", "kwg_geoenrichment",
+                                 level=Qgis.Info)
+
+        # show the dialog
+        self.dlgPropertyMerge.show()
+
+        # Run the dialog event loop
+        result = self.dlgPropertyMerge.exec_()
+        # See if OK was pressed
+        if result:
+            pass
+
+        return
 
 
     def updateParamsPropertyEnrichment(self, propertiesDict):
