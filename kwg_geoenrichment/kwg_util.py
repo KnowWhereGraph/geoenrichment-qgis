@@ -7,8 +7,10 @@ from .kwg_sparqlutil import kwg_sparqlutil
 
 class kwg_util:
 
+
     def __init__(self):
         pass
+
 
     def get_geometry_type_from_wkt(wkt):
         if "POINT".lower() in wkt.lower():

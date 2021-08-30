@@ -138,6 +138,51 @@
        <height>32</height>
       </rect>
      </property>
+     <item>
+      <property name="text">
+       <string>SUM</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>MIN</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>MAX</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>STDEV</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>MEAN</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>COUNT</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>CONCATENATE</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>FIRST</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>LAST</string>
+      </property>
+     </item>
     </widget>
     <widget class="QComboBox" name="comboBox_2">
      <property name="geometry">
@@ -148,6 +193,11 @@
        <height>32</height>
       </rect>
      </property>
+     <item>
+      <property name="text">
+       <string>/usr/local/QGIS3/kwg_result.gpkg</string>
+      </property>
+     </item>
     </widget>
     <widget class="QComboBox" name="comboBox_3">
      <property name="geometry">

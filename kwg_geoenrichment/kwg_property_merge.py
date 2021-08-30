@@ -1,4 +1,4 @@
-
+from qgis._core import Qgis, QgsMessageLog
 
 from .kwg_sparqlquery import kwg_sparqlquery
 from .kwg_util import kwg_util as UTIL
@@ -6,12 +6,8 @@ from .kwg_json2field import kwg_json2field as Json2Field
 
 
 
-
-
 class MergeSingleNoFunctionalProperty(object):
-    relatedTableFieldList = []
-    relatedTableList = []
-    relatedNoFunctionalPropertyURLList = []
+
 
     def __init__(self):
         """Define the tool (tool name is the name of the class)."""
@@ -22,67 +18,15 @@ class MergeSingleNoFunctionalProperty(object):
         self.kwg_sparqlquery = kwg_sparqlquery()
         self.kwg_util = UTIL()
         self.Json2Field = Json2Field()
+        self.relatedTableFieldList = []
+        self.relatedTableList = []
+        self.relatedNoFunctionalPropertyURLList = []
 
-    def getParameterInfo(self):
-        """Define parameter definitions"""
-        # The input Feature class which is the output of LinkedDataAnalysis Tool, "URL" column should be included in the attribute table
-        in_wikiplace_IRI = arcpy.Parameter(
-            displayName="Input wikidata location entities Feature Class",
-            name="in_wikiplace_IRI",
-            datatype="DEFeatureClass",
-            parameterType="Required",
-            direction="Input")
-
-        # in_wikiplace_IRI.filter.list = ["Point"]
-
-        in_no_functional_property_list = arcpy.Parameter(
-            displayName="List of No-Functional Properties of Current Feature Class",
-            name="in_no_functional_property_list",
-            datatype="GPString",
-            parameterType="Required",
-            direction="Input")
-
-        in_no_functional_property_list.filter.type = "ValueList"
-        in_no_functional_property_list.filter.list = []
-
-        in_related_table_list = arcpy.Parameter(
-            displayName="List of Related Tables",
-            name="in_related_table_list",
-            datatype="GPString",
-            parameterType="Required",
-            direction="Input")
-
-        in_related_table_list.filter.type = "ValueList"
-        in_related_table_list.filter.list = []
-
-        in_merge_rule = arcpy.Parameter(
-        displayName='List of Merge Rules',
-        name='in_merge_rule',
-        datatype='GPString',
-        parameterType='Required',
-        direction='Input')
-
-        in_merge_rule.filter.type = "ValueList"
-        in_merge_rule.filter.list = ['SUM', 'MIN', 'MAX', 'STDEV', 'MEAN', 'COUNT', 'FIRST', 'LAST', 'CONCATENATE']
-
-        in_cancatenate_delimiter = arcpy.Parameter(
-        displayName='The delimiter of cancatenating fields',
-        name='in_cancatenate_delimiter',
-        datatype='GPString',
-        parameterType='Optional',
-        direction='Input')
-
-        in_cancatenate_delimiter.filter.type = "ValueList"
-        in_cancatenate_delimiter.filter.list = ['DASH', 'COMMA', 'VERTICAL BAR', 'TAB', 'SPACE']
-        in_cancatenate_delimiter.enabled = False
-
-        params = [in_wikiplace_IRI, in_no_functional_property_list, in_related_table_list, in_merge_rule, in_cancatenate_delimiter]
-
-        return params
 
     def isLicensed(self):
         """Set whether tool is licensed to execute."""
         return True
+
 
     def updateParameters(self, parameters):
         """Modify the values and properties of parameters before internal
@@ -118,30 +62,30 @@ class MergeSingleNoFunctionalProperty(object):
                 # else:
                 #   if UTIL.detectRelationship(inputFeatureClassName, inputTableName):
                 #       arcpy.AddMessage("The feature class and table are related!")
-                MergeSingleNoFunctionalProperty.relatedTableFieldList = []
-                MergeSingleNoFunctionalProperty.relatedTableList = []
-                MergeSingleNoFunctionalProperty.relatedNoFunctionalPropertyURLList = []
+                self.relatedTableFieldList = []
+                self.relatedTableList = []
+                self.relatedNoFunctionalPropertyURLList = []
 
-                MergeSingleNoFunctionalProperty.relatedTableList = UTIL.getRelatedTableFromFeatureClass(inputFeatureClassName)
-                in_related_table_list.filter.list = MergeSingleNoFunctionalProperty.relatedTableList
+                self.relatedTableList = self.kwg_util.getRelatedTableFromFeatureClass(inputFeatureClassName)
+                in_related_table_list.filter.list = self.relatedTableList
 
                 # noFunctionalPropertyTable = []
 
-                for relatedTable in MergeSingleNoFunctionalProperty.relatedTableList:
+                for relatedTable in self.relatedTableList:
                     fieldList = arcpy.ListFields(relatedTable)
                     if "origin" not in fieldList and "end" not in fieldList:
                         noFunctionalFieldName = fieldList[2].name
-                        arcpy.AddMessage("noFunctionalFieldName: {0}".format(noFunctionalFieldName))
-                        MergeSingleNoFunctionalProperty.relatedTableFieldList.append(noFunctionalFieldName)
+                        # arcpy.AddMessage("noFunctionalFieldName: {0}".format(noFunctionalFieldName))
+                        self.relatedTableFieldList.append(noFunctionalFieldName)
                         # get the no functioal property URL from the firt row of this table field "propURL"
                         # propURL = arcpy.da.SearchCursor(relatedTable, ("propURL")).next()[0]
 
-                        TableRelationshipClassList = UTIL.getRelationshipClassFromTable(relatedTable)
+                        TableRelationshipClassList = self.kwg_util.getRelationshipClassFromTable(relatedTable)
                         propURL = arcpy.Describe(TableRelationshipClassList[0]).forwardPathLabel
 
-                        MergeSingleNoFunctionalProperty.relatedNoFunctionalPropertyURLList.append(propURL)
+                        self.relatedNoFunctionalPropertyURLList.append(propURL)
 
-                in_no_functional_property_list.filter.list = MergeSingleNoFunctionalProperty.relatedNoFunctionalPropertyURLList
+                in_no_functional_property_list.filter.list = self.relatedNoFunctionalPropertyURLList
                         # noFunctionalPropertyTable.append([noFunctionalFieldName, 'COUNT', relatedTable])
                         # MergeNoFunctionalProperty.relatedTableFieldList.append([noFunctionalFieldName, relatedTable, 'COUNT'])
                     # fieldmappings.addTable(relatedTable)
@@ -153,33 +97,29 @@ class MergeSingleNoFunctionalProperty(object):
 
         if in_no_functional_property_list.altered:
             selectPropURL = in_no_functional_property_list.valueAsText
-            selectIndex = MergeSingleNoFunctionalProperty.relatedNoFunctionalPropertyURLList.index(selectPropURL)
-            selectFieldName = MergeSingleNoFunctionalProperty.relatedTableFieldList[selectIndex]
-            selectTableName = MergeSingleNoFunctionalProperty.relatedTableList[selectIndex]
+            selectIndex = self.relatedNoFunctionalPropertyURLList.index(selectPropURL)
+            selectFieldName = self.relatedTableFieldList[selectIndex]
+            selectTableName = self.relatedTableList[selectIndex]
 
             in_related_table_list.value = selectTableName
 
-            currentDataType = UTIL.getFieldDataTypeInTable(selectFieldName, selectTableName)
+            currentDataType = self.kwg_util.getFieldDataTypeInTable(selectFieldName, selectTableName)
             if currentDataType in ['Single', 'Double', 'SmallInteger', 'Integer']:
                 in_merge_rule.filter.list = ['SUM', 'MIN', 'MAX', 'STDEV', 'MEAN', 'COUNT', 'FIRST', 'LAST', 'CONCATENATE']
-            # elif currentDataType in ['SmallInteger', 'Integer']:
-            #   in_merge_rule.filter.list = ['SUM', 'MIN', 'MAX', 'COUNT', 'FIRST', 'LAST']
             else:
                 in_merge_rule.filter.list = ['COUNT', 'FIRST', 'LAST', 'CONCATENATE']
 
         if in_related_table_list.altered:
             selectTableName = in_related_table_list.valueAsText
-            selectIndex = MergeSingleNoFunctionalProperty.relatedTableList.index(selectTableName)
-            selectFieldName = MergeSingleNoFunctionalProperty.relatedTableFieldList[selectIndex]
-            selectPropURL = MergeSingleNoFunctionalProperty.relatedNoFunctionalPropertyURLList[selectIndex]
+            selectIndex = self.relatedTableList.index(selectTableName)
+            selectFieldName = self.relatedTableFieldList[selectIndex]
+            selectPropURL = self.relatedNoFunctionalPropertyURLList[selectIndex]
 
             in_no_functional_property_list.value = selectPropURL
 
-            currentDataType = UTIL.getFieldDataTypeInTable(selectFieldName, selectTableName)
+            currentDataType = self.kwg_util.getFieldDataTypeInTable(selectFieldName, selectTableName)
             if currentDataType in ['Single', 'Double', 'SmallInteger', 'Integer']:
                 in_merge_rule.filter.list = ['SUM', 'MIN', 'MAX', 'STDEV', 'MEAN', 'COUNT', 'FIRST', 'LAST', 'CONCATENATE']
-            # elif currentDataType in ['SmallInteger', 'Integer']:
-            #   in_merge_rule.filter.list = ['SUM', 'MIN', 'MAX', 'COUNT', 'FIRST', 'LAST']
             else:
                 in_merge_rule.filter.list = ['COUNT', 'FIRST', 'LAST', 'CONCATENATE']
 
@@ -189,10 +129,12 @@ class MergeSingleNoFunctionalProperty(object):
 
         return
 
+
     def updateMessages(self, parameters):
         """Modify the messages created by internal validation for each tool
         parameter.  This method is called after internal validation."""
         return
+
 
     def execute(self, parameters, messages):
         """The source code of the tool."""
@@ -209,50 +151,37 @@ class MergeSingleNoFunctionalProperty(object):
             selectTableName = in_related_table_list.valueAsText
             selectMergeRule = in_merge_rule.valueAsText
 
-            selectIndex = MergeSingleNoFunctionalProperty.relatedTableList.index(selectTableName)
-            selectFieldName = MergeSingleNoFunctionalProperty.relatedTableFieldList[selectIndex]
+            selectIndex = self.relatedTableList.index(selectTableName)
+            selectFieldName = self.relatedTableFieldList[selectIndex]
 
-            arcpy.AddMessage("CurrentDataType: {0}".format(UTIL.getFieldDataTypeInTable(selectFieldName, selectTableName)))
+            QgsMessageLog.logMessage(("CurrentDataType: {0}".format(self.kwg_util.getFieldDataTypeInTable(selectFieldName, selectTableName))), "kwg_geoenrichment",  level=Qgis.info)
 
-            arcpy.AddMessage("selectTableName: {0}".format(selectTableName))
+            QgsMessageLog.logMessage(("selectTableName: {0}".format(selectTableName)), "kwg_geoenrichment",  level=Qgis.info)
 
-            arcpy.AddMessage("MergeSingleNoFunctionalProperty.relatedTableList: {0}".format(MergeSingleNoFunctionalProperty.relatedTableList))
+            QgsMessageLog.logMessage(("MergeSingleNoFunctionalProperty.relatedTableList: {0}".format(self.relatedTableList)), "kwg_geoenrichment",  level=Qgis.info)
 
-            arcpy.AddMessage("MergeSingleNoFunctionalProperty.relatedTableList.index(selectTableName): {0}".format(MergeSingleNoFunctionalProperty.relatedTableList.index(selectTableName)))
+            QgsMessageLog.logMessage(("MergeSingleNoFunctionalProperty.relatedTableList.index(selectTableName): {0}".format(self.relatedTableList.index(selectTableName))), "kwg_geoenrichment",  level=Qgis.info)
 
-            lastIndexOFGDB = inputFeatureClassName.rfind("\\")
-            currentWorkspace = inputFeatureClassName[:lastIndexOFGDB]
+            noFunctionalPropertyDict = self.kwg_util.buildMultiValueDictFromNoFunctionalProperty(selectFieldName, selectTableName, URLFieldName = 'URL')
 
-            if currentWorkspace.endswith(".gdb") == False:
-                messages.addErrorMessage("Please enter a feature class in file geodatabase for the input feature class.")
-                raise arcpy.ExecuteError
-            else:
-                # if in_related_table.value:
-                arcpy.env.workspace = currentWorkspace
+            if noFunctionalPropertyDict != -1:
+                if selectMergeRule == 'CONCATENATE':
+                    selectDelimiter = in_cancatenate_delimiter.valueAsText
+                    delimiter = ','
 
-
-                noFunctionalPropertyDict = UTIL.buildMultiValueDictFromNoFunctionalProperty(selectFieldName, selectTableName, URLFieldName = 'URL')
-
-                if noFunctionalPropertyDict != -1:
-                    if selectMergeRule == 'CONCATENATE':
-                        selectDelimiter = in_cancatenate_delimiter.valueAsText
+                    # ['DASH', 'COMMA', 'VERTICAL BAR', 'TAB', 'SPACE']
+                    if selectDelimiter == 'DASH':
+                        delimiter = '-'
+                    elif selectDelimiter == 'COMMA':
                         delimiter = ','
+                    elif selectDelimiter == 'VERTICAL BAR':
+                        delimiter = '|'
+                    elif selectDelimiter == 'TAB':
+                        delimiter = '   '
+                    elif selectDelimiter == 'SPACE':
+                        delimiter = ' '
 
-                        # ['DASH', 'COMMA', 'VERTICAL BAR', 'TAB', 'SPACE']
-                        if selectDelimiter == 'DASH':
-                            delimiter = '-'
-                        elif selectDelimiter == 'COMMA':
-                            delimiter = ','
-                        elif selectDelimiter == 'VERTICAL BAR':
-                            delimiter = '|'
-                        elif selectDelimiter == 'TAB':
-                            delimiter = '   '
-                        elif selectDelimiter == 'SPACE':
-                            delimiter = ' '
-
-                        UTIL.appendFieldInFeatureClassByMergeRule(inputFeatureClassName, noFunctionalPropertyDict, selectFieldName, selectTableName, selectMergeRule, delimiter)
-                    else:
-                        UTIL.appendFieldInFeatureClassByMergeRule(inputFeatureClassName, noFunctionalPropertyDict, selectFieldName, selectTableName, selectMergeRule, '')
-
-
+                    self.kwg_util.appendFieldInFeatureClassByMergeRule(inputFeatureClassName, noFunctionalPropertyDict, selectFieldName, selectTableName, selectMergeRule, delimiter)
+                else:
+                    self.kwg_util.appendFieldInFeatureClassByMergeRule(inputFeatureClassName, noFunctionalPropertyDict, selectFieldName, selectTableName, selectMergeRule, '')
         return
