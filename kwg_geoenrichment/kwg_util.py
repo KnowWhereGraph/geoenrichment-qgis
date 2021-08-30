@@ -1,4 +1,6 @@
 from collections import defaultdict
+import statistics
+from qgis._core import QgsMessageLog, Qgis
 
 from .kwg_sparqlutil import kwg_sparqlutil
 
@@ -251,28 +253,20 @@ class kwg_util:
                         if mergeRule in ['STDEV', 'MEAN', 'SUM', 'MIN', 'MAX']:
                             if appendFieldType in ['Single', 'Double', 'SmallInteger', 'Integer']:
                                 if mergeRule == 'MEAN':
-                                    # rowValue = numpy.average(noFunctionalPropertyValueList)
-                                    # TODO: import numpy?
-                                    pass
+                                    rowValue = statistics.mean(noFunctionalPropertyValueList)
                                 elif mergeRule == 'STDEV':
-                                    # rowValue = numpy.std(noFunctionalPropertyValueList)
-                                    # TODO: import numpy?
-                                    pass
+                                    rowValue = statistics.stdev(noFunctionalPropertyValueList)
                                 elif mergeRule == 'SUM':
-                                    # rowValue = numpy.sum(noFunctionalPropertyValueList)
-                                    # TODO: import numpy?
+                                    rowValue = sum(noFunctionalPropertyValueList)
                                     pass
                                 elif mergeRule == 'MIN':
-                                    # rowValue = numpy.amin(noFunctionalPropertyValueList)
-                                    # TODO: import numpy?
-                                    pass
+                                    rowValue = min(noFunctionalPropertyValueList)
                                 elif mergeRule == 'MAX':
-                                    # rowValue = numpy.amax(noFunctionalPropertyValueList)
-                                    # TODO: import numpy?
-                                    pass
+                                    rowValue = max(noFunctionalPropertyValueList)
                             else:
-                                # TODO: write up QGIS logic
-                                pass
+                                QgsMessageLog.logMessage("The {0} data type of Field {1} does not support {2} merge rule".format(appendFieldType,
+                                                                                                        appendFieldName,
+                                                                                                        mergeRule), "kwg_geoenrichment", level=Qgis.Warning)
                         elif mergeRule in ['COUNT', 'FIRST', 'LAST']:
                             if mergeRule == 'COUNT':
                                 rowValue = len(noFunctionalPropertyValueList)
