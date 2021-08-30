@@ -58,7 +58,7 @@
       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enter the feature class name&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="text">
-      <string/>
+      <string>kwg_results</string>
      </property>
     </widget>
     <widget class="QDialogButtonBox" name="button_box">
@@ -195,7 +195,7 @@
      </property>
      <item>
       <property name="text">
-       <string>/usr/local/QGIS3/kwg_result.gpkg</string>
+       <string>/var/local/QGIS/kwg_results.gpkg</string>
       </property>
      </item>
     </widget>
@@ -208,6 +208,11 @@
        <height>32</height>
       </rect>
      </property>
+     <item>
+      <property name="text">
+       <string>kwg_results_URL_type</string>
+      </property>
+     </item>
     </widget>
    </widget>
    <widget class="QWidget" name="tab_2">

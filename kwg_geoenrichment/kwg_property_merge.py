@@ -6,7 +6,7 @@ from .kwg_json2field import kwg_json2field as Json2Field
 
 
 
-class MergeSingleNoFunctionalProperty(object):
+class kwg_property_merge(object):
 
 
     def __init__(self):
@@ -136,20 +136,17 @@ class MergeSingleNoFunctionalProperty(object):
         return
 
 
-    def execute(self, parameters, messages):
+    def execute(self, parameters):
         """The source code of the tool."""
-        in_wikiplace_IRI = parameters[0]
-        in_no_functional_property_list = parameters[1]
-        in_related_table_list = parameters[2]
-        in_merge_rule = parameters[3]
-        in_cancatenate_delimiter = parameters[4]
+
+        inputFeatureClassName = parameters["feature_class"]
+        selectPropURL = parameters["non_functional_property"]
+        selectTableName = parameters["related_tables"]
+        selectMergeRule = parameters["merge_rule"]
+        in_cancatenate_delimiter = parameters["concat_delimiter"]
 
 
-        if in_wikiplace_IRI.value:
-            inputFeatureClassName = in_wikiplace_IRI.valueAsText
-            selectPropURL = in_no_functional_property_list.valueAsText
-            selectTableName = in_related_table_list.valueAsText
-            selectMergeRule = in_merge_rule.valueAsText
+        if len(inputFeatureClassName) > 0:
 
             selectIndex = self.relatedTableList.index(selectTableName)
             selectFieldName = self.relatedTableFieldList[selectIndex]
