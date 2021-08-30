@@ -38,6 +38,7 @@ from .kwg_geoenrichment_dialog import kwg_geoenrichmentDialog
 from .kwg_property_geoenrichment_dialog import kwg_property_geoenrichmentDialog
 from .kwg_property_merge_dialog import kwg_property_mergeDialog
 from .kwg_property_enrichment import kwg_property_enrichment
+from .kwg_property_merge import kwg_property_merge
 from .kwg_sparqlquery import kwg_sparqlquery
 from .kwg_util import kwg_util as UTIL
 from .kwg_json2field import kwg_json2field as Json2Field
@@ -408,6 +409,9 @@ class kwg_geoenrichment:
         QgsMessageLog.logMessage("KWG Property Merge tool", "kwg_geoenrichment",
                                  level=Qgis.Info)
 
+        names = [layer.name() for layer in QgsProject.instance().mapLayers().values()]
+
+
         # show the dialog
         self.dlgPropertyMerge.show()
 
@@ -415,7 +419,10 @@ class kwg_geoenrichment:
         result = self.dlgPropertyMerge.exec_()
         # See if OK was pressed
         if result:
-            pass
+            params = self.getPropertyMergeparams()
+
+            kwgpropmerge = kwg_property_merge()
+            kwgpropmerge.execute(params=params)
 
         return
 
@@ -430,6 +437,19 @@ class kwg_geoenrichment:
         listWidget.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         return
+
+
+    def getPropertyMergeparams(self):
+        params = {}
+
+        params["feature_class"] = self.dlgPropertyMerge.lineEdit.text()
+        params["non_functional_property"] = self.dlgPropertyMerge.comboBox_3.currentText()
+        params["related_tables"] = self.dlgPropertyMerge.comboBox_2.currentText()
+        params["merge_rule"] = self.dlgPropertyMerge.comboBox.currentText()
+        params["concat_delimiter"] = ","
+
+        return params
+
 
     def drawPoint(self):
         if self.tool:
@@ -800,6 +820,7 @@ then select an entity on the map.'
             self.dlg.comboBox.addItem(key)
 
         return
+
 
     def getInputs(self):
         params = {}
