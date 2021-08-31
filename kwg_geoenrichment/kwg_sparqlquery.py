@@ -3,11 +3,14 @@ import logging
 
 from .kwg_sparqlutil import kwg_sparqlutil
 
+from qgis.core import QgsMessageLog, Qgis
+
 class kwg_sparqlquery:
 
     def __init__(self):
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.DEBUG)  # or whatever
+        self.sparqlUTIL = kwg_sparqlutil()
         handler = logging.FileHandler(
             '/var/local/QGIS/kwg_geoenrichment.log', 'w',
             'utf-8')  # or whatever
@@ -43,6 +46,7 @@ class kwg_sparqlquery:
         GeoQueryResult = GeoQueryResult["results"]["bindings"]
 
         return GeoQueryResult
+
 
     def TypeAndGeoSPARQLQuery(self, query_geo_wkt, selectedURL="",
                               isDirectInstance=False,
@@ -154,6 +158,376 @@ class kwg_sparqlquery:
         GeoQueryResult = GeoQueryResult["results"]["bindings"]
         return GeoQueryResult
 
+
+    def commonPropertyQuery(self, inplaceIRIList, sparql_endpoint="http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire", doSameAs=True):
+
+
+        queryPrefix = self.sparqlUTIL.make_sparql_prefix()
+
+        iri_list = ""
+        for IRI in inplaceIRIList:
+            iri_list = iri_list + "<" + IRI + "> \n"
+
+        if sparql_endpoint == kwg_sparqlutil._WIKIDATA_SPARQL_ENDPOINT:
+            commonPropertyQuery = queryPrefix + """SELECT ?p ?prop ?propLabel ?NumofSub WHERE 
+                                        {
+                                            {
+                                                SELECT ?prop ?p (COUNT(DISTINCT ?s) AS ?NumofSub) WHERE 
+                                                {
+
+                                                    hint:Query hint:optimizer "None" .
+
+                                                    ?s ?p ?o .
+                                                    ?prop wikibase:directClaim ?p .
+
+                                                    VALUES ?s
+                                                    {
+            """
+            commonPropertyQuery += iri_list
+            commonPropertyQuery += """
+                                                    }
+                                                }  GROUP BY ?prop ?p
+                                            }
+
+                                            SERVICE wikibase:label {
+                                                bd:serviceParam wikibase:language "en" .
+                                            }
+
+                                        } ORDER BY DESC (?NumofSub)
+            """
+
+        else:
+            if doSameAs:
+                commonPropertyQuery = queryPrefix + """select distinct ?p (count(distinct ?s) as ?NumofSub)
+                                            where
+                                            {
+                                            ?s owl:sameAs ?wikidataSub.
+                                            ?s ?p ?o.
+                                            VALUES ?wikidataSub
+                                            {"""
+            else:
+                commonPropertyQuery = queryPrefix + """select distinct ?p (count(distinct ?s) as ?NumofSub)
+                                            where
+                                            {
+                                            ?s ?p ?o.
+                                            VALUES ?s
+                                            {"""
+            commonPropertyQuery += iri_list
+
+            commonPropertyQuery += """
+                                            }
+                                            }
+                                            group by ?p
+                                            order by DESC(?NumofSub)
+                                            """
+
+        # QgsMessageLog.logMessage(commonPropertyQuery, "kwg_geoenrichment", level=Qgis.Info)
+        res_json = self.sparqlUTIL.sparql_requests(query=commonPropertyQuery,
+                                              sparql_endpoint=sparql_endpoint,
+                                              doInference=False)
+        return res_json
+
+
+    def commonSosaObsPropertyQuery(self, inplaceIRIList, sparql_endpoint='https://dbpedia.org/sparql', doSameAs=False):
+        queryPrefix = self.sparqlUTIL.make_sparql_prefix()
+
+        commonPropertyQuery = queryPrefix + """select distinct ?p ?pLabel (count(distinct ?s) as ?NumofSub) 
+                                        where { 
+                                        ?s sosa:isFeatureOfInterestOf ?obscol .
+                                        ?obscol sosa:hasMember ?obs.
+                                        ?obs sosa:observedProperty ?p .
+                                        OPTIONAL {?p rdfs:label ?pLabel . }
+                                        VALUES ?s
+                                        {
+                                        """
+        for IRI in inplaceIRIList:
+            commonPropertyQuery = commonPropertyQuery + "<" + IRI + "> \n"
+
+        commonPropertyQuery = commonPropertyQuery + """
+                                        }
+                                        }
+                                        group by ?p ?pLabel 
+                                        order by DESC(?NumofSub)
+                                        """
+
+        res_json = self.sparqlUTIL.sparql_requests(query=commonPropertyQuery,
+                                              sparql_endpoint=sparql_endpoint,
+                                              doInference=False)
+        return res_json
+
+
+    def inverseCommonPropertyQuery(self, inplaceIRIList, sparql_endpoint='https://dbpedia.org/sparql', doSameAs=True):
+        queryPrefix = self.SPARQLUtil.make_sparql_prefix()
+
+        if doSameAs:
+            commonPropertyQuery = queryPrefix + """select distinct ?p (count(distinct ?s) as ?NumofSub)
+                                            where
+                                            { ?s owl:sameAs ?wikidataSub.
+                                            ?o ?p ?s.
+                                            VALUES ?wikidataSub
+                                            {"""
+        else:
+            commonPropertyQuery = queryPrefix + """select distinct ?p (count(distinct ?s) as ?NumofSub)
+                                        where
+                                        { 
+                                        ?o ?p ?s.
+                                        VALUES ?s
+                                        {"""
+        for IRI in inplaceIRIList:
+            commonPropertyQuery = commonPropertyQuery + "<" + IRI + "> \n"
+
+        commonPropertyQuery = commonPropertyQuery + """
+                                        }
+                                        }
+                                        group by ?p
+                                        order by DESC(?NumofSub)
+                                        """
+
+        res_json = self.sparqlUTIL.sparql_requests(query=commonPropertyQuery,
+                                              sparql_endpoint=sparql_endpoint,
+                                              doInference=False)
+        return res_json
+
+    def functionalPropertyQuery(self, propertyURLList, sparql_endpoint='https://dbpedia.org/sparql'):
+        # give a list of property, get a sublist which are functional property
+
+        # send a SPARQL query to DBpedia endpoint to test whether the user selected properties are functionalProperty
+        jsonBindingObject = []
+        i = 0
+        while i < len(propertyURLList):
+            if i + 50 > len(propertyURLList):
+                propertyURLSubList = propertyURLList[i:]
+            else:
+                propertyURLSubList = propertyURLList[i:(i + 50)]
+
+            queryPrefix = self.sparqlUTIL.make_sparql_prefix()
+
+            isFuncnalPropertyQuery = queryPrefix + """select ?property
+                            where
+                            { ?property a owl:FunctionalProperty.
+                            VALUES ?property
+                            {"""
+            for propertyURL in propertyURLSubList:
+                isFuncnalPropertyQuery = isFuncnalPropertyQuery + "<" + propertyURL + "> \n"
+
+            isFuncnalPropertyQuery = isFuncnalPropertyQuery + """
+                            }
+                            }
+                            """
+
+            res_json = self.sparqlUTIL.sparql_requests(query=isFuncnalPropertyQuery,
+                                                  sparql_endpoint=sparql_endpoint,
+                                                  doInference=False)
+            jsonBindingObject.extend(res_json["results"]["bindings"])
+
+            i = i + 50
+        return jsonBindingObject
+
+
+    def propertyValueQuery(self, inplaceIRIList, propertyURL, sparql_endpoint='https://dbpedia.org/sparql', doSameAs=True):
+        # according to a list of wikidata IRI (inplaceIRIList), get the value for a specific property (propertyURL) from DBpedia
+        jsonBindingObject = []
+        i = 0
+        while i < len(inplaceIRIList):
+            if i + 50 > len(inplaceIRIList):
+                inplaceIRISubList = inplaceIRIList[i:]
+            else:
+                inplaceIRISubList = inplaceIRIList[i:(i + 50)]
+            queryPrefix = self.sparqlUTIL.make_sparql_prefix()
+
+            if doSameAs:
+                PropertyValueQuery = queryPrefix + """select ?wikidataSub ?o
+                                where
+                                { ?s owl:sameAs ?wikidataSub.
+                                ?s <""" + propertyURL + """> ?o.
+                                VALUES ?wikidataSub
+                                {
+                                """
+            else:
+                PropertyValueQuery = queryPrefix + """select ?wikidataSub ?o
+                                where
+                                { 
+                                ?wikidataSub <""" + propertyURL + """> ?o.
+                                VALUES ?wikidataSub
+                                {
+                                """
+            for IRI in inplaceIRISubList:
+                PropertyValueQuery += "<" + IRI + "> \n"
+
+            PropertyValueQuery += """
+                            }
+                            }
+                            """
+
+            res_json = self.sparqlUTIL.sparql_requests(query=PropertyValueQuery,
+                                                  sparql_endpoint=sparql_endpoint,
+                                                  doInference=False)
+            jsonBindingObject.extend(res_json["results"]["bindings"])
+
+            i = i + 50
+
+        return jsonBindingObject
+        # return PropertyValueSparqlRequest.json()
+
+
+    def checkGeoPropertyquery(self, inplaceIRIList, propertyURL, sparql_endpoint='https://dbpedia.org/sparql', doSameAs=True):
+        # according to a list of wikidata IRI (inplaceIRIList), get the value for a specific property (propertyURL) from DBpedia
+        jsonBindingObject = []
+        i = 0
+        while i < len(inplaceIRIList):
+            if i + 50 > len(inplaceIRIList):
+                inplaceIRISubList = inplaceIRIList[i:]
+            else:
+                inplaceIRISubList = inplaceIRIList[i:(i + 50)]
+            queryPrefix = self.sparqlUTIL.make_sparql_prefix()
+            PropertyValueQuery = queryPrefix + """select (count(?geometry) as ?cnt)
+                                where
+                                {
+                                """
+            if doSameAs:
+                PropertyValueQuery += """ ?s owl:sameAs ?wikidataSub.
+                                ?s <""" + propertyURL + """> ?place.
+                                """
+            else:
+                PropertyValueQuery += """ 
+                                ?wikidataSub <""" + propertyURL + """> ?place.
+                                """
+            PropertyValueQuery += """
+                                ?place geo:hasGeometry ?geometry .
+                                """
+            PropertyValueQuery += """
+                                VALUES ?wikidataSub
+                                {
+                                """
+            for IRI in inplaceIRISubList:
+                PropertyValueQuery += "<" + IRI + "> \n"
+
+            PropertyValueQuery += """
+                            }
+                            }
+                            """
+
+            res_json = self.sparqlUTIL.sparql_requests(query=PropertyValueQuery,
+                                                  sparql_endpoint=sparql_endpoint,
+                                                  doInference=False)
+
+            jsonBindingObject.extend(res_json["results"]["bindings"])
+
+            i = i + 50
+
+        return jsonBindingObject
+
+
+    def twoDegreePropertyValueWKTquery(self, inplaceIRIList, propertyURL, sparql_endpoint='https://dbpedia.org/sparql',
+                                       doSameAs=True):
+        # according to a list of wikidata IRI (inplaceIRIList), get the value for a specific property (propertyURL) from DBpedia
+        jsonBindingObject = []
+        i = 0
+        while i < len(inplaceIRIList):
+            if i + 50 > len(inplaceIRIList):
+                inplaceIRISubList = inplaceIRIList[i:]
+            else:
+                inplaceIRISubList = inplaceIRIList[i:(i + 50)]
+            queryPrefix = self.sparqlUTIL.make_sparql_prefix()
+            PropertyValueQuery = queryPrefix + """select distinct ?place ?placeLabel ?placeFlatType ?wkt
+                                where
+                                {
+                                """
+            if doSameAs:
+                PropertyValueQuery += """ ?s owl:sameAs ?wikidataSub.
+                                ?s <""" + propertyURL + """> ?place.
+                                """
+            else:
+                PropertyValueQuery += """ 
+                                ?wikidataSub <""" + propertyURL + """> ?place.
+                                """
+            PropertyValueQuery += """
+                                ?place geo:hasGeometry ?geometry .
+                                ?place rdfs:label ?placeLabel .
+                                ?geometry geo:asWKT ?wkt.
+                                ?place rdf:type ?placeFlatType.
+                                """
+            PropertyValueQuery += """
+                                VALUES ?wikidataSub
+                                {
+                                """
+            for IRI in inplaceIRISubList:
+                PropertyValueQuery += "<" + IRI + "> \n"
+
+            PropertyValueQuery += """
+                            }
+                            }
+                            """
+
+            res_json = self.sparqlUTIL.sparql_requests(query=PropertyValueQuery,
+                                                  sparql_endpoint=sparql_endpoint,
+                                                  doInference=False)
+            jsonBindingObject.extend(res_json["results"]["bindings"])
+
+            i = i + 50
+
+        return jsonBindingObject
+
+
+    def sosaObsPropertyValueQuery(self, inplaceIRIList, propertyURL,
+                                  sparql_endpoint='https://dbpedia.org/sparql', doSameAs=False):
+        # according to a list of wikidata IRI (inplaceIRIList), get the value for a specific property (propertyURL) from DBpedia
+        jsonBindingObject = []
+        i = 0
+        while i < len(inplaceIRIList):
+            if i + 50 > len(inplaceIRIList):
+                inplaceIRISubList = inplaceIRIList[i:]
+            else:
+                inplaceIRISubList = inplaceIRIList[i:(i + 50)]
+            queryPrefix = self.sparqlUTIL.make_sparql_prefix()
+
+            PropertyValueQuery = queryPrefix + """select ?wikidataSub ?o
+                            where
+                            { 
+                            ?wikidataSub sosa:isFeatureOfInterestOf ?obscol .
+                            ?obscol sosa:hasMember ?obs.
+                            ?obs sosa:observedProperty <""" + propertyURL + """> .
+                            ?obs sosa:hasSimpleResult ?o.
+                            VALUES ?wikidataSub
+                            {
+                            """
+            for IRI in inplaceIRISubList:
+                PropertyValueQuery += "<" + IRI + "> \n"
+
+            PropertyValueQuery += """
+                            }
+                            }
+                            """
+
+            res_json = self.sparqlUTIL.sparql_requests(query=PropertyValueQuery,
+                                                  sparql_endpoint=sparql_endpoint,
+                                                  doInference=False)
+            jsonBindingObject.extend(res_json["results"]["bindings"])
+
+            i = i + 50
+
+        return jsonBindingObject
+
+
+    def extractCommonPropertyJSON(self, commonPropertyJSON,
+                                  p_url_list=[], p_name_list=[], url_dict={},
+                                  p_var="p", plabel_var="pLabel", numofsub_var="NumofSub"):
+        for jsonItem in commonPropertyJSON:
+            propertyURL = jsonItem[p_var]["value"]
+            if propertyURL not in p_url_list:
+                p_url_list.append(propertyURL)
+                label = ""
+                if plabel_var in jsonItem:
+                    label = jsonItem[plabel_var]["value"]
+                if label.strip() == "":
+                    label = self.sparqlUTIL.make_prefixed_iri(propertyURL)
+                propertyName = f"""{label} [{jsonItem[numofsub_var]["value"]}]"""
+                p_name_list.append(propertyName)
+
+        url_dict = dict(zip(p_name_list, p_url_list))
+
+        return url_dict
+    
 
 if __name__ == "__main__":
     SQ = kwg_sparqlquery()

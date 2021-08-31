@@ -22,7 +22,7 @@
  ***************************************************************************/
 """
 from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, qVersion, QVariant
-from qgis.PyQt.QtWidgets import QAction, QMessageBox, QMenu, QInputDialog
+from qgis.PyQt.QtWidgets import QAction, QMessageBox, QMenu, QInputDialog, QAbstractItemView
 from qgis.PyQt.QtGui import QIcon
 
 from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
@@ -35,9 +35,11 @@ from qgis.gui import QgsRubberBand
 from .resources import *
 # Import the code for the dialog
 from .kwg_geoenrichment_dialog import kwg_geoenrichmentDialog
+from .kwg_property_geoenrichment_dialog import kwg_property_geoenrichmentDialog
+from .kwg_property_enrichment import kwg_property_enrichment
 from .kwg_sparqlquery import kwg_sparqlquery
 from .kwg_util import kwg_util as UTIL
-from .kwg_json2field import kwf_json2field as Json2Field
+from .kwg_json2field import kwg_json2field as Json2Field
 
 # Import QDraw settings
 from .drawtools import DrawPoint, DrawRect, DrawLine, DrawCircle, DrawPolygon,\
@@ -221,6 +223,12 @@ class kwg_geoenrichment:
             callback=self.run,
             parent=self.iface.mainWindow())
 
+        self.add_action(
+            icon_path,
+            text=self.tr(u'Property Enrichment Query'),
+            callback=self.runPropertyEnrichment,
+            parent=self.iface.mainWindow())
+
         # Adding menu to toolbar
         pointMenu = QMenu()
         pointMenu.addAction(
@@ -333,6 +341,65 @@ class kwg_geoenrichment:
             # substitute with your code.
             pass
 
+    def runPropertyEnrichment(self):
+        """Run method that performs all the real work"""
+
+        # Create the dialog with elements (after translation) and keep reference
+        # Only create GUI ONCE in callback, so that it will only load when the plugin is started
+        if self.first_start == True:
+            self.first_start = False
+            self.dlgPropertyEnrichment = kwg_property_geoenrichmentDialog()
+
+        QgsMessageLog.logMessage("Retrieving common properties based on geometry selection", "kwg_geoenrichment",
+                                 level=Qgis.Info)
+        # show the dialog
+        self.dlgPropertyEnrichment.show()
+
+        kwgpropeenrichment = kwg_property_enrichment()
+
+        # get common properties
+        results = kwgpropeenrichment.getCommonProperties()
+        self.updateParamsPropertyEnrichment(results)
+
+        # get sosa obs properties
+        results = kwgpropeenrichment.getsosaObsPropNameList()
+        self.updateParamsPropertyEnrichment(results)
+
+        QgsMessageLog.logMessage("Common properties retrieved successfully", "kwg_geoenrichment", level=Qgis.Info)
+
+        # Run the dialog event loop
+        result = self.dlgPropertyEnrichment.exec_()
+        # See if OK was pressed
+        if result:
+            params = {}
+
+            params["sparql_endpoint"] = self.dlgPropertyEnrichment.lineEdit.text()
+
+
+            items = self.dlgPropertyEnrichment.listWidget.selectedItems()
+
+            propertySelectList = []
+            for item, val in enumerate(items):
+                QgsMessageLog.logMessage( "selected: " + val.text(), "kwg_geoenrichment",
+                                         level=Qgis.Info)
+                propertySelectList.append(val.text())
+            params["propertySelect"] = propertySelectList
+
+
+            kwgpropeenrichment.execute(parameters=params, ifaceObj=self.iface)
+
+
+    def updateParamsPropertyEnrichment(self, propertiesDict):
+        listWidget = self.dlgPropertyEnrichment.listWidget
+        itemsTextList = [str(listWidget.item(i).text()) for i in range(listWidget.count())]
+
+        for key in propertiesDict:
+            if key not in itemsTextList:
+                listWidget.addItem(key)
+        listWidget.setSelectionMode(QAbstractItemView.ExtendedSelection)
+
+        return
+
     def drawPoint(self):
         if self.tool:
             self.tool.reset()
@@ -433,6 +500,7 @@ class kwg_geoenrichment:
         self.toolname = 'drawPolygon'
         self.resetSB()
 
+
     def drawBuffer(self):
         self.bGeom = None
         if self.tool:
@@ -459,6 +527,7 @@ class kwg_geoenrichment:
         self.toolname = 'drawBuffer'
         self.resetSB()
 
+
     def drawPolygonBuffer(self):
         self.bGeom = None
         if self.tool:
@@ -483,14 +552,17 @@ class kwg_geoenrichment:
         self.toolname = 'drawBuffer'
         self.resetSB()
 
+
     def showSettingsWindow(self):
         self.settings.settingsChanged.connect(self.settingsChangedSlot)
         self.settings.show()
+
 
     # triggered when a setting is changed
     def settingsChangedSlot(self):
         if self.tool:
             self.tool.rb.setColor(self.settings.getColor())
+
 
     def resetSB(self):
         message = {
@@ -505,6 +577,7 @@ confirm.',
 then select an entity on the map.'
         }
         self.sb.showMessage(self.tr(message[self.toolname]))
+
 
     def updateSB(self):
         g = self.geomTransform(
@@ -525,12 +598,14 @@ then select an entity on the map.'
                 self.sb.showMessage(self.tr('Area')+': '+"0 m"+u'²')
         self.iface.mapCanvas().mapSettings().destinationCrs().authid()
 
+
     def geomTransform(self, geom, crs_orig, crs_dest):
         g = QgsGeometry(geom)
         crsTransform = QgsCoordinateTransform(
             crs_orig, crs_dest, QgsCoordinateTransformContext())  # which context ?
         g.transform(crsTransform)
         return g
+
 
     def selectBuffer(self):
         rb = self.tool.rb
@@ -568,6 +643,7 @@ then select an entity on the map.'
                 rb.setToGeometry(self.bGeom, layer)
         if isinstance(self.tool, DrawPolygon):
             self.draw()
+
 
     def draw(self):
         rb = self.tool.rb
@@ -718,6 +794,7 @@ then select an entity on the map.'
 
         return params
 
+
     def performWKTConversion(self):
         layers = QgsProject.instance().mapLayers().values()
         QgsMessageLog.logMessage("Reading all the layers", "kwg_geoenrichment", level=Qgis.Info)
@@ -762,6 +839,7 @@ then select an entity on the map.'
             QgsMessageLog.logMessage("Error while writing geopackage", "kwg_geoenrichment", level=Qgis.Error)
 
         pass
+
 
     def createShapeFileFromSPARQLResult(self, GeoQueryResult, out_path="/var/local/QGIS/kwg_results.shp", inPlaceType="", selectedURL="",
                                            isDirectInstance=False):
@@ -847,6 +925,7 @@ then select an entity on the map.'
         return
 
 
+
     def createGeoPackageFromSPARQLResult(self, GeoQueryResult, out_path="/var/local/QGIS/kwg_results.gpkg", inPlaceType="", selectedURL="",
                                            isDirectInstance=False):
         '''
@@ -905,16 +984,6 @@ then select an entity on the map.'
             if out_path == None:
                 QgsMessageLog.logMessage("No data will be added to the map document.", level=Qgis.Info)
             else:
-
-
-                # labelFieldLength = Json2Field.fieldLengthDecide(GeoQueryResult, "placeLabel")
-                #
-                # urlFieldLength = Json2Field.fieldLengthDecide(GeoQueryResult, "place")
-                #
-                # if isDirectInstance == False:
-                #     classFieldLength = Json2Field.fieldLengthDecide(GeoQueryResult, "placeFlatType")
-                # else:
-                #     classFieldLength = len(selectedURL) + 50
 
                 for item in placeList:
                     place_iri, label, type_iri, wkt_literal = item
