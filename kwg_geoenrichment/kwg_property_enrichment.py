@@ -281,10 +281,9 @@ class kwg_property_enrichment:
 
                     prop_name = self.SPARQLUtil.getPropertyName(propertyURL)
 
-                    # out_geo_feature_class_name = "{}_{}".format(featureClassName, prop_name)
-                    # out_geo_feature_class_path = os.path.join(in_place_IRI_desc.path, out_geo_feature_class_name)
-                    # Json2Field.createFeatureClassFromSPARQLResult(GeoQueryResult=GeoQueryResult,
-                    #                                               out_path=out_geo_feature_class_path)
+                    out_geo_feature_class_name = "{}_{}".format(self.layerName, prop_name)
+                    self.JSON2Field.createQGISFeatureClassFromSPARQLResult(GeoQueryResult=GeoQueryResult,
+                                                                  feat_class=out_geo_feature_class_name, ifaceObj=ifaceObj)
 
                     # TODO: manage the geometry relationship class for QGIS
                     # out_relationshipClassName = out_geo_feature_class_name + "_" + tableName + "_RelClass"

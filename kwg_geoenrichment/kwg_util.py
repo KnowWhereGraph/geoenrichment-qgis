@@ -14,7 +14,7 @@ class kwg_util:
         pass
 
 
-    def get_geometry_type_from_wkt(wkt):
+    def get_geometry_type_from_wkt(self, wkt):
         if "POINT".lower() in wkt.lower():
             return "POINT"
         elif "MULTIPOINT".lower() in wkt.lower():

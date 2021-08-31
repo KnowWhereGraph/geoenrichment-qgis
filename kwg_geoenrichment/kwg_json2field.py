@@ -107,6 +107,91 @@ class kwg_json2field:
         return
 
 
+    def createQGISFeatureClassFromSPARQLResult(self, GeoQueryResult, out_path="/var/local/QGIS/kwg_results.gpkg", feat_class="geo_Result",inPlaceType="", selectedURL="",
+                                           isDirectInstance=False, ifaceObj=None):
+        '''
+        GeoQueryResult: a sparql query result json obj serialized as a list of dict()
+                    SPARQL query like this:
+                    select distinct ?place ?placeLabel ?placeFlatType ?wkt
+                    where
+                    {...}
+        out_path: the output path for the create geo feature class
+        inPlaceType: the label of user spercified type IRI
+        selectedURL: the user spercified type IRI
+        isDirectInstance: True: use placeFlatType as the type of geo-entity
+                          False: use selectedURL as the type of geo-entity
+        '''
+        # a set of unique WKT for each found places
+        placeIRISet = set()
+        placeList = []
+        geom_type = None
+
+        layerFields = QgsFields()
+        layerFields.append(QgsField('place_iri', QVariant.String))
+        layerFields.append(QgsField('label', QVariant.String))
+        layerFields.append(QgsField('type_iri', QVariant.String))
+
+        for idx, item in enumerate(GeoQueryResult):
+            wkt_literal = item["wkt"]["value"]
+            # for now, make sure all geom has the same geometry type
+            if idx == 0:
+                geom_type = self.kwgUtil.get_geometry_type_from_wkt(wkt_literal)
+            else:
+                assert geom_type == self.kwgUtil.get_geometry_type_from_wkt(wkt_literal)
+
+            if isDirectInstance == False:
+                placeType = item["placeFlatType"]["value"]
+            else:
+                placeType = selectedURL
+            print("{}\t{}\t{}".format(
+                item["place"]["value"], item["placeLabel"]["value"], placeType))
+            if len(placeIRISet) == 0 or item["place"]["value"] not in placeIRISet:
+                placeIRISet.add(item["place"]["value"])
+                placeList.append(
+                    [item["place"]["value"], item["placeLabel"]["value"], placeType, wkt_literal])
+
+        if geom_type is None:
+            raise Exception("geometry type not find")
+
+        vl = QgsVectorLayer(geom_type+"?crs=epsg:4326", feat_class, "memory")
+        pr = vl.dataProvider()
+        pr.addAttributes(layerFields)
+        vl.updateFields()
+
+        if len(placeList) == 0:
+            QgsMessageLog.logMessage("No {0} within the provided polygon can be found!".format(inPlaceType), level=Qgis.Info)
+        else:
+
+            if out_path == None:
+                QgsMessageLog.logMessage("No data will be added to the map document.", level=Qgis.Info)
+            else:
+
+                for item in placeList:
+                    place_iri, label, type_iri, wkt_literal = item
+                    wkt = wkt_literal.replace("<http://www.opengis.net/def/crs/OGC/1.3/CRS84>", "")
+
+                    feat = QgsFeature()
+                    geom = QgsGeometry.fromWkt(wkt)
+
+                    # TODO: handle the CRS
+                    # feat.setGeometry(self.transformSourceCRStoDestinationCRS(geom, src=4326, dest=3857))
+
+                    feat.setGeometry(geom)
+                    feat.setAttributes(item[0:3])
+
+                    pr.addFeature(feat)
+                vl.updateExtents()
+
+                options = QgsVectorFileWriter.SaveVectorOptions()
+                options.layerName = feat_class
+                options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteLayer
+                context = QgsProject.instance().transformContext()
+                error = QgsVectorFileWriter.writeAsVectorFormatV2(vl, out_path, context, options)
+                ifaceObj.addVectorLayer(out_path, feat_class, 'ogr')
+
+        return error[0] == QgsVectorFileWriter.NoError
+
+
     def fieldLengthDecide(self, jsonBindingObject, fieldName):
         # This option is only applicable on fields of type text or blob
         fieldType = self.fieldDataTypeDecide(jsonBindingObject, fieldName)

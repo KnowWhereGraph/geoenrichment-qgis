@@ -1002,6 +1002,8 @@ then select an entity on the map.'
         placeList = []
         geom_type = None
 
+        util_obj = UTIL()
+
         layerFields = QgsFields()
         layerFields.append(QgsField('place_iri', QVariant.String))
         layerFields.append(QgsField('label', QVariant.String))
@@ -1011,9 +1013,9 @@ then select an entity on the map.'
             wkt_literal = item["wkt"]["value"]
             # for now, make sure all geom has the same geometry type
             if idx == 0:
-                geom_type = UTIL.get_geometry_type_from_wkt(wkt_literal)
+                geom_type = util_obj.get_geometry_type_from_wkt(wkt_literal)
             else:
-                assert geom_type == UTIL.get_geometry_type_from_wkt(wkt_literal)
+                assert geom_type == util_obj.get_geometry_type_from_wkt(wkt_literal)
 
             if isDirectInstance == False:
                 placeType = item["placeFlatType"]["value"]
