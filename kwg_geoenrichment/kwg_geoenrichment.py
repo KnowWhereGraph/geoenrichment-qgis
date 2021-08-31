@@ -36,7 +36,9 @@ from .resources import *
 # Import the code for the dialog
 from .kwg_geoenrichment_dialog import kwg_geoenrichmentDialog
 from .kwg_property_geoenrichment_dialog import kwg_property_geoenrichmentDialog
+from .kwg_property_merge_dialog import kwg_property_mergeDialog
 from .kwg_property_enrichment import kwg_property_enrichment
+from .kwg_property_merge import kwg_property_merge
 from .kwg_sparqlquery import kwg_sparqlquery
 from .kwg_util import kwg_util as UTIL
 from .kwg_json2field import kwg_json2field as Json2Field
@@ -216,17 +218,22 @@ class kwg_geoenrichment:
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
-        icon_path = ':/plugins/kwg_geoenrichment/icon.png'
         self.add_action(
-            icon_path,
+            QIcon(':/plugins/kwg_geoenrichment/resources/graph_Query.png'),
             text=self.tr(u'GeoSPARQL Query'),
             callback=self.run,
             parent=self.iface.mainWindow())
 
         self.add_action(
-            icon_path,
+            QIcon(':/plugins/kwg_geoenrichment/resources/enrich_Data.png'),
             text=self.tr(u'Property Enrichment Query'),
             callback=self.runPropertyEnrichment,
+            parent=self.iface.mainWindow())
+
+        self.add_action(
+            QIcon(':/plugins/kwg_geoenrichment/resources/merge_Data.png'),
+            text=self.tr(u'Property Merge Tool'),
+            callback=self.runPropertyMerge,
             parent=self.iface.mainWindow())
 
         # Adding menu to toolbar
@@ -329,7 +336,7 @@ class kwg_geoenrichment:
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
-            self.dlg = kwg_geoenrichmentDialog()
+        self.dlg = kwg_geoenrichmentDialog()
 
         # show the dialog
         self.dlg.show()
@@ -348,7 +355,7 @@ class kwg_geoenrichment:
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
-            self.dlgPropertyEnrichment = kwg_property_geoenrichmentDialog()
+        self.dlgPropertyEnrichment = kwg_property_geoenrichmentDialog()
 
         QgsMessageLog.logMessage("Retrieving common properties based on geometry selection", "kwg_geoenrichment",
                                  level=Qgis.Info)
@@ -389,6 +396,36 @@ class kwg_geoenrichment:
             kwgpropeenrichment.execute(parameters=params, ifaceObj=self.iface)
 
 
+    def runPropertyMerge(self):
+        """KWG Property Merge tool"""
+
+        # Create the dialog with elements (after translation) and keep reference
+        # Only create GUI ONCE in callback, so that it will only load when the plugin is started
+        if self.first_start == True:
+            self.first_start = False
+        self.dlgPropertyMerge = kwg_property_mergeDialog()
+
+        QgsMessageLog.logMessage("KWG Property Merge tool", "kwg_geoenrichment",
+                                 level=Qgis.Info)
+
+        names = [layer.name() for layer in QgsProject.instance().mapLayers().values()]
+
+
+        # show the dialog
+        self.dlgPropertyMerge.show()
+
+        # Run the dialog event loop
+        result = self.dlgPropertyMerge.exec_()
+        # See if OK was pressed
+        if result:
+            params = self.getPropertyMergeparams()
+
+            kwgpropmerge = kwg_property_merge()
+            kwgpropmerge.execute(parameters=params)
+
+        return
+
+
     def updateParamsPropertyEnrichment(self, propertiesDict):
         listWidget = self.dlgPropertyEnrichment.listWidget
         itemsTextList = [str(listWidget.item(i).text()) for i in range(listWidget.count())]
@@ -399,6 +436,24 @@ class kwg_geoenrichment:
         listWidget.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         return
+
+
+    def getPropertyMergeparams(self):
+        params = {}
+
+        params["feature_class"] = self.dlgPropertyMerge.lineEdit.text()
+        params["non_functional_property"] = self.dlgPropertyMerge.lineEdit_2.text()
+
+        # TODO: set up displaying related tables logic
+        # params["related_tables"] = self.dlgPropertyMerge.comboBox_2.currentText()
+
+        params["merge_rule"] = self.dlgPropertyMerge.comboBox.currentText()
+
+        # TODO: set up signal for listening inputs and handle the delim values
+        params["concat_delimiter"] = ","
+
+        return params
+
 
     def drawPoint(self):
         if self.tool:
@@ -770,6 +825,7 @@ then select an entity on the map.'
 
         return
 
+
     def getInputs(self):
         params = {}
         params["end_point"] = self.dlg.lineEdit.text()
@@ -945,6 +1001,8 @@ then select an entity on the map.'
         placeList = []
         geom_type = None
 
+        util_obj = UTIL()
+
         layerFields = QgsFields()
         layerFields.append(QgsField('place_iri', QVariant.String))
         layerFields.append(QgsField('label', QVariant.String))
@@ -954,9 +1012,9 @@ then select an entity on the map.'
             wkt_literal = item["wkt"]["value"]
             # for now, make sure all geom has the same geometry type
             if idx == 0:
-                geom_type = UTIL.get_geometry_type_from_wkt(wkt_literal)
+                geom_type = util_obj.get_geometry_type_from_wkt(wkt_literal)
             else:
-                assert geom_type == UTIL.get_geometry_type_from_wkt(wkt_literal)
+                assert geom_type == util_obj.get_geometry_type_from_wkt(wkt_literal)
 
             if isDirectInstance == False:
                 placeType = item["placeFlatType"]["value"]
@@ -972,7 +1030,7 @@ then select an entity on the map.'
         if geom_type is None:
             raise Exception("geometry type not find")
 
-        vl = QgsVectorLayer(geom_type+"?crs=epsg:4326", "GeoEnrichment Query", "memory")
+        vl = QgsVectorLayer(geom_type+"?crs=epsg:4326", "geo_results", "memory")
         pr = vl.dataProvider()
         pr.addAttributes(layerFields)
         vl.updateFields()
@@ -1002,9 +1060,10 @@ then select an entity on the map.'
                 vl.updateExtents()
 
                 options = QgsVectorFileWriter.SaveVectorOptions()
+                options.layerName = 'geo_results'
                 context = QgsProject.instance().transformContext()
                 error = QgsVectorFileWriter.writeAsVectorFormatV2(vl, out_path, context, options)
-                self.iface.addVectorLayer(out_path, 'kwg_results', 'ogr')
+                self.iface.addVectorLayer(out_path, 'geo_results', 'ogr')
 
         return error[0] == QgsVectorFileWriter.NoError
 

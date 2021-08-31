@@ -52,7 +52,7 @@ class kwg_property_enrichment:
         self.loadIRIList()
         self.sparqlEndpoint = "http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire"
         self.path_to_gpkg = "/var/local/QGIS/kwg_results.gpkg"
-        self.layerName = "kwg_results"
+        self.layerName = "geo_results"
 
 
     def getCommonProperties(self):
@@ -122,13 +122,13 @@ class kwg_property_enrichment:
 
         return
 
-    def loadIRIList(self, path_to_gpkg ='/var/local/QGIS/kwg_results.gpkg', layerName="kwg_results"):
+    def loadIRIList(self, path_to_gpkg ='/var/local/QGIS/kwg_results.gpkg', layerName="geo_results"):
         # get the path to a geopackage e.g. /home/project/data/data.gpkg
         iriList = []
 
         gpkg_places_layer = path_to_gpkg + "|layername=%s"%(layerName)
 
-        vlayer = QgsVectorLayer(gpkg_places_layer, "kwg_results", "ogr")
+        vlayer = QgsVectorLayer(gpkg_places_layer, layerName, "ogr")
 
         if not vlayer.isValid():
             return iriList
@@ -147,21 +147,13 @@ class kwg_property_enrichment:
 
         propertyList = parameters["propertySelect"]
         sparql_endpoint = parameters["sparql_endpoint"]
-        QgsMessageLog.logMessage("pass 1",
-                                 "kwg_geoenrichment", level=Qgis.Info)
 
-        QgsMessageLog.logMessage("count: {0}".format(kwg_property_enrichment.count), "kwg_geoenrichment", level=Qgis.Info)
+        # QgsMessageLog.logMessage("count: {0}".format(kwg_property_enrichment.count), "kwg_geoenrichment", level=Qgis.Info)
 
         selectPropertyURLList = []
         selectSosaObsPropURLList = []
 
         if len(propertyList) > 0:
-
-            # QgsMessageLog.logMessage("propertyURLDict: {0}".format(json.dumps(self.propertyURLDict)),
-            #                          "kwg_geoenrichment",
-            #                          level=Qgis.Info)
-            # QgsMessageLog.logMessage("sosaObsPropURLDict: {0}".format(json.dumps(self.sosaObsPropURLDict)), "kwg_geoenrichment",
-            #                          level=Qgis.Info)
 
             QgsMessageLog.logMessage("propertySplitList: {0}".format(propertyList), "kwg_geoenrichment", level=Qgis.Info)
             for propertyItem in propertyList:
@@ -171,18 +163,15 @@ class kwg_property_enrichment:
                     selectSosaObsPropURLList.append(
                         self.sosaObsPropURLDict[propertyItem])
 
-            QgsMessageLog.logMessage("selectPropertyURLList: " + str(selectPropertyURLList), "kwg_geoenrichment", level=Qgis.Info)
-            QgsMessageLog.logMessage("selectSosaObsPropURLList: " + str(selectSosaObsPropURLList), "kwg_geoenrichment",
-                                     level=Qgis.Info)
+            # QgsMessageLog.logMessage("selectPropertyURLList: " + str(selectPropertyURLList), "kwg_geoenrichment", level=Qgis.Info)
+            # QgsMessageLog.logMessage("selectSosaObsPropURLList: " + str(selectSosaObsPropURLList), "kwg_geoenrichment",
+            #                          level=Qgis.Info)
             # QgsMessageLog.logMessage(selectPropertyURLList, "kwg_geoenrichment", level=Qgis.Info)
 
             # send a SPARQL query to DBpedia endpoint to test whether the properties are functionalProperty
             isFuncnalPropertyJSON = self.SPARQLQuery.functionalPropertyQuery(selectPropertyURLList,
                                                                              sparql_endpoint = sparql_endpoint)
             # isFuncnalPropertyJSON = isFuncnalPropertyJSONObj["results"]["bindings"]
-
-            QgsMessageLog.logMessage("pass 2",
-                                     "kwg_geoenrichment", level=Qgis.Info)
 
             FunctionalPropertySet = set()
             # QgsMessageLog.logMessage("isFunctionalPropertyJSON: {0}".format(json.dumps(isFuncnalPropertyJSON)), "kwg_geoenrichment", level=Qgis.Info)
@@ -194,10 +183,7 @@ class kwg_property_enrichment:
             # get the value for each functionalProperty
             FunctionalPropertyList = list(FunctionalPropertySet)
 
-            QgsMessageLog.logMessage("FunctionalPropertyList: {0}".format(str(FunctionalPropertyList)), "kwg_geoenrichment", level=Qgis.Info)
-
-            QgsMessageLog.logMessage("pass 3",
-                                     "kwg_geoenrichment", level=Qgis.Info)
+            # QgsMessageLog.logMessage("FunctionalPropertyList: {0}".format(str(FunctionalPropertyList)), "kwg_geoenrichment", level=Qgis.Info)
 
             # add these functionalProperty value to feature class table
             for functionalProperty in FunctionalPropertyList:
@@ -214,18 +200,16 @@ class kwg_property_enrichment:
                                                    "place_iri", functionalProperty, False, gpkgLocation=self.path_to_gpkg )
 
                 if results:
-                    ifaceObj.refresh()
-                    QgsMessageLog.logMessage("pass 3 - functional property write successful",
+                    ifaceObj.mapCanvas().refresh()
+                    QgsMessageLog.logMessage("update - functional property write successful",
                                          "kwg_geoenrichment", level=Qgis.Info)
 
-            QgsMessageLog.logMessage("pass 4",
-                                     "kwg_geoenrichment", level=Qgis.Info)
 
             selectPropertyURLSet = set(selectPropertyURLList)
             noFunctionalPropertySet = selectPropertyURLSet.difference(FunctionalPropertySet)
             noFunctionalPropertyList = list(noFunctionalPropertySet)
 
-            QgsMessageLog.logMessage("noFunctionalPropertyList: {0}".format(str(noFunctionalPropertyList)), "kwg_geoenrichment", level=Qgis.Info)
+            # QgsMessageLog.logMessage("noFunctionalPropertyList: {0}".format(str(noFunctionalPropertyList)), "kwg_geoenrichment", level=Qgis.Info)
 
             for noFunctionalProperty in noFunctionalPropertyList:
                 noFunctionalPropertyJSON = self.SPARQLQuery.propertyValueQuery(self.inplaceIRIList, noFunctionalProperty,
@@ -281,10 +265,9 @@ class kwg_property_enrichment:
 
                     prop_name = self.SPARQLUtil.getPropertyName(propertyURL)
 
-                    # out_geo_feature_class_name = "{}_{}".format(featureClassName, prop_name)
-                    # out_geo_feature_class_path = os.path.join(in_place_IRI_desc.path, out_geo_feature_class_name)
-                    # Json2Field.createFeatureClassFromSPARQLResult(GeoQueryResult=GeoQueryResult,
-                    #                                               out_path=out_geo_feature_class_path)
+                    out_geo_feature_class_name = "{}_{}".format(self.layerName, prop_name)
+                    self.JSON2Field.createQGISFeatureClassFromSPARQLResult(GeoQueryResult=GeoQueryResult,
+                                                                  feat_class=out_geo_feature_class_name, ifaceObj=ifaceObj)
 
                     # TODO: manage the geometry relationship class for QGIS
                     # out_relationshipClassName = out_geo_feature_class_name + "_" + tableName + "_RelClass"
@@ -300,19 +283,15 @@ class kwg_property_enrichment:
                     #                                          origin_primary_key="URL",
                     #                                          origin_foreign_key=currentValuePropertyName)
 
-
-            QgsMessageLog.logMessage("pass 5",
-                                     "kwg_geoenrichment", level=Qgis.Info)
-
             # sosa property value query
             for p_url in selectSosaObsPropURLList:
                 sosaPropValJSON = self.SPARQLQuery.sosaObsPropertyValueQuery(self.inplaceIRIList, p_url,
                                                                         sparql_endpoint=sparql_endpoint,
                                                                         doSameAs=False)
 
-                QgsMessageLog.logMessage(
-                    "sosaPropValJSON: {0}".format(json.dumps(sosaPropValJSON)),
-                    "kwg_geoenrichment", level=Qgis.Info)
+                # QgsMessageLog.logMessage(
+                #     "sosaPropValJSON: {0}".format(json.dumps(sosaPropValJSON)),
+                #     "kwg_geoenrichment", level=Qgis.Info)
 
                 success = Json2Field.createMappingTableFromJSON(sosaPropValJSON,
                                                                             keyPropertyName="wikidataSub",
@@ -334,8 +313,6 @@ class kwg_property_enrichment:
                 #                                          p_url, "features from Knowledge Graph",
                 #                                          "FORWARD", "ONE_TO_MANY", "NONE", "URL", "URL")
 
-            QgsMessageLog.logMessage("pass 6",
-                                     "kwg_geoenrichment", level=Qgis.Info)
         return
 
 

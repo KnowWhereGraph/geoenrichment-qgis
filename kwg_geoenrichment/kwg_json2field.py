@@ -107,6 +107,91 @@ class kwg_json2field:
         return
 
 
+    def createQGISFeatureClassFromSPARQLResult(self, GeoQueryResult, out_path="/var/local/QGIS/kwg_results.gpkg", feat_class="geo_Result",inPlaceType="", selectedURL="",
+                                           isDirectInstance=False, ifaceObj=None):
+        '''
+        GeoQueryResult: a sparql query result json obj serialized as a list of dict()
+                    SPARQL query like this:
+                    select distinct ?place ?placeLabel ?placeFlatType ?wkt
+                    where
+                    {...}
+        out_path: the output path for the create geo feature class
+        inPlaceType: the label of user spercified type IRI
+        selectedURL: the user spercified type IRI
+        isDirectInstance: True: use placeFlatType as the type of geo-entity
+                          False: use selectedURL as the type of geo-entity
+        '''
+        # a set of unique WKT for each found places
+        placeIRISet = set()
+        placeList = []
+        geom_type = None
+
+        layerFields = QgsFields()
+        layerFields.append(QgsField('place_iri', QVariant.String))
+        layerFields.append(QgsField('label', QVariant.String))
+        layerFields.append(QgsField('type_iri', QVariant.String))
+
+        for idx, item in enumerate(GeoQueryResult):
+            wkt_literal = item["wkt"]["value"]
+            # for now, make sure all geom has the same geometry type
+            if idx == 0:
+                geom_type = self.kwgUtil.get_geometry_type_from_wkt(wkt_literal)
+            else:
+                assert geom_type == self.kwgUtil.get_geometry_type_from_wkt(wkt_literal)
+
+            if isDirectInstance == False:
+                placeType = item["placeFlatType"]["value"]
+            else:
+                placeType = selectedURL
+            print("{}\t{}\t{}".format(
+                item["place"]["value"], item["placeLabel"]["value"], placeType))
+            if len(placeIRISet) == 0 or item["place"]["value"] not in placeIRISet:
+                placeIRISet.add(item["place"]["value"])
+                placeList.append(
+                    [item["place"]["value"], item["placeLabel"]["value"], placeType, wkt_literal])
+
+        if geom_type is None:
+            raise Exception("geometry type not find")
+
+        vl = QgsVectorLayer(geom_type+"?crs=epsg:4326", feat_class, "memory")
+        pr = vl.dataProvider()
+        pr.addAttributes(layerFields)
+        vl.updateFields()
+
+        if len(placeList) == 0:
+            QgsMessageLog.logMessage("No {0} within the provided polygon can be found!".format(inPlaceType), level=Qgis.Info)
+        else:
+
+            if out_path == None:
+                QgsMessageLog.logMessage("No data will be added to the map document.", level=Qgis.Info)
+            else:
+
+                for item in placeList:
+                    place_iri, label, type_iri, wkt_literal = item
+                    wkt = wkt_literal.replace("<http://www.opengis.net/def/crs/OGC/1.3/CRS84>", "")
+
+                    feat = QgsFeature()
+                    geom = QgsGeometry.fromWkt(wkt)
+
+                    # TODO: handle the CRS
+                    # feat.setGeometry(self.transformSourceCRStoDestinationCRS(geom, src=4326, dest=3857))
+
+                    feat.setGeometry(geom)
+                    feat.setAttributes(item[0:3])
+
+                    pr.addFeature(feat)
+                vl.updateExtents()
+
+                options = QgsVectorFileWriter.SaveVectorOptions()
+                options.layerName = feat_class
+                options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteLayer
+                context = QgsProject.instance().transformContext()
+                error = QgsVectorFileWriter.writeAsVectorFormatV2(vl, out_path, context, options)
+                ifaceObj.addVectorLayer(out_path, feat_class, 'ogr')
+
+        return error[0] == QgsVectorFileWriter.NoError
+
+
     def fieldLengthDecide(self, jsonBindingObject, fieldName):
         # This option is only applicable on fields of type text or blob
         fieldType = self.fieldDataTypeDecide(jsonBindingObject, fieldName)
@@ -229,7 +314,7 @@ class kwg_json2field:
 
     def createMappingTableFromJSON(self, jsonBindingObject, keyPropertyName,
                                    valuePropertyName, valuePropertyURL,
-                                   keyPropertyFieldName, isInverse, isSubDivisionTable, featureClassName="kwg_results", outputLocation="", ifaceObj=None):
+                                   keyPropertyFieldName, isInverse, isSubDivisionTable, featureClassName="geo_results", outputLocation="", ifaceObj=None):
 
 
         currentValuePropertyName = self.kwgUtil.getPropertyName(valuePropertyURL)
@@ -239,7 +324,11 @@ class kwg_json2field:
             currentValuePropertyName = "is_" + currentValuePropertyName + "_Of"
         if isSubDivisionTable == True:
             currentValuePropertyName = "subDivisionIRI"
-        tableName = featureClassName + "_" + keyPropertyFieldName + "_" + currentValuePropertyName
+        tableName = keyPropertyFieldName + "_" + currentValuePropertyName
+
+        # QgsMessageLog.logMessage(tableName,
+        #                          "kwg_geoenrichment", level=Qgis.Info)
+
 
         # TODO:  implement QGIS logic
         # tablePath = Json2Field.getNoExistTableNameInWorkspace(outputLocation, tableName)
@@ -267,7 +356,7 @@ class kwg_json2field:
         propertyValueList = list(propertyValueSet)
 
         if outputLocation == None:
-            QgsMessageLog.logMessage("No data will be added to the map document.", level=Qgis.Info)
+            QgsMessageLog.logMessage("No data will be added to the map document.", level=Qgis.Warning)
         else:
 
             for item in propertyValueList:
@@ -281,6 +370,8 @@ class kwg_json2field:
             vl.updateExtents()
 
             options = QgsVectorFileWriter.SaveVectorOptions()
+            options.layerName = tableName
+            options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteLayer
             context = QgsProject.instance().transformContext()
             error = QgsVectorFileWriter.writeAsVectorFormatV2(vl, outputLocation, context, options)
             ifaceObj.addVectorLayer(outputLocation, tableName, 'ogr')
@@ -288,7 +379,7 @@ class kwg_json2field:
         return error[0] == QgsVectorFileWriter.NoError
 
 
-    def addFieldInTableByMapping(self, jsonBindingObject, keyPropertyName, valuePropertyName, keyPropertyFieldName, valuePropertyURL, isInverse, featureClassName="kwg_results", gpkgLocation=""):
+    def addFieldInTableByMapping(self, jsonBindingObject, keyPropertyName, valuePropertyName, keyPropertyFieldName, valuePropertyURL, isInverse, featureClassName="geo_results", gpkgLocation=""):
         # according to the json object from sparql query which contains the mapping from keyProperty to valueProperty, add field in the Table
         # change the field name if there is already a field which has the same name in table
         # jsonBindingObject: the json object from sparql query which contains the mapping from keyProperty to valueProperty, ex. functionalPropertyJSON
@@ -307,7 +398,7 @@ class kwg_json2field:
 
         gpkg_places_layer = gpkgLocation + "|layername=%s" % (featureClassName)
 
-        vlayer = QgsVectorLayer(gpkg_places_layer, "kwg_results", "ogr")
+        vlayer = QgsVectorLayer(gpkg_places_layer, "geo_results", "ogr")
 
         if not vlayer.isValid():
             QgsMessageLog.logMessage("Error reading the table",
@@ -336,9 +427,7 @@ class kwg_json2field:
                 vlayer.updateFields()
 
             selected_feature = vlayer.getFeatures()
-            QgsMessageLog.logMessage(
-                "Features selected, beginning editing the values for those features " ,
-                "kwg_geoenrichment", level=Qgis.Info)
+
             vlayer.startEditing()
 
             for feature in selected_feature:
@@ -349,4 +438,3 @@ class kwg_json2field:
             vlayer.commitChanges()
 
         return 1
-
