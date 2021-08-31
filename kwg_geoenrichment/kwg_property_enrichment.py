@@ -126,9 +126,9 @@ class kwg_property_enrichment:
         # get the path to a geopackage e.g. /home/project/data/data.gpkg
         iriList = []
 
-        gpkg_places_layer = path_to_gpkg + "|layername=%s"%(layerName +" kwg_results")
+        gpkg_places_layer = path_to_gpkg + "|layername=%s"%(layerName)
 
-        vlayer = QgsVectorLayer(gpkg_places_layer, layerName + " kwg_results", "ogr")
+        vlayer = QgsVectorLayer(gpkg_places_layer, layerName, "ogr")
 
         if not vlayer.isValid():
             return iriList

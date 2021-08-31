@@ -285,6 +285,8 @@ class kwg_json2field:
             vl.updateExtents()
 
             options = QgsVectorFileWriter.SaveVectorOptions()
+            options.layerName = tableName
+            options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteLayer
             context = QgsProject.instance().transformContext()
             error = QgsVectorFileWriter.writeAsVectorFormatV2(vl, outputLocation, context, options)
             ifaceObj.addVectorLayer(outputLocation, tableName, 'ogr')
