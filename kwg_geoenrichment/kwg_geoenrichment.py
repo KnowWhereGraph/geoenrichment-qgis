@@ -422,7 +422,7 @@ class kwg_geoenrichment:
             params = self.getPropertyMergeparams()
 
             kwgpropmerge = kwg_property_merge()
-            kwgpropmerge.execute(params=params)
+            kwgpropmerge.execute(parameters=params)
 
         return
 

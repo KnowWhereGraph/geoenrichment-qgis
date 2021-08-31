@@ -1,3 +1,5 @@
+import json
+
 from qgis._core import Qgis, QgsMessageLog
 
 from .kwg_sparqlquery import kwg_sparqlquery
@@ -152,7 +154,6 @@ class kwg_property_merge(object):
 
         if len(inputFeatureClassName) > 0:
 
-            selectIndex = self.relatedTableList.index(selectTableName)
             selectFieldName = selectTableName.split("_")[1]
 
             # QgsMessageLog.logMessage(("CurrentDataType: {0}".format(self.kwg_util.getFieldDataTypeInTable(selectFieldName, selectTableName))), "kwg_geoenrichment",  level=Qgis.info)
@@ -164,6 +165,8 @@ class kwg_property_merge(object):
             # QgsMessageLog.logMessage(("MergeSingleNoFunctionalProperty.relatedTableList.index(selectTableName): {0}".format(self.relatedTableList.index(selectTableName))), "kwg_geoenrichment",  level=Qgis.info)
 
             noFunctionalPropertyDict = self.kwg_util.buildMultiValueDictFromNoFunctionalProperty(selectFieldName, selectTableName, URLFieldName = 'URL')
+
+            res = 0
 
             if noFunctionalPropertyDict != -1:
                 if selectMergeRule == 'CONCATENATE':
@@ -182,7 +185,12 @@ class kwg_property_merge(object):
                     elif selectDelimiter == 'SPACE':
                         delimiter = ' '
 
-                    self.kwg_util.appendFieldInFeatureClassByMergeRule(inputFeatureClassName, noFunctionalPropertyDict, selectFieldName, selectTableName, selectMergeRule, delimiter)
+                    res = self.kwg_util.appendFieldInFeatureClassByMergeRule(inputFeatureClassName, noFunctionalPropertyDict, selectFieldName, selectTableName, selectMergeRule, delimiter)
                 else:
-                    self.kwg_util.appendFieldInFeatureClassByMergeRule(inputFeatureClassName, noFunctionalPropertyDict, selectFieldName, selectTableName, selectMergeRule, '')
+                    res = self.kwg_util.appendFieldInFeatureClassByMergeRule(inputFeatureClassName, noFunctionalPropertyDict, selectFieldName, selectTableName, selectMergeRule, '')
+
+            if res:
+                QgsMessageLog.logMessage("Successfully updated the input feature class with the non functional property.", "kwg_geoenrichment",  level=Qgis.Info)
+            else:
+                QgsMessageLog.logMessage("Error updating the input feature class with the non functional property!", "kwg_geoenrichment",  level=Qgis.Info)
         return

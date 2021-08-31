@@ -1,6 +1,8 @@
 from collections import defaultdict
 import statistics
-from qgis._core import QgsMessageLog, Qgis, QgsVectorLayer
+
+from PyQt5.QtCore import QVariant
+from qgis._core import QgsMessageLog, Qgis, QgsVectorLayer, QgsField
 
 from .kwg_sparqlutil import kwg_sparqlutil
 
@@ -62,7 +64,7 @@ class kwg_util:
         return propertyName
 
 
-    def getFieldNameWithTable(self, propertyName, featureClassName, gpkgLocation):
+    def getFieldNameWithTable(self, propertyName, featureClassName, gpkgLocation='/var/local/QGIS/kwg_results.gpkg'):
         # give a property Name which have been sliced by getPropertyName(propertyURL)
         # decide whether its lengh is larger than 10
         # decide whether it is already in the feature class table
@@ -87,7 +89,7 @@ class kwg_util:
 
         isfieldNameinFieldList = False
         for field in fieldList:
-            if field.name == fieldName:
+            if field == fieldName:
                 isfieldNameinFieldList = True
                 break
 
@@ -134,8 +136,8 @@ class kwg_util:
             else:
                 for feature in vlayer.getFeatures():
                     row = feature.attributes()
-                    foreignKeyValue = row[0]
-                    noFunctionalPropertyValue = row[1]
+                    foreignKeyValue = row[1]
+                    noFunctionalPropertyValue = row[2]
 
                     if noFunctionalPropertyValue is not None:
                         noFunctionalPropertyDict[foreignKeyValue].append(noFunctionalPropertyValue)
@@ -146,24 +148,32 @@ class kwg_util:
 
 
     def appendFieldInFeatureClassByMergeRule(self, inputFeatureClassName, noFunctionalPropertyDict, appendFieldName,
-                                             relatedTableName, mergeRule, delimiter):
+                                             relatedTableName, mergeRule, delimiter, gpkgLocation="/var/local/QGIS/kwg_results.gpkg"):
         # append a new field in inputFeatureClassName which will install the merged no-functional property value
         # noFunctionalPropertyDict: the collections.defaultdict object which stores the no-functional property value for each URL
         # appendFieldName: the field name of no-functional property in the relatedTableName
         # mergeRule: the merge rule the user selected, one of ['SUM', 'MIN', 'MAX', 'STDEV', 'MEAN', 'COUNT', 'FIRST', 'LAST']
         # delimiter: the optional paramter which define the delimiter of the cancatenate operation
         appendFieldType = ''
-        appendFieldLength = 0
-        # fieldList = arcpy.ListFields(relatedTableName)
-        # TODO: write up QGIS logic
-        fieldList = []
+
+        # readthe layer from the geopackage
+        gpkg_places_layer = gpkgLocation + "|layername=%s" % (inputFeatureClassName)
+        vlayer = QgsVectorLayer(gpkg_places_layer, "geo_results", "ogr")
+
+        if not vlayer.isValid():
+            QgsMessageLog.logMessage("Error reading the table",
+                                     "kwg_geoenrichment", level=Qgis.Warning)
+            return 0
+
+        # get the field list
+        prov = vlayer.dataProvider()
+        fieldList = [field.name() for field in prov.fields()]
 
         for field in fieldList:
-            if field.name == appendFieldName:
-                appendFieldType = field.type
-                if field.type == "String":
-                    appendFieldLength = field.length
+            if field == appendFieldName:
+                appendFieldType = field.typeName()
                 break
+
         mergeRuleField = ''
         if mergeRule == 'SUM':
             mergeRuleField = 'SUM'
@@ -184,84 +194,30 @@ class kwg_util:
         elif mergeRule == 'CONCATENATE':
             mergeRuleField = 'CONCAT'
 
-        if appendFieldType != "String":
-            cursor = []
-            # TODO: write up QGIS logic
-            # cursor = arcpy.SearchCursor(relatedTableName)
-            for row in cursor:
-                rowValue = row.getValue(appendFieldName)
-                if appendFieldLength < len(str(rowValue)):
-                    appendFieldLength = len(str(rowValue))
-        # subFieldName = appendFieldName[:5]
-        # arcpy.AddMessage("subFieldName: {0}".format(subFieldName))
-
         # featureClassAppendFieldName = subFieldName + "_" + mergeRuleField
         featureClassAppendFieldName = appendFieldName + "_" + mergeRuleField
         newAppendFieldName = self.getFieldNameWithTable(featureClassAppendFieldName, inputFeatureClassName)
         if newAppendFieldName != -1:
             if mergeRule == 'COUNT':
-                # arcpy.AddField_management(inputFeatureClassName, newAppendFieldName, "SHORT")
-                # TODO: write up QGIS logic
-                pass
+                prov.addAttributes([QgsField(newAppendFieldName, QVariant.Int)])
+                vlayer.updateFields()
             elif mergeRule == 'STDEV' or mergeRule == 'MEAN':
                 # arcpy.AddField_management(inputFeatureClassName, newAppendFieldName, "DOUBLE")
-                # TODO: write up QGIS logic
-                pass
-            elif mergeRule == 'CONCATENATE':
-                # get the maximum number of values for current property: maxNumOfValue
-                # maxNumOfValue * field.length = the length of new append field
-                maxNumOfValue = 1
-                for key in noFunctionalPropertyDict:
-                    if maxNumOfValue < len(noFunctionalPropertyDict[key]):
-                        maxNumOfValue = len(noFunctionalPropertyDict[key])
-
-                # arcpy.AddField_management(inputFeatureClassName, newAppendFieldName, 'TEXT',
-                #                           field_length=
-                #                           appendFieldLength * maxNumOfValue)
-                # TODO: write up QGIS logic
-                pass
-
-
+                prov.addAttributes([QgsField(newAppendFieldName, QVariant.Double)])
+                vlayer.updateFields()
             else:
-                if appendFieldType == "String":
-                    # arcpy.AddField_management(inputFeatureClassName, newAppendFieldName, appendFieldType,
-                    #                           field_length=appendFieldLength)
-                    # TODO: write up QGIS logic
-                    pass
-                else:
-                    # arcpy.AddField_management(inputFeatureClassName, newAppendFieldName, appendFieldType)
-                    # TODO: write up QGIS logic
-                    pass
+                prov.addAttributes([QgsField(newAppendFieldName, QVariant.String)])
+                vlayer.updateFields()
 
-            if self.isFieldNameInTable("URL", inputFeatureClassName):
-                urows = None
-                # urows = arcpy.UpdateCursor(inputFeatureClassName)
-                # TODO: write up QGIS logic
-                pass
-                for row in urows:
-                    foreignKeyValue = row.getValue("URL")
+            if self.isFieldNameInTable("place_iri", inputFeatureClassName):
+
+                vlayer.startEditing()
+                for feature in vlayer.getFeatures():
+                    foreignKeyValue = feature["place_iri"]
                     noFunctionalPropertyValueList = noFunctionalPropertyDict[foreignKeyValue]
                     if len(noFunctionalPropertyValueList) != 0:
                         rowValue = ""
-                        # if mergeRule in ['STDEV', 'MEAN']:
-                        #     if appendFieldType in ['Single', 'Double']:
-                        #         if mergeRule == 'MEAN':
-                        #             rowValue = numpy.average(noFunctionalPropertyValueList)
-                        #         elif mergeRule == 'STDEV':
-                        #             rowValue = numpy.std(noFunctionalPropertyValueList)
-                        #     else:
-                        #         arcpy.AddError("The {0} data type of Field {1} does not support {2} merge rule".format(appendFieldType, appendFieldName, mergeRule))
-                        #         raise arcpy.ExecuteError
-                        # elif mergeRule in ['SUM', 'MIN', 'MAX']:
-                        #     if appendFieldType in ['Single', 'Double', 'SmallInteger', 'Integer']:
-                        #         if mergeRule == 'SUM':
-                        #             rowValue = numpy.sum(noFunctionalPropertyValueList)
-                        #         elif mergeRule == 'MIN':
-                        #             rowValue = numpy.amin(noFunctionalPropertyValueList)
-                        #         elif mergeRule == 'MAX':
-                        #             rowValue = numpy.amax(noFunctionalPropertyValueList)
-                        #     else:
-                        #         arcpy.AddError("The {0} data type of Field {1} does not support {2} merge rule".format(appendFieldType, appendFieldName, mergeRule))
+
                         if mergeRule in ['STDEV', 'MEAN', 'SUM', 'MIN', 'MAX']:
                             if appendFieldType in ['Single', 'Double', 'SmallInteger', 'Integer']:
                                 if mergeRule == 'MEAN':
@@ -295,5 +251,9 @@ class kwg_util:
                                 rowValue = delimiter.join(sorted(
                                     set([str(val) for val in noFunctionalPropertyValueList if not value is None])))
 
-                        row.setValue(newAppendFieldName, rowValue)
-                        urows.updateRow(row)
+                        feature[newAppendFieldName] = rowValue
+
+                        vlayer.updateFeature(feature)
+                vlayer.commitChanges()
+
+        return 1
