@@ -156,18 +156,9 @@ class kwg_property_merge(object):
 
             selectFieldName = selectTableName.split("_")[1]
 
-            # QgsMessageLog.logMessage(("CurrentDataType: {0}".format(self.kwg_util.getFieldDataTypeInTable(selectFieldName, selectTableName))), "kwg_geoenrichment",  level=Qgis.info)
-            #
-            # QgsMessageLog.logMessage(("selectTableName: {0}".format(selectTableName)), "kwg_geoenrichment",  level=Qgis.info)
-            #
-            # QgsMessageLog.logMessage(("self.relatedTableList: {0}".format(self.relatedTableList)), "kwg_geoenrichment",  level=Qgis.info)
-            #
-            # QgsMessageLog.logMessage(("MergeSingleNoFunctionalProperty.relatedTableList.index(selectTableName): {0}".format(self.relatedTableList.index(selectTableName))), "kwg_geoenrichment",  level=Qgis.info)
-
             noFunctionalPropertyDict = self.kwg_util.buildMultiValueDictFromNoFunctionalProperty(selectFieldName, selectTableName, URLFieldName = 'URL')
 
             res = 0
-
             if noFunctionalPropertyDict != -1:
                 if selectMergeRule == 'CONCATENATE':
                     selectDelimiter = in_cancatenate_delimiter.valueAsText

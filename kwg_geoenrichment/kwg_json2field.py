@@ -326,8 +326,8 @@ class kwg_json2field:
             currentValuePropertyName = "subDivisionIRI"
         tableName = keyPropertyFieldName + "_" + currentValuePropertyName
 
-        QgsMessageLog.logMessage(tableName,
-                                 "kwg_geoenrichment", level=Qgis.Info)
+        # QgsMessageLog.logMessage(tableName,
+        #                          "kwg_geoenrichment", level=Qgis.Info)
 
 
         # TODO:  implement QGIS logic
@@ -356,7 +356,7 @@ class kwg_json2field:
         propertyValueList = list(propertyValueSet)
 
         if outputLocation == None:
-            QgsMessageLog.logMessage("No data will be added to the map document.", level=Qgis.Info)
+            QgsMessageLog.logMessage("No data will be added to the map document.", level=Qgis.Warning)
         else:
 
             for item in propertyValueList:
@@ -427,9 +427,7 @@ class kwg_json2field:
                 vlayer.updateFields()
 
             selected_feature = vlayer.getFeatures()
-            QgsMessageLog.logMessage(
-                "Features selected, beginning editing the values for those features " ,
-                "kwg_geoenrichment", level=Qgis.Info)
+
             vlayer.startEditing()
 
             for feature in selected_feature:
@@ -440,4 +438,3 @@ class kwg_json2field:
             vlayer.commitChanges()
 
         return 1
-
