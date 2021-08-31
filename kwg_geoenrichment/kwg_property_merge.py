@@ -21,6 +21,8 @@ class kwg_property_merge(object):
         self.relatedTableFieldList = []
         self.relatedTableList = []
         self.relatedNoFunctionalPropertyURLList = []
+        self.path_to_gpkg = "/var/local/QGIS/kwg_results.gpkg"
+        self.layerName = "geo_results"
 
 
     def isLicensed(self):
@@ -45,11 +47,12 @@ class kwg_property_merge(object):
             currentWorkspace = inputFeatureClassName[:lastIndexOFGDB]
 
             if currentWorkspace.endswith(".gdb") == False:
-                messages.addErrorMessage("Please enter a feature class in file geodatabase for the input feature class.")
-                raise arcpy.ExecuteError
+                # messages.addErrorMessage("Please enter a feature class in file geodatabase for the input feature class.")
+                # raise arcpy.ExecuteError
+                pass
             else:
                 # if in_related_table.value:
-                arcpy.env.workspace = currentWorkspace
+                # arcpy.env.workspace = currentWorkspace
                 # out_location.value = currentWorkspace
                 # out_points_name.value = featureClassName + "_noFunc_merge"
                 # # check whether the input table are in the same file geodatabase as the input feature class
@@ -72,7 +75,8 @@ class kwg_property_merge(object):
                 # noFunctionalPropertyTable = []
 
                 for relatedTable in self.relatedTableList:
-                    fieldList = arcpy.ListFields(relatedTable)
+                    # fieldList = arcpy.ListFields(relatedTable)
+                    fieldList =[]
                     if "origin" not in fieldList and "end" not in fieldList:
                         noFunctionalFieldName = fieldList[2].name
                         # arcpy.AddMessage("noFunctionalFieldName: {0}".format(noFunctionalFieldName))
@@ -81,8 +85,8 @@ class kwg_property_merge(object):
                         # propURL = arcpy.da.SearchCursor(relatedTable, ("propURL")).next()[0]
 
                         TableRelationshipClassList = self.kwg_util.getRelationshipClassFromTable(relatedTable)
-                        propURL = arcpy.Describe(TableRelationshipClassList[0]).forwardPathLabel
-
+                        # propURL = arcpy.Describe(TableRelationshipClassList[0]).forwardPathLabel
+                        propURL = ""
                         self.relatedNoFunctionalPropertyURLList.append(propURL)
 
                 in_no_functional_property_list.filter.list = self.relatedNoFunctionalPropertyURLList
@@ -140,8 +144,8 @@ class kwg_property_merge(object):
         """The source code of the tool."""
 
         inputFeatureClassName = parameters["feature_class"]
-        selectPropURL = parameters["non_functional_property"]
-        selectTableName = parameters["related_tables"]
+        # selectPropURL = parameters["non_functional_property"]
+        selectTableName = parameters["non_functional_property"]
         selectMergeRule = parameters["merge_rule"]
         in_cancatenate_delimiter = parameters["concat_delimiter"]
 
@@ -149,15 +153,15 @@ class kwg_property_merge(object):
         if len(inputFeatureClassName) > 0:
 
             selectIndex = self.relatedTableList.index(selectTableName)
-            selectFieldName = self.relatedTableFieldList[selectIndex]
+            selectFieldName = selectTableName.split("_")[1]
 
-            QgsMessageLog.logMessage(("CurrentDataType: {0}".format(self.kwg_util.getFieldDataTypeInTable(selectFieldName, selectTableName))), "kwg_geoenrichment",  level=Qgis.info)
-
-            QgsMessageLog.logMessage(("selectTableName: {0}".format(selectTableName)), "kwg_geoenrichment",  level=Qgis.info)
-
-            QgsMessageLog.logMessage(("MergeSingleNoFunctionalProperty.relatedTableList: {0}".format(self.relatedTableList)), "kwg_geoenrichment",  level=Qgis.info)
-
-            QgsMessageLog.logMessage(("MergeSingleNoFunctionalProperty.relatedTableList.index(selectTableName): {0}".format(self.relatedTableList.index(selectTableName))), "kwg_geoenrichment",  level=Qgis.info)
+            # QgsMessageLog.logMessage(("CurrentDataType: {0}".format(self.kwg_util.getFieldDataTypeInTable(selectFieldName, selectTableName))), "kwg_geoenrichment",  level=Qgis.info)
+            #
+            # QgsMessageLog.logMessage(("selectTableName: {0}".format(selectTableName)), "kwg_geoenrichment",  level=Qgis.info)
+            #
+            # QgsMessageLog.logMessage(("self.relatedTableList: {0}".format(self.relatedTableList)), "kwg_geoenrichment",  level=Qgis.info)
+            #
+            # QgsMessageLog.logMessage(("MergeSingleNoFunctionalProperty.relatedTableList.index(selectTableName): {0}".format(self.relatedTableList.index(selectTableName))), "kwg_geoenrichment",  level=Qgis.info)
 
             noFunctionalPropertyDict = self.kwg_util.buildMultiValueDictFromNoFunctionalProperty(selectFieldName, selectTableName, URLFieldName = 'URL')
 

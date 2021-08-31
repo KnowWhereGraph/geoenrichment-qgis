@@ -58,7 +58,7 @@
       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enter the feature class name&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="text">
-      <string>kwg_results</string>
+      <string>geo_results</string>
      </property>
     </widget>
     <widget class="QDialogButtonBox" name="button_box">
@@ -100,27 +100,14 @@
       </rect>
      </property>
      <property name="text">
-      <string>List of Non functional properties of current feature Class</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="label_4">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>130</y>
-       <width>481</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>List of related tables</string>
+      <string>Input the tableName for the nonFunctional property</string>
      </property>
     </widget>
     <widget class="QLabel" name="label_5">
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>190</y>
+       <y>130</y>
        <width>481</width>
        <height>16</height>
       </rect>
@@ -133,7 +120,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>210</y>
+       <y>150</y>
        <width>491</width>
        <height>32</height>
       </rect>
@@ -184,35 +171,21 @@
       </property>
      </item>
     </widget>
-    <widget class="QComboBox" name="comboBox_2">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>150</y>
-       <width>491</width>
-       <height>32</height>
-      </rect>
-     </property>
-     <item>
-      <property name="text">
-       <string>/var/local/QGIS/kwg_results.gpkg</string>
-      </property>
-     </item>
-    </widget>
-    <widget class="QComboBox" name="comboBox_3">
+    <widget class="QLineEdit" name="lineEdit_2">
      <property name="geometry">
       <rect>
        <x>10</x>
        <y>90</y>
-       <width>491</width>
-       <height>32</height>
+       <width>481</width>
+       <height>21</height>
       </rect>
      </property>
-     <item>
-      <property name="text">
-       <string>kwg_results_URL_type</string>
-      </property>
-     </item>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enter the feature class name&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
     </widget>
    </widget>
    <widget class="QWidget" name="tab_2">

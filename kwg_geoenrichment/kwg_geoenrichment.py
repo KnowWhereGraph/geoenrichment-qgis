@@ -443,9 +443,14 @@ class kwg_geoenrichment:
         params = {}
 
         params["feature_class"] = self.dlgPropertyMerge.lineEdit.text()
-        params["non_functional_property"] = self.dlgPropertyMerge.comboBox_3.currentText()
-        params["related_tables"] = self.dlgPropertyMerge.comboBox_2.currentText()
+        params["non_functional_property"] = self.dlgPropertyMerge.lineEdit_2.text()
+
+        # TODO: set up displaying related tables logic
+        # params["related_tables"] = self.dlgPropertyMerge.comboBox_2.currentText()
+
         params["merge_rule"] = self.dlgPropertyMerge.comboBox.currentText()
+
+        # TODO: set up signal for listening inputs and handle the delim values
         params["concat_delimiter"] = ","
 
         return params

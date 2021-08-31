@@ -1,6 +1,6 @@
 from collections import defaultdict
 import statistics
-from qgis._core import QgsMessageLog, Qgis
+from qgis._core import QgsMessageLog, Qgis, QgsVectorLayer
 
 from .kwg_sparqlutil import kwg_sparqlutil
 
@@ -77,10 +77,13 @@ class kwg_util:
             return self.changeFieldNameWithTable(propertyName, featureClassName, gpkgLocation)
 
 
-    def isFieldNameInTable(self, fieldName, featureClassName, gpkgLocation):
-        # fieldList = arcpy.ListFields(inputFeatureClassName)
-        # TODO: QGIS implementation
-        fieldList = []
+    def isFieldNameInTable(self, fieldName, featureClassName, gpkgLocation='/var/local/QGIS/kwg_results.gpkg'):
+
+        # read layer and check for existing fields
+        gpkg_places_layer = gpkgLocation + "|layername=%s" % (featureClassName)
+        vlayer = QgsVectorLayer(gpkg_places_layer, featureClassName, "ogr")
+        prov = vlayer.dataProvider()
+        fieldList = [field.name() for field in prov.fields()]
 
         isfieldNameinFieldList = False
         for field in fieldList:
@@ -101,34 +104,41 @@ class kwg_util:
         return -1
 
 
-    def getFieldDataTypeInTable(self, fieldName, inputFeatureClassName):
-        # fieldList = arcpy.ListFields(inputFeatureClassName)
-        fieldList = []
-        # TODO: implement qgis logic
+    def getFieldDataTypeInTable(self, fieldName, featureClassName, gpkgLocation='/var/local/QGIS/kwg_results.gpkg'):
+
+        # read layer and check for existing fields
+        gpkg_places_layer = gpkgLocation + "|layername=%s" % (featureClassName)
+        vlayer = QgsVectorLayer(gpkg_places_layer, featureClassName, "ogr")
+        prov = vlayer.dataProvider()
+        fieldList = [field.name() for field in prov.fields()]
+
         for field in fieldList:
-            if field.name == fieldName:
-                return field.type
+            if field.name() == fieldName:
+                return field.typeName()
 
         return -1
 
 
-    def buildMultiValueDictFromNoFunctionalProperty(self, fieldName, tableName, URLFieldName='wikiURL'):
+    def buildMultiValueDictFromNoFunctionalProperty(self, fieldName, tableName, URLFieldName='wikiURL', featureClassName="geo_results", gpkgLocation="/var/local/QGIS/kwg_results.gpkg"):
         # build a collections.defaultdict object to store the multivalue for each no-functional property's subject.
         # The subject "wikiURL" is the key, the corespnding property value in "fieldName" is the value
         if self.isFieldNameInTable(fieldName, tableName):
             noFunctionalPropertyDict = defaultdict(list)
             # fieldList = arcpy.ListFields(tableName)
 
-            srows = None
-            # TODO: write up QGIS logic
-            # srows = arcpy.SearchCursor(tableName, '', '', '', '{0} A;{1} A'.format(URLFieldName, fieldName))
-            for row in srows:
-                foreignKeyValue = row.getValue(URLFieldName)
-                noFunctionalPropertyValue = row.getValue(fieldName)
-                # if from_field in ['Double', 'Float']:
-                #     value = locale.format('%s', (row.getValue(from_field)))
-                if noFunctionalPropertyValue is not None:
-                    noFunctionalPropertyDict[foreignKeyValue].append(noFunctionalPropertyValue)
+            gpkg_places_layer = gpkgLocation + "|layername=%s" % (tableName)
+            vlayer = QgsVectorLayer(gpkg_places_layer, tableName, "ogr")
+
+            if not vlayer.isValid():
+                srows  = None
+            else:
+                for feature in vlayer.getFeatures():
+                    row = feature.attributes()
+                    foreignKeyValue = row[0]
+                    noFunctionalPropertyValue = row[1]
+
+                    if noFunctionalPropertyValue is not None:
+                        noFunctionalPropertyDict[foreignKeyValue].append(noFunctionalPropertyValue)
 
             return noFunctionalPropertyDict
         else:
