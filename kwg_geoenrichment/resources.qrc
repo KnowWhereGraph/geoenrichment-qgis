@@ -12,5 +12,8 @@
         <file>resources/icon_DrawPtXY.png</file>
         <file>resources/icon_DrawPtDMS.png</file>
         <file>resources/icon_Settings.png</file>
+        <file>resources/enrich_Data.png</file>
+        <file>resources/graph_Query.png</file>
+        <file>resources/merge_Data.png</file>
     </qresource>
 </RCC>

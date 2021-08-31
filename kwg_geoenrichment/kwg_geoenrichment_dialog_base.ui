@@ -151,6 +151,9 @@
        <height>21</height>
       </rect>
      </property>
+     <property name="text">
+      <string>/var/local/QGIS/kwg_results.gpkg</string>
+     </property>
     </widget>
     <widget class="QLineEdit" name="lineEdit_4">
      <property name="geometry">
@@ -160,6 +163,9 @@
        <width>481</width>
        <height>21</height>
       </rect>
+     </property>
+     <property name="text">
+      <string>geo_results</string>
      </property>
     </widget>
     <widget class="QComboBox" name="comboBox">

@@ -218,21 +218,20 @@ class kwg_geoenrichment:
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
-        icon_path = ':/plugins/kwg_geoenrichment/icon.png'
         self.add_action(
-            icon_path,
+            QIcon(':/plugins/kwg_geoenrichment/resources/graph_Query.png'),
             text=self.tr(u'GeoSPARQL Query'),
             callback=self.run,
             parent=self.iface.mainWindow())
 
         self.add_action(
-            icon_path,
+            QIcon(':/plugins/kwg_geoenrichment/resources/enrich_Data.png'),
             text=self.tr(u'Property Enrichment Query'),
             callback=self.runPropertyEnrichment,
             parent=self.iface.mainWindow())
 
         self.add_action(
-            icon_path,
+            QIcon(':/plugins/kwg_geoenrichment/resources/merge_Data.png'),
             text=self.tr(u'Property Merge Tool'),
             callback=self.runPropertyMerge,
             parent=self.iface.mainWindow())
