@@ -52,7 +52,7 @@ class kwg_property_enrichment:
         self.loadIRIList()
         self.sparqlEndpoint = "http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire"
         self.path_to_gpkg = "/var/local/QGIS/kwg_results.gpkg"
-        self.layerName = "kwg_results"
+        self.layerName = "geo_results"
 
 
     def getCommonProperties(self):
@@ -122,13 +122,13 @@ class kwg_property_enrichment:
 
         return
 
-    def loadIRIList(self, path_to_gpkg ='/var/local/QGIS/kwg_results.gpkg', layerName="kwg_results"):
+    def loadIRIList(self, path_to_gpkg ='/var/local/QGIS/kwg_results.gpkg', layerName="geo_results"):
         # get the path to a geopackage e.g. /home/project/data/data.gpkg
         iriList = []
 
-        gpkg_places_layer = path_to_gpkg + "|layername=%s"%(layerName)
+        gpkg_places_layer = path_to_gpkg + "|layername=%s"%(layerName +" kwg_results")
 
-        vlayer = QgsVectorLayer(gpkg_places_layer, "kwg_results", "ogr")
+        vlayer = QgsVectorLayer(gpkg_places_layer, layerName + " kwg_results", "ogr")
 
         if not vlayer.isValid():
             return iriList
@@ -214,7 +214,7 @@ class kwg_property_enrichment:
                                                    "place_iri", functionalProperty, False, gpkgLocation=self.path_to_gpkg )
 
                 if results:
-                    ifaceObj.refresh()
+                    ifaceObj.mapCanvas().refresh()
                     QgsMessageLog.logMessage("pass 3 - functional property write successful",
                                          "kwg_geoenrichment", level=Qgis.Info)
 

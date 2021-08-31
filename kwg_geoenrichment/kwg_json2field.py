@@ -229,7 +229,7 @@ class kwg_json2field:
 
     def createMappingTableFromJSON(self, jsonBindingObject, keyPropertyName,
                                    valuePropertyName, valuePropertyURL,
-                                   keyPropertyFieldName, isInverse, isSubDivisionTable, featureClassName="kwg_results", outputLocation="", ifaceObj=None):
+                                   keyPropertyFieldName, isInverse, isSubDivisionTable, featureClassName="geo_results", outputLocation="", ifaceObj=None):
 
 
         currentValuePropertyName = self.kwgUtil.getPropertyName(valuePropertyURL)
@@ -239,7 +239,11 @@ class kwg_json2field:
             currentValuePropertyName = "is_" + currentValuePropertyName + "_Of"
         if isSubDivisionTable == True:
             currentValuePropertyName = "subDivisionIRI"
-        tableName = featureClassName + "_" + keyPropertyFieldName + "_" + currentValuePropertyName
+        tableName = keyPropertyFieldName + "_" + currentValuePropertyName
+
+        QgsMessageLog.logMessage(tableName,
+                                 "kwg_geoenrichment", level=Qgis.Info)
+
 
         # TODO:  implement QGIS logic
         # tablePath = Json2Field.getNoExistTableNameInWorkspace(outputLocation, tableName)
@@ -288,7 +292,7 @@ class kwg_json2field:
         return error[0] == QgsVectorFileWriter.NoError
 
 
-    def addFieldInTableByMapping(self, jsonBindingObject, keyPropertyName, valuePropertyName, keyPropertyFieldName, valuePropertyURL, isInverse, featureClassName="kwg_results", gpkgLocation=""):
+    def addFieldInTableByMapping(self, jsonBindingObject, keyPropertyName, valuePropertyName, keyPropertyFieldName, valuePropertyURL, isInverse, featureClassName="geo_results", gpkgLocation=""):
         # according to the json object from sparql query which contains the mapping from keyProperty to valueProperty, add field in the Table
         # change the field name if there is already a field which has the same name in table
         # jsonBindingObject: the json object from sparql query which contains the mapping from keyProperty to valueProperty, ex. functionalPropertyJSON
@@ -307,7 +311,7 @@ class kwg_json2field:
 
         gpkg_places_layer = gpkgLocation + "|layername=%s" % (featureClassName)
 
-        vlayer = QgsVectorLayer(gpkg_places_layer, "kwg_results", "ogr")
+        vlayer = QgsVectorLayer(gpkg_places_layer, "geo_results", "ogr")
 
         if not vlayer.isValid():
             QgsMessageLog.logMessage("Error reading the table",

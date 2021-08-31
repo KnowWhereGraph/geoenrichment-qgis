@@ -337,7 +337,7 @@ class kwg_geoenrichment:
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
-            self.dlg = kwg_geoenrichmentDialog()
+        self.dlg = kwg_geoenrichmentDialog()
 
         # show the dialog
         self.dlg.show()
@@ -356,7 +356,7 @@ class kwg_geoenrichment:
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
-            self.dlgPropertyEnrichment = kwg_property_geoenrichmentDialog()
+        self.dlgPropertyEnrichment = kwg_property_geoenrichmentDialog()
 
         QgsMessageLog.logMessage("Retrieving common properties based on geometry selection", "kwg_geoenrichment",
                                  level=Qgis.Info)
@@ -404,7 +404,7 @@ class kwg_geoenrichment:
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
-            self.dlgPropertyMerge = kwg_property_mergeDialog()
+        self.dlgPropertyMerge = kwg_property_mergeDialog()
 
         QgsMessageLog.logMessage("KWG Property Merge tool", "kwg_geoenrichment",
                                  level=Qgis.Info)
@@ -1024,7 +1024,7 @@ then select an entity on the map.'
         if geom_type is None:
             raise Exception("geometry type not find")
 
-        vl = QgsVectorLayer(geom_type+"?crs=epsg:4326", "GeoEnrichment Query", "memory")
+        vl = QgsVectorLayer(geom_type+"?crs=epsg:4326", "geo_results", "memory")
         pr = vl.dataProvider()
         pr.addAttributes(layerFields)
         vl.updateFields()
@@ -1054,9 +1054,10 @@ then select an entity on the map.'
                 vl.updateExtents()
 
                 options = QgsVectorFileWriter.SaveVectorOptions()
+                options.layerName = 'geo_results'
                 context = QgsProject.instance().transformContext()
                 error = QgsVectorFileWriter.writeAsVectorFormatV2(vl, out_path, context, options)
-                self.iface.addVectorLayer(out_path, 'kwg_results', 'ogr')
+                self.iface.addVectorLayer(out_path, 'geo_results', 'ogr')
 
         return error[0] == QgsVectorFileWriter.NoError
 
