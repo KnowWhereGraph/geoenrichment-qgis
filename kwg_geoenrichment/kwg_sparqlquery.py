@@ -777,6 +777,42 @@ class kwg_sparqlquery:
         return tripleStore
 
 
+    def locationCommonPropertyLabelQuery(self, locationCommonPropertyURLList, sparql_endpoint = SPARQLUtil._WIKIDATA_SPARQL_ENDPOINT):
+        jsonBindingObject = []
+        i = 0
+        while i < len(locationCommonPropertyURLList):
+            if i + 50 > len(locationCommonPropertyURLList):
+                propertyIRISubList = locationCommonPropertyURLList[i:]
+            else:
+                propertyIRISubList = locationCommonPropertyURLList[i:(i+50)]
+
+            queryPrefix = self.sparqlUTIL.make_sparql_prefix()
+
+            commonPropertyLabelQuery = queryPrefix + """select ?p ?propertyLabel
+                            where
+                            {
+                            ?wdProperty wikibase:directClaim ?p.
+                            SERVICE wikibase:label {bd:serviceParam wikibase:language "en". ?wdProperty rdfs:label ?propertyLabel.}
+                            VALUES ?p
+                            {"""
+            for propertyURL in propertyIRISubList:
+                commonPropertyLabelQuery = commonPropertyLabelQuery + "<" + propertyURL + "> \n"
+
+            commonPropertyLabelQuery = commonPropertyLabelQuery + """
+                            }
+                            }
+                            """
+            res_json = self.sparqlUTIL.sparql_requests(query = commonPropertyLabelQuery,
+                                       sparql_endpoint = sparql_endpoint,
+                                       doInference = False)
+
+            jsonBindingObject.extend(res_json["results"]["bindings"])
+
+
+            i = i + 50
+        return jsonBindingObject
+
+
 if __name__ == "__main__":
     SQ = kwg_sparqlquery()
     SQ.EventTypeSPARQLQuery()

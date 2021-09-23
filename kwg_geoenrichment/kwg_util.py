@@ -257,3 +257,17 @@ class kwg_util:
                 vlayer.commitChanges()
 
         return 1
+
+    def mergeTripleStoreDicts(self, superTripleStore, childTripleStore):
+        # superTripleStore and childTripleStore: dict() object with key nameTuple Triple("Triple",["s", "p", "o"])
+        # add childTripleStore to superTripleStore.
+        # If S-P-O is in the superTripleStore, update the degree to the smaller one between the original degree in superTripleStore and the one in childTripleStore
+        # If S-P-O is not in the superTripleStore, add it
+        for triple in childTripleStore:
+            if triple not in superTripleStore:
+                superTripleStore[triple] = childTripleStore[triple]
+            else:
+                if superTripleStore[triple] > childTripleStore[triple]:
+                    superTripleStore[triple] = childTripleStore[triple]
+
+        return superTripleStore
