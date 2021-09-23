@@ -1,5 +1,6 @@
 import json
 import logging
+from collections import namedtuple
 
 from .kwg_sparqlutil import kwg_sparqlutil
 
@@ -527,7 +528,254 @@ class kwg_sparqlquery:
         url_dict = dict(zip(p_name_list, p_url_list))
 
         return url_dict
-    
+
+
+    def relFinderTripleQuery(self,inplaceIRIList, propertyDirectionList, selectPropertyURLList,
+                             sparql_endpoint=None):
+
+        if sparql_endpoint is None:
+            sparql_endpoint = self.sparqlUTIL._WIKIDATA_SPARQL_ENDPOINT
+        # get the triple set in the specific degree path from the inplaceIRIList
+        # inplaceIRIList: the URL list of wikidata locations
+        # propertyDirectionList: the list of property direction, it has at most 4 elements, the length is the path degree. The element value is from ["ORIGIN", "DESTINATION"]
+        # selectPropertyURLList: the selected peoperty URL list, it always has 4 elements, "" if no property has been selected
+
+        # get the selected parameter
+        # selectParam = "?place ?p1 ?o1 ?p2 ?o2 ?p3 ?o3 ?p4 ?o4"
+
+        selectParam = "?place "
+        if len(propertyDirectionList) > 0:
+            if selectPropertyURLList[0] == "":
+                selectParam += "?p1 "
+
+        selectParam += "?o1 "
+
+        if len(propertyDirectionList) > 1:
+            if selectPropertyURLList[1] == "":
+                selectParam += "?p2 "
+
+        selectParam += "?o2 "
+
+        if len(propertyDirectionList) > 2:
+            if selectPropertyURLList[2] == "":
+                selectParam += "?p3 "
+
+        selectParam += "?o3 "
+
+        if len(propertyDirectionList) > 3:
+            if selectPropertyURLList[3] == "":
+                selectParam += "?p4 "
+
+        selectParam += "?o4 "
+
+        jsonBindingObject = []
+        i = 0
+        while i < len(inplaceIRIList):
+            if i + 50 > len(inplaceIRIList):
+                inplaceIRISubList = inplaceIRIList[i:]
+            else:
+                inplaceIRISubList = inplaceIRIList[i:(i+50)]
+
+            queryPrefix = self.sparqlUTIL.make_sparql_prefix()
+
+            relFinderPropertyQuery = queryPrefix + """SELECT distinct """ + selectParam + """
+                            WHERE {"""
+
+            if len(propertyDirectionList) > 0:
+                if selectPropertyURLList[0] == "":
+                    # if propertyDirectionList[0] == "BOTH":
+                    #     relFinderPropertyQuery += """{?place ?p1 ?o1.} UNION {?o1 ?p1 ?place.}\n"""
+                    if propertyDirectionList[0] == "ORIGIN":
+                        relFinderPropertyQuery += """?place ?p1 ?o1.\n"""
+                    elif propertyDirectionList[0] == "DESTINATION":
+                        relFinderPropertyQuery += """?o1 ?p1 ?place.\n"""
+                else:
+                    # if propertyDirectionList[0] == "BOTH":
+                    #     relFinderPropertyQuery += """{?place <"""+ selectPropertyURLList[0] + """> ?o1.} UNION {?o1 <"""+ selectPropertyURLList[0] + """> ?place.}\n"""
+                    if propertyDirectionList[0] == "ORIGIN":
+                        relFinderPropertyQuery += """?place <"""+ selectPropertyURLList[0] + """> ?o1.\n"""
+                    elif propertyDirectionList[0] == "DESTINATION":
+                        relFinderPropertyQuery += """?o1 <"""+ selectPropertyURLList[0] + """> ?place.\n"""
+
+            if len(propertyDirectionList) > 1:
+                if selectPropertyURLList[1] == "":
+                    # if propertyDirectionList[1] == "BOTH":
+                    #     relFinderPropertyQuery += """{?o1 ?p2 ?o2.} UNION {?o2 ?p2 ?o1.}\n"""
+                    if propertyDirectionList[1] == "ORIGIN":
+                        relFinderPropertyQuery += """?o1 ?p2 ?o2.\n"""
+                    elif propertyDirectionList[1] == "DESTINATION":
+                        relFinderPropertyQuery += """?o2 ?p2 ?o1.\n"""
+                else:
+                    # if propertyDirectionList[1] == "BOTH":
+                    #     relFinderPropertyQuery += """{?o1 <"""+ selectPropertyURLList[1] + """> ?o2.} UNION {?o2 <"""+ selectPropertyURLList[1] + """> ?o1.}\n"""
+                    if propertyDirectionList[1] == "ORIGIN":
+                        relFinderPropertyQuery += """?o1 <"""+ selectPropertyURLList[1] + """> ?o2.\n"""
+                    elif propertyDirectionList[1] == "DESTINATION":
+                        relFinderPropertyQuery += """?o2 <"""+ selectPropertyURLList[1] + """> ?o1.\n"""
+
+            if len(propertyDirectionList) > 2:
+                if selectPropertyURLList[2] == "":
+                    # if propertyDirectionList[2] == "BOTH":
+                    #     relFinderPropertyQuery += """{?o2 ?p3 ?o3.} UNION {?o3 ?p3 ?o2.}\n"""
+                    if propertyDirectionList[2] == "ORIGIN":
+                        relFinderPropertyQuery += """?o2 ?p3 ?o3.\n"""
+                    elif propertyDirectionList[2] == "DESTINATION":
+                        relFinderPropertyQuery += """?o3 ?p3 ?o2.\n"""
+                else:
+                    # if propertyDirectionList[2] == "BOTH":
+                    #     relFinderPropertyQuery += """{?o2 <"""+ selectPropertyURLList[2] + """> ?o3.} UNION {?o3 <"""+ selectPropertyURLList[2] + """> ?o2.}\n"""
+                    if propertyDirectionList[2] == "ORIGIN":
+                        relFinderPropertyQuery += """?o2 <"""+ selectPropertyURLList[2] + """> ?o3.\n"""
+                    elif propertyDirectionList[2] == "DESTINATION":
+                        relFinderPropertyQuery += """?o3 <"""+ selectPropertyURLList[2] + """> ?o2.\n"""
+
+            if len(propertyDirectionList) > 3:
+                if selectPropertyURLList[3] == "":
+                    # if propertyDirectionList[3] == "BOTH":
+                    #     relFinderPropertyQuery += """{?o3 ?p4 ?o4.} UNION {?o4 ?p4 ?o3.}\n"""
+                    if propertyDirectionList[3] == "ORIGIN":
+                        relFinderPropertyQuery += """?o3 ?p4 ?o4.\n"""
+                    elif propertyDirectionList[3] == "DESTINATION":
+                        relFinderPropertyQuery += """?o4 ?p4 ?o3.\n"""
+                else:
+                    # if propertyDirectionList[3] == "BOTH":
+                    #     relFinderPropertyQuery += """{?o3 <"""+ selectPropertyURLList[3] + """> ?o4.} UNION {?o4 <"""+ selectPropertyURLList[3] + """> ?o3.}\n"""
+                    if propertyDirectionList[3] == "ORIGIN":
+                        relFinderPropertyQuery += """?o3 <"""+ selectPropertyURLList[3] + """> ?o4.\n"""
+                    elif propertyDirectionList[3] == "DESTINATION":
+                        relFinderPropertyQuery += """?o4 <"""+ selectPropertyURLList[3] + """> ?o3.\n"""
+
+
+
+
+            relFinderPropertyQuery += """
+                            VALUES ?place
+                            {"""
+            for IRI in inplaceIRISubList:
+                relFinderPropertyQuery = relFinderPropertyQuery + "<" + IRI + "> \n"
+
+            relFinderPropertyQuery = relFinderPropertyQuery + """
+                            }
+                            }
+                            """
+
+            res_json = self.sparqlUTIL.sparql_requests(query = relFinderPropertyQuery,
+                                               sparql_endpoint = sparql_endpoint,
+                                               doInference = False)
+            jsonBindingObject.extend(res_json["results"]["bindings"])
+
+            i = i + 50
+
+        tripleStore = dict()
+        Triple = namedtuple("Triple", ["s", "p", "o"])
+        for jsonItem in jsonBindingObject:
+            if len(propertyDirectionList) > 0:
+                # triple = []
+                if selectPropertyURLList[0] == "":
+                    if propertyDirectionList[0] == "ORIGIN":
+                        # relFinderPropertyQuery += """?place ?p1 ?o1.\n"""
+                        currentTriple = Triple(s = jsonItem["place"]["value"], p = jsonItem["p1"]["value"], o = jsonItem["o1"]["value"])
+                    elif propertyDirectionList[0] == "DESTINATION":
+                        # relFinderPropertyQuery += """?o1 ?p1 ?place.\n"""
+                        currentTriple = Triple(s = jsonItem["o1"]["value"], p = jsonItem["p1"]["value"], o = jsonItem["place"]["value"])
+                        # triple = [jsonItem["o1"]["value"], jsonItem["p1"]["value"], jsonItem["place"]["value"]]
+                else:
+                    if propertyDirectionList[0] == "ORIGIN":
+                        # relFinderPropertyQuery += """?place <"""+ selectPropertyURLList[0] + """> ?o1.\n"""
+                        currentTriple = Triple(s = jsonItem["place"]["value"], p = selectPropertyURLList[0], o = jsonItem["o1"]["value"])
+                        # triple = [jsonItem["place"]["value"], selectPropertyURLList[0], jsonItem["o1"]["value"]]
+                    elif propertyDirectionList[0] == "DESTINATION":
+                        # relFinderPropertyQuery += """?o1 <"""+ selectPropertyURLList[0] + """> ?place.\n"""
+                        currentTriple = Triple(s = jsonItem["o1"]["value"], p = selectPropertyURLList[0], o = jsonItem["place"]["value"])
+                        # triple = [jsonItem["o1"]["value"], selectPropertyURLList[0], jsonItem["place"]["value"]]
+
+                if currentTriple not in tripleStore:
+                    tripleStore[currentTriple] = 1
+                else:
+                    if tripleStore[currentTriple] > 1:
+                        tripleStore[currentTriple] = 1
+
+
+            if len(propertyDirectionList) > 1:
+                # triple = []
+                if selectPropertyURLList[1] == "":
+                    if propertyDirectionList[1] == "ORIGIN":
+                        # relFinderPropertyQuery += """?o1 ?p2 ?o2.\n"""
+                        currentTriple = Triple(s = jsonItem["o1"]["value"], p = jsonItem["p2"]["value"], o = jsonItem["o2"]["value"])
+                        # triple = [jsonItem["o1"]["value"], jsonItem["p2"]["value"], jsonItem["o2"]["value"]]
+                    elif propertyDirectionList[1] == "DESTINATION":
+                        # relFinderPropertyQuery += """?o2 ?p2 ?o1.\n"""
+                        currentTriple = Triple(s = jsonItem["o2"]["value"], p = jsonItem["p2"]["value"], o = jsonItem["o1"]["value"])
+                        # triple = [jsonItem["o2"]["value"], jsonItem["p2"]["value"], jsonItem["o1"]["value"]]
+                else:
+                    if propertyDirectionList[1] == "ORIGIN":
+                        # relFinderPropertyQuery += """?o1 <"""+ selectPropertyURLList[1] + """> ?o2.\n"""
+                        currentTriple = Triple(s = jsonItem["o1"]["value"], p = selectPropertyURLList[1], o = jsonItem["o2"]["value"])
+                        # triple = [jsonItem["o1"]["value"], selectPropertyURLList[1], jsonItem["o2"]["value"]]
+                    elif propertyDirectionList[1] == "DESTINATION":
+                        # relFinderPropertyQuery += """?o2 <"""+ selectPropertyURLList[1] + """> ?o1.\n"""
+                        currentTriple = Triple(s = jsonItem["o2"]["value"], p = selectPropertyURLList[1], o = jsonItem["o1"]["value"])
+                        # triple = [jsonItem["o2"]["value"], selectPropertyURLList[1], jsonItem["o1"]["value"]]
+
+                if currentTriple not in tripleStore:
+                    tripleStore[currentTriple] = 2
+                else:
+                    if tripleStore[currentTriple] > 2:
+                        tripleStore[currentTriple] = 2
+
+            if len(propertyDirectionList) > 2:
+                # triple = []
+                if selectPropertyURLList[2] == "":
+                    if propertyDirectionList[2] == "ORIGIN":
+                        # relFinderPropertyQuery += """?o2 ?p3 ?o3.\n"""
+                        currentTriple = Triple(s = jsonItem["o2"]["value"], p = jsonItem["p3"]["value"], o = jsonItem["o3"]["value"])
+                        # triple = [jsonItem["o2"]["value"], jsonItem["p3"]["value"], jsonItem["o3"]["value"]]
+                    elif propertyDirectionList[2] == "DESTINATION":
+                        # relFinderPropertyQuery += """?o3 ?p3 ?o2.\n"""
+                        currentTriple = Triple(s = jsonItem["o3"]["value"], p = jsonItem["p3"]["value"], o = jsonItem["o2"]["value"])
+                        # triple = [jsonItem["o3"]["value"], jsonItem["p3"]["value"], jsonItem["o2"]["value"]]
+                else:
+                    if propertyDirectionList[2] == "ORIGIN":
+                        # relFinderPropertyQuery += """?o2 <"""+ selectPropertyURLList[2] + """> ?o3.\n"""
+                        currentTriple = Triple(s = jsonItem["o2"]["value"], p = selectPropertyURLList[2], o = jsonItem["o3"]["value"])
+                        # triple = [jsonItem["o2"]["value"], selectPropertyURLList[2], jsonItem["o3"]["value"]]
+                    elif propertyDirectionList[2] == "DESTINATION":
+                        # relFinderPropertyQuery += """?o3 <"""+ selectPropertyURLList[2] + """> ?o2.\n"""
+                        currentTriple = Triple(s = jsonItem["o3"]["value"], p = selectPropertyURLList[2], o = jsonItem["o2"]["value"])
+                        # triple = [jsonItem["o3"]["value"], selectPropertyURLList[2], jsonItem["o2"]["value"]]
+
+                if currentTriple not in tripleStore:
+                    tripleStore[currentTriple] = 3
+                else:
+                    if tripleStore[currentTriple] > 3:
+                        tripleStore[currentTriple] = 3
+
+            if len(propertyDirectionList) > 3:
+                triple = []
+                if selectPropertyURLList[3] == "":
+                    if propertyDirectionList[3] == "ORIGIN":
+                        # relFinderPropertyQuery += """?o3 ?p4 ?o4.\n"""
+                        currentTriple = Triple(s = jsonItem["o3"]["value"], p = jsonItem["p4"]["value"], o = jsonItem["o4"]["value"])
+                        # triple = [jsonItem["o3"]["value"], jsonItem["p4"]["value"], jsonItem["o4"]["value"]]
+                    elif propertyDirectionList[3] == "DESTINATION":
+                        # relFinderPropertyQuery += """?o4 ?p4 ?o3.\n"""
+                        currentTriple = Triple(s = jsonItem["o4"]["value"], p = jsonItem["p4"]["value"], o = jsonItem["o3"]["value"])
+                        # triple = [jsonItem["o4"]["value"], jsonItem["p4"]["value"], jsonItem["o3"]["value"]]
+                else:
+                    if propertyDirectionList[3] == "ORIGIN":
+                        # relFinderPropertyQuery += """?o3 <"""+ selectPropertyURLList[3] + """> ?o4.\n"""
+                        currentTriple = Triple(s = jsonItem["o3"]["value"], p = selectPropertyURLList[3], o = jsonItem["o4"]["value"])
+                        # triple = [jsonItem["o3"]["value"], selectPropertyURLList[3], jsonItem["o4"]["value"]]
+                    elif propertyDirectionList[3] == "DESTINATION":
+                        # relFinderPropertyQuery += """?o4 <"""+ selectPropertyURLList[3] + """> ?o3.\n"""
+                        currentTriple = Triple(s = jsonItem["o4"]["value"], p = selectPropertyURLList[3], o = jsonItem["o3"]["value"])
+                        # triple = [jsonItem["o4"]["value"], selectPropertyURLList[3], jsonItem["o3"]["value"]]
+
+                if currentTriple not in tripleStore:
+                    tripleStore[currentTriple] = 4
+
+        return tripleStore
+
 
 if __name__ == "__main__":
     SQ = kwg_sparqlquery()
