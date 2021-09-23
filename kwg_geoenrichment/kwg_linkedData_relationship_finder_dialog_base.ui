@@ -80,6 +80,21 @@
        <height>32</height>
       </rect>
      </property>
+     <item>
+      <property name="text">
+       <string>SUBJECT</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>OBJECT</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>BOTH</string>
+      </property>
+     </item>
     </widget>
     <widget class="QComboBox" name="comboBox_3">
      <property name="geometry">
@@ -126,6 +141,21 @@
        <height>32</height>
       </rect>
      </property>
+     <item>
+      <property name="text">
+       <string>SUBJECT</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>OBJECT</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>BOTH</string>
+      </property>
+     </item>
     </widget>
     <widget class="QComboBox" name="comboBox_5">
      <property name="geometry">
@@ -136,6 +166,21 @@
        <height>32</height>
       </rect>
      </property>
+     <item>
+      <property name="text">
+       <string>SUBJECT</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>OBJECT</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>BOTH</string>
+      </property>
+     </item>
     </widget>
     <widget class="QLabel" name="label_6">
      <property name="geometry">
