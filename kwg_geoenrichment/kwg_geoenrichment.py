@@ -37,8 +37,10 @@ from .resources import *
 from .kwg_geoenrichment_dialog import kwg_geoenrichmentDialog
 from .kwg_property_geoenrichment_dialog import kwg_property_geoenrichmentDialog
 from .kwg_property_merge_dialog import kwg_property_mergeDialog
+from .kwg_linkedData_relationship_finder_dialog import kwg_linkedDataDialog
 from .kwg_property_enrichment import kwg_property_enrichment
 from .kwg_property_merge import kwg_property_merge
+from .kwg_linkedData_relationship_finder import kwg_linkedData_relationship_finder
 from .kwg_sparqlquery import kwg_sparqlquery
 from .kwg_util import kwg_util as UTIL
 from .kwg_json2field import kwg_json2field as Json2Field
@@ -236,6 +238,12 @@ class kwg_geoenrichment:
             callback=self.runPropertyMerge,
             parent=self.iface.mainWindow())
 
+        self.add_action(
+            QIcon(':/plugins/kwg_geoenrichment/resources/merge_Data.png'),
+            text=self.tr(u'Link Data Relationship Finder Tool'),
+            callback=self.runRelationshipFinder,
+            parent=self.iface.mainWindow())
+
         # Adding menu to toolbar
         pointMenu = QMenu()
         pointMenu.addAction(
@@ -424,6 +432,26 @@ class kwg_geoenrichment:
             kwgpropmerge.execute(parameters=params)
 
         return
+
+
+    def runRelationshipFinder(self):
+        """Run method that performs all the real work"""
+
+        # Create the dialog with elements (after translation) and keep reference
+        # Only create GUI ONCE in callback, so that it will only load when the plugin is started
+        if self.first_start == True:
+            self.first_start = False
+        self.dlg = kwg_linkedDataDialog()
+
+        # show the dialog
+        self.dlg.show()
+        # Run the dialog event loop
+        result = self.dlg.exec_()
+        # See if OK was pressed
+        if result:
+            # Do something useful here - delete the line containing pass and
+            # substitute with your code.
+            pass
 
 
     def updateParamsPropertyEnrichment(self, propertiesDict):
