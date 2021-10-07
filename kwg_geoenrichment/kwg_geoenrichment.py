@@ -22,7 +22,7 @@
  ***************************************************************************/
 """
 from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, qVersion, QVariant
-from qgis.PyQt.QtWidgets import QAction, QMessageBox, QMenu, QInputDialog, QAbstractItemView
+from qgis.PyQt.QtWidgets import QAction, QMessageBox, QMenu, QInputDialog, QAbstractItemView, QLineEdit
 from qgis.PyQt.QtGui import QIcon
 
 from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
@@ -32,6 +32,8 @@ from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
 from qgis.gui import QgsRubberBand
 
 # Initialize Qt resources from file resources.py
+from PyQt5.uic.properties import QtWidgets
+
 from .resources import *
 # Import the code for the dialog
 from .kwg_geoenrichment_dialog import kwg_geoenrichmentDialog
@@ -119,6 +121,8 @@ class kwg_geoenrichment:
         self.sparqlQuery = kwg_sparqlquery()
 
         self.eventPlaceTypeDict = dict()
+        self._filter = Filter()
+
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -441,18 +445,31 @@ class kwg_geoenrichment:
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
-        self.dlg = kwg_linkedDataDialog()
+        self.dlgRelFinder = kwg_linkedDataDialog()
 
         # show the dialog
-        self.dlg.show()
+        self.dlgRelFinder.show()
         # Run the dialog event loop
-        result = self.dlg.exec_()
+        result = self.dlgRelFinder.exec_()
         # See if OK was pressed
+        
+        QgsMessageLog.logMessage("Connecting", "kwg_geoenrichment",
+                                 level=Qgis.Info)
+
+        # self.dlgRelFinder.lineEdit_2.installEventFilter(self._filter)
+
+        self.dlgRelFinder.lineEdit_2.textChanged.connect(self.textChangeTest)
+
+        QgsMessageLog.logMessage("No update", "kwg_geoenrichment",
+                                 level=Qgis.Info)
         if result:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
             pass
 
+    def textChangeTest(self):
+        QgsMessageLog.logMessage("Text changed... ", "kwg_geoenrichment",
+                                 level=Qgis.Info)
 
     def updateParamsPropertyEnrichment(self, propertiesDict):
         listWidget = self.dlgPropertyEnrichment.listWidget
@@ -464,6 +481,39 @@ class kwg_geoenrichment:
         listWidget.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         return
+
+
+    def getParamsRelFinder(self):
+        params = {}
+
+        params["sparql_endpoint"] = self.dlgPropertyMerge.lineEdit.text()
+        params["feat_class"] = self.dlgPropertyMerge.lineEdit_2.text()
+
+        # TODO: set up displaying related tables logic
+        # params["related_tables"] = self.dlgPropertyMerge.comboBox_2.currentText()
+
+        # get First Degree Property
+        params["first_degree_property"] = self.dlgPropertyMerge.comboBox_2.currentText()
+        # params["first_degree_property_direction"] = self.dlgPropertyMerge.comboBox_3.currentText()
+        params["first_degree_property_direction"] = "BOTH"
+
+        # get Second Degree Property
+        params["second_degree_property"] = self.dlgPropertyMerge.comboBox_4.currentText()
+        # params["second_degree_property_direction"] = self.dlgPropertyMerge.comboBox_5.currentText()
+        params["second_degree_property_direction"] = "BOTH"
+
+        # get Third Degree Property
+        params["third_degree_property"] = self.dlgPropertyMerge.comboBox_6.currentText()
+        # params["third_degree_property_direction"] = self.dlgPropertyMerge.comboBox_7.currentText()
+        params["third_degree_property_direction"] = "BOTH"
+
+        # Test SetUp
+        # params["first_degree_property"] = ""
+        # params["first_degree_property_direction"] = ""
+        # params["second_degree_property"] = ""
+        # params["second_degree_property_direction"] = ""
+
+        return params
 
 
     def getPropertyMergeparams(self):
@@ -1102,3 +1152,19 @@ then select an entity on the map.'
         geom_converter = QgsCoordinateTransform(src_crs, dest_crs, QgsProject.instance())
         geom_reproj = geom_converter.transform(geom)
         return geom_reproj
+
+
+
+class Filter(QtCore.QObject):
+    def eventFilter(self, widget, event):
+        # FocusOut event
+        if event.type() == QtCore.QEvent.FocusOut:
+            # do custom stuff
+            QgsMessageLog.logMessage("Focus Out", level=Qgis.Info)
+            # return False so that the widget will also handle the event
+            # otherwise it won't focus out
+            return False
+        else:
+            # we don't care about other events
+            QgsMessageLog.logMessage("something", level=Qgis.Info)
+            return False
