@@ -816,6 +816,131 @@ class kwg_sparqlquery:
         return jsonBindingObject
 
 
+    def relFinderCommonPropertyQuery(self, inplaceIRIList, relationDegree, propertyDirectionList, selectPropertyURLList,
+                                     sparql_endpoint=None):
+
+        if sparql_endpoint is None:
+            sparql_endpoint = self.sparqlUTIL._WIKIDATA_SPARQL_ENDPOINT
+
+        # get the property URL list in the specific degree path from the inplaceIRIList
+        # inplaceIRIList: the URL list of wikidata locations
+        # relationDegree: the degree of the property on the path the current query wants to get
+        # propertyDirectionList: the list of property direction, it has at most 4 elements, the length is the path degree. The element value is from ["BOTH", "ORIGIN", "DESTINATION"]
+        # selectPropertyURLList: the selected peoperty URL list, it always has three elements, "" if no property has been selected
+
+        if len(propertyDirectionList) == 1:
+            selectParam = "?p1"
+        elif len(propertyDirectionList) == 2:
+            selectParam = "?p2"
+        elif len(propertyDirectionList) == 3:
+            selectParam = "?p3"
+        elif len(propertyDirectionList) == 4:
+            selectParam = "?p4"
+
+        jsonBindingObject = []
+        i = 0
+        while i < len(inplaceIRIList):
+            if i + 50 > len(inplaceIRIList):
+                inplaceIRISubList = inplaceIRIList[i:]
+            else:
+                inplaceIRISubList = inplaceIRIList[i:(i + 50)]
+            queryPrefix = self.sparqlUTIL.make_sparql_prefix()
+
+            # ["BOTH", "ORIGIN", "DESTINATION"]
+            # if propertyDirectionList[0] == "BOTH"
+
+            relFinderPropertyQuery = queryPrefix + """SELECT distinct """ + selectParam + """
+                            WHERE {"""
+
+            if len(propertyDirectionList) > 0:
+                if selectPropertyURLList[0] == "":
+                    if propertyDirectionList[0] == "BOTH":
+                        relFinderPropertyQuery += """{?place ?p1 ?o1.} UNION {?o1 ?p1 ?place.}\n"""
+                    elif propertyDirectionList[0] == "ORIGIN":
+                        relFinderPropertyQuery += """?place ?p1 ?o1.\n"""
+                    elif propertyDirectionList[0] == "DESTINATION":
+                        relFinderPropertyQuery += """?o1 ?p1 ?place.\n"""
+
+                    if relationDegree > 1:
+                        relFinderPropertyQuery += """OPTIONAL {?p1 a owl:ObjectProperty.}\n"""
+                else:
+                    if propertyDirectionList[0] == "BOTH":
+                        relFinderPropertyQuery += """{?place <""" + selectPropertyURLList[
+                            0] + """> ?o1.} UNION {?o1 <""" + selectPropertyURLList[0] + """> ?place.}\n"""
+                    elif propertyDirectionList[0] == "ORIGIN":
+                        relFinderPropertyQuery += """?place <""" + selectPropertyURLList[0] + """> ?o1.\n"""
+                    elif propertyDirectionList[0] == "DESTINATION":
+                        relFinderPropertyQuery += """?o1 <""" + selectPropertyURLList[0] + """> ?place.\n"""
+
+            if len(propertyDirectionList) > 1:
+                if selectPropertyURLList[1] == "":
+                    if propertyDirectionList[1] == "BOTH":
+                        relFinderPropertyQuery += """{?o1 ?p2 ?o2.} UNION {?o2 ?p2 ?o1.}\n"""
+                    elif propertyDirectionList[1] == "ORIGIN":
+                        relFinderPropertyQuery += """?o1 ?p2 ?o2.\n"""
+                    elif propertyDirectionList[1] == "DESTINATION":
+                        relFinderPropertyQuery += """?o2 ?p2 ?o1.\n"""
+
+                    if relationDegree > 2:
+                        relFinderPropertyQuery += """OPTIONAL {?p2 a owl:ObjectProperty.}\n"""
+                else:
+                    if propertyDirectionList[1] == "BOTH":
+                        relFinderPropertyQuery += """{?o1 <""" + selectPropertyURLList[1] + """> ?o2.} UNION {?o2 <""" + \
+                                                  selectPropertyURLList[1] + """> ?o1.}\n"""
+                    elif propertyDirectionList[1] == "ORIGIN":
+                        relFinderPropertyQuery += """?o1 <""" + selectPropertyURLList[1] + """> ?o2.\n"""
+                    elif propertyDirectionList[1] == "DESTINATION":
+                        relFinderPropertyQuery += """?o2 <""" + selectPropertyURLList[1] + """> ?o1.\n"""
+
+            if len(propertyDirectionList) > 2:
+                if selectPropertyURLList[2] == "":
+                    if propertyDirectionList[2] == "BOTH":
+                        relFinderPropertyQuery += """{?o2 ?p3 ?o3.} UNION {?o3 ?p3 ?o2.}\n"""
+                    elif propertyDirectionList[2] == "ORIGIN":
+                        relFinderPropertyQuery += """?o2 ?p3 ?o3.\n"""
+                    elif propertyDirectionList[2] == "DESTINATION":
+                        relFinderPropertyQuery += """?o3 ?p3 ?o2.\n"""
+
+                    if relationDegree > 3:
+                        relFinderPropertyQuery += """OPTIONAL {?p3 a owl:ObjectProperty.}\n"""
+                else:
+                    if propertyDirectionList[2] == "BOTH":
+                        relFinderPropertyQuery += """{?o2 <""" + selectPropertyURLList[2] + """> ?o3.} UNION {?o3 <""" + \
+                                                  selectPropertyURLList[2] + """> ?o2.}\n"""
+                    elif propertyDirectionList[2] == "ORIGIN":
+                        relFinderPropertyQuery += """?o2 <""" + selectPropertyURLList[2] + """> ?o3.\n"""
+                    elif propertyDirectionList[2] == "DESTINATION":
+                        relFinderPropertyQuery += """?o3 <""" + selectPropertyURLList[2] + """> ?o2.\n"""
+
+            if len(propertyDirectionList) > 3:
+                if propertyDirectionList[3] == "BOTH":
+                    relFinderPropertyQuery += """{?o3 ?p4 ?o4.} UNION {?o4 ?p4 ?o3.}\n"""
+                elif propertyDirectionList[3] == "ORIGIN":
+                    relFinderPropertyQuery += """?o3 ?p4 ?o4.\n"""
+                elif propertyDirectionList[3] == "DESTINATION":
+                    relFinderPropertyQuery += """?o4 ?p4 ?o3.\n"""
+
+            relFinderPropertyQuery += """
+                            VALUES ?place
+                            {"""
+            for IRI in inplaceIRISubList:
+                relFinderPropertyQuery = relFinderPropertyQuery + "<" + IRI + "> \n"
+
+            relFinderPropertyQuery = relFinderPropertyQuery + """
+                            }
+                            }
+                            """
+
+            res_json = self.sparqlUTIL.sparql_requests(query=relFinderPropertyQuery,
+                                                  sparql_endpoint=sparql_endpoint,
+                                                  doInference=False)
+            jsonBindingObject.extend(res_json["results"]["bindings"])
+
+            i = i + 50
+
+        return jsonBindingObject
+
+
 if __name__ == "__main__":
     SQ = kwg_sparqlquery()
     SQ.EventTypeSPARQLQuery()
