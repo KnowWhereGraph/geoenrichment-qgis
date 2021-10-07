@@ -121,7 +121,6 @@ class kwg_geoenrichment:
         self.sparqlQuery = kwg_sparqlquery()
 
         self.eventPlaceTypeDict = dict()
-        self._filter = Filter()
 
 
     # noinspection PyMethodMayBeStatic
@@ -220,6 +219,7 @@ class kwg_geoenrichment:
         self.actions.append(action)
 
         return action
+
 
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
@@ -360,6 +360,7 @@ class kwg_geoenrichment:
             # substitute with your code.
             pass
 
+
     def runPropertyEnrichment(self):
         """Run method that performs all the real work"""
 
@@ -422,7 +423,6 @@ class kwg_geoenrichment:
 
         names = [layer.name() for layer in QgsProject.instance().mapLayers().values()]
 
-
         # show the dialog
         self.dlgPropertyMerge.show()
 
@@ -452,24 +452,11 @@ class kwg_geoenrichment:
         # Run the dialog event loop
         result = self.dlgRelFinder.exec_()
         # See if OK was pressed
-        
-        QgsMessageLog.logMessage("Connecting", "kwg_geoenrichment",
-                                 level=Qgis.Info)
-
-        # self.dlgRelFinder.lineEdit_2.installEventFilter(self._filter)
-
-        self.dlgRelFinder.lineEdit_2.textChanged.connect(self.textChangeTest)
-
-        QgsMessageLog.logMessage("No update", "kwg_geoenrichment",
-                                 level=Qgis.Info)
         if result:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
             pass
 
-    def textChangeTest(self):
-        QgsMessageLog.logMessage("Text changed... ", "kwg_geoenrichment",
-                                 level=Qgis.Info)
 
     def updateParamsPropertyEnrichment(self, propertiesDict):
         listWidget = self.dlgPropertyEnrichment.listWidget
@@ -1153,18 +1140,3 @@ then select an entity on the map.'
         geom_reproj = geom_converter.transform(geom)
         return geom_reproj
 
-
-
-class Filter(QtCore.QObject):
-    def eventFilter(self, widget, event):
-        # FocusOut event
-        if event.type() == QtCore.QEvent.FocusOut:
-            # do custom stuff
-            QgsMessageLog.logMessage("Focus Out", level=Qgis.Info)
-            # return False so that the widget will also handle the event
-            # otherwise it won't focus out
-            return False
-        else:
-            # we don't care about other events
-            QgsMessageLog.logMessage("something", level=Qgis.Info)
-            return False
