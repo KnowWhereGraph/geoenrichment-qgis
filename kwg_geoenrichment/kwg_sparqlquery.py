@@ -777,7 +777,10 @@ class kwg_sparqlquery:
         return tripleStore
 
 
-    def locationCommonPropertyLabelQuery(self, locationCommonPropertyURLList, sparql_endpoint = SPARQLUtil._WIKIDATA_SPARQL_ENDPOINT):
+    def locationCommonPropertyLabelQuery(self, locationCommonPropertyURLList, sparql_endpoint = None):
+        if sparql_endpoint is None:
+            sparql_endpoint = self.sparqlUTIL._WIKIDATA_SPARQL_ENDPOINT
+
         jsonBindingObject = []
         i = 0
         while i < len(locationCommonPropertyURLList):

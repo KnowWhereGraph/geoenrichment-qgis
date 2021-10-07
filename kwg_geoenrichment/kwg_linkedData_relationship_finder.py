@@ -34,6 +34,7 @@ class kwg_linkedData_relationship_finder:
         self.canRunInBackground = False
         self.SPARQLQuery = kwg_sparqlquery()
         self.SPARQLUtil = kwg_sparqlutil()
+        self.inplaceIRIList = []
         self.Util = UTIL()
         self.JSON2Field = Json2Field()
         self.sparqlEndpoint = "http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire"
@@ -88,19 +89,18 @@ class kwg_linkedData_relationship_finder:
         if not in_do_single_ent_start.value:
             # if we use geo-entity feature class as start node
             inputFeatureClassName = in_wikiplace_IRI.valueAsText
-            if not arcpy.Exists(inputFeatureClassName):
-                arcpy.AddErrorMessage("The input feature class - {} - does not exist.".format(inputFeatureClassName))
-                raise arcpy.ExecuteError
-                return
+            # TODO: QGIS implementation to check for existence of the featureClass
+            # if not arcpy.Exists(inputFeatureClassName):
+            #     arcpy.AddErrorMessage("The input feature class - {} - does not exist.".format(inputFeatureClassName))
+            #     raise arcpy.ExecuteError
+            #     return
 
             lastIndexOFGDB = inputFeatureClassName.rfind("\\")
-            originFeatureClassName = inputFeatureClassName[(lastIndexOFGDB + 1):]
+            originFeatureClassName = "ldrf"
 
             # get all the IRI from input point feature class of wikidata places
-            inplaceIRIList = []
-            cursor = arcpy.SearchCursor(inputFeatureClassName)
-            for row in cursor:
-                inplaceIRIList.append(row.getValue("URL"))
+            self.loadIRIList()
+            inplaceIRIList = self.inplaceIRIList
         else:
             # we use single iri as the start node
             inplaceIRIList = [in_single_ent.valueAsText]
@@ -108,9 +108,9 @@ class kwg_linkedData_relationship_finder:
         # get the user specified property URL and direction at each degree
         propertyDirectionList = []
         selectPropertyURLList = ["", "", "", ""]
-        if in_first_property_dir.value and relationDegree >= 1:
-            fristDirection = in_first_property_dir.valueAsText
-            firstProperty = in_first_property.valueAsText
+        if in_first_property_dir and relationDegree >= 1:
+            fristDirection = in_first_property_dir
+            firstProperty = in_first_property
             if firstProperty == None:
                 firstPropertyURL = ""
             else:
@@ -119,9 +119,9 @@ class kwg_linkedData_relationship_finder:
             propertyDirectionList.append(fristDirection)
             selectPropertyURLList[0] = firstPropertyURL
 
-        if in_second_property_dir.value and relationDegree >= 2:
-            secondDirection = in_second_property_dir.valueAsText
-            secondProperty = in_second_property.valueAsText
+        if in_second_property_dir and relationDegree >= 2:
+            secondDirection = in_second_property_dir
+            secondProperty = in_second_property
             if secondProperty == None:
                 secondPropertyURL = ""
             else:
@@ -130,9 +130,9 @@ class kwg_linkedData_relationship_finder:
             propertyDirectionList.append(secondDirection)
             selectPropertyURLList[1] = secondPropertyURL
 
-        if in_third_property_dir.value and relationDegree >= 3:
-            thirdDirection = in_third_property_dir.valueAsText
-            thirdProperty = in_third_property.valueAsText
+        if in_third_property_dir and relationDegree >= 3:
+            thirdDirection = in_third_property_dir
+            thirdProperty = in_third_property
             if thirdProperty == None:
                 thirdPropertyURL = ""
             else:
@@ -141,9 +141,9 @@ class kwg_linkedData_relationship_finder:
             propertyDirectionList.append(thirdDirection)
             selectPropertyURLList[2] = thirdPropertyURL
 
-        if in_fourth_property_dir.value and relationDegree >= 4:
-            fourthDirection = in_fourth_property_dir.valueAsText
-            fourthProperty = in_fourth_property.valueAsText
+        if in_fourth_property_dir and relationDegree >= 4:
+            fourthDirection = in_fourth_property_dir
+            fourthProperty = in_fourth_property
             if fourthProperty == None:
                 fourthPropertyURL = ""
             else:
@@ -155,11 +155,11 @@ class kwg_linkedData_relationship_finder:
         # arcpy.AddMessage("propertyDirectionList: {0}".format(propertyDirectionList))
         # arcpy.AddMessage("selectPropertyURLList: {0}".format(selectPropertyURLList))
 
-        # for the direction list, change "BOTH" to "OROIGIN" and "DESTINATION"
-        directionExpendedLists = UTIL.directionListFromBoth2OD(propertyDirectionList)
+        # for the direction list, change "BOTH" to "ORIGIN" and "DESTINATION"
+        directionExpendedLists = self.Util.directionListFromBoth2OD(propertyDirectionList)
         tripleStore = dict()
         for currentDirectionList in directionExpendedLists:
-            # get a list of triples for curent specified property path
+            # get a list of triples for current specified property path
             newTripleStore = self.SPARQLQuery.relFinderTripleQuery(inplaceIRIList,
                                                               propertyDirectionList=currentDirectionList,
                                                               selectPropertyURLList=selectPropertyURLList,
@@ -185,7 +185,6 @@ class kwg_linkedData_relationship_finder:
                 propertyName = jsonItem["propertyLabel"]["value"]
                 triplePropertyLabelList.append(propertyName)
         else:
-            # TODO:
             triplePropertyLabelList = self.SPARQLUtil.make_prefixed_iri_batch(triplePropertyURLList)
 
         triplePropertyURLLabelDict = dict(zip(triplePropertyURLList, triplePropertyLabelList))
@@ -272,6 +271,26 @@ class kwg_linkedData_relationship_finder:
         #                                          "SIMPLE",
         #                                          "S-P-O Link", "Destination of S-P-O Link",
         #                                          "FORWARD", "ONE_TO_MANY", "NONE", "URL", "Object")
+
+        return
+
+
+    def loadIRIList(self, path_to_gpkg ='/var/local/QGIS/kwg_results.gpkg', layerName="geo_results"):
+        # get the path to a geopackage e.g. /home/project/data/data.gpkg
+        iriList = []
+
+        gpkg_places_layer = path_to_gpkg + "|layername=%s"%(layerName)
+
+        vlayer = QgsVectorLayer(gpkg_places_layer, layerName, "ogr")
+
+        if not vlayer.isValid():
+            return iriList
+        else:
+            for feature in vlayer.getFeatures():
+                attrs = feature.attributes()
+                iriList.append(attrs[1])
+
+        self.inplaceIRIList = iriList
 
         return
 
