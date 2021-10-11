@@ -42,83 +42,45 @@ class kwg_linkedData_relationship_finder:
         self.layerName = "geo_results"
 
 
-    def execute(self, parameters, messages):
+    def execute(self, parameters, ifaceObj):
         """The source code of the tool."""
-        in_sparql_endpoint = parameters[0]
-        in_wikiplace_IRI = parameters[1]
-        in_do_single_ent_start = parameters[2]
-        in_single_ent = parameters[3]
-        in_relation_degree = parameters[4]
-        in_first_property_dir = parameters[5]
-        in_first_property = parameters[6]
-        in_second_property_dir = parameters[7]
-        in_second_property = parameters[8]
-        in_third_property_dir = parameters[9]
-        in_third_property = parameters[10]
-        in_fourth_property_dir = parameters[11]
-        in_fourth_property = parameters[12]
-        out_location = parameters[13]
-        out_table_name = parameters[14]
-        out_points_name = parameters[15]
+        in_sparql_endpoint = parameters["sparql_endpoint"]
 
-        sparql_endpoint = in_sparql_endpoint.valueAsText
+        in_relation_degree = parameters["degree_val"]
+        in_first_property_dir = parameters["first_degree_property_direction"]
+        in_first_property = parameters["first_degree_property"]
+        in_second_property_dir = parameters["second_degree_property_direction"]
+        in_second_property = parameters["second_degree_property"]
+        in_third_property_dir = parameters["third_degree_property_direction"]
+        in_third_property = parameters["third_degree_property"]
 
-        relationDegree = int(in_relation_degree.valueAsText)
-        outLocation = out_location.valueAsText
-        outTableName = out_table_name.valueAsText
-        outFeatureClassName = out_points_name.valueAsText
-        outputTableName = os.path.join(outLocation, outTableName)
-        outputFeatureClassName = os.path.join(outLocation, outFeatureClassName)
+        sparql_endpoint = in_sparql_endpoint
 
-        # TODO: check for gpkg
-        # # check whether outLocation is a file geodatabase
-        # if outLocation.endswith(".gdb") == False:
-        #     messages.addErrorMessage("Please enter a file geodatabase as the file location for output feature class.")
-        #     raise arcpy.ExecuteError
-        #     return
-        # else:
-        #     arcpy.env.workspace = outLocation
+        # set this
+        relationDegree = int(in_relation_degree)
 
-        # TODO: check for outputTableName
-        # # check whether outputTableName or outputFeatureClassName already exist
-        # if arcpy.Exists(outputTableName) or arcpy.Exists(outputFeatureClassName):
-        #     messages.addErrorMessage("The output table or feature class already exists in current workspace!")
-        #     raise arcpy.ExecuteError
-        #     return
+        self.loadIRIList()
 
-        if not in_do_single_ent_start.value:
-            # if we use geo-entity feature class as start node
-            inputFeatureClassName = in_wikiplace_IRI.valueAsText
-            # TODO: QGIS implementation to check for existence of the featureClass
-            # if not arcpy.Exists(inputFeatureClassName):
-            #     arcpy.AddErrorMessage("The input feature class - {} - does not exist.".format(inputFeatureClassName))
-            #     raise arcpy.ExecuteError
-            #     return
-
-            lastIndexOFGDB = inputFeatureClassName.rfind("\\")
-            originFeatureClassName = "ldrf"
-
-            # get all the IRI from input point feature class of wikidata places
-            self.loadIRIList()
-            inplaceIRIList = self.inplaceIRIList
-        else:
-            # we use single iri as the start node
-            inplaceIRIList = [in_single_ent.valueAsText]
+        inplaceIRIList = self.inplaceIRIList
 
         # get the user specified property URL and direction at each degree
         propertyDirectionList = []
-        selectPropertyURLList = ["", "", "", ""]
+        selectPropertyURLList = ["", "", ""]
+
+        self.getFirstDegreeProperty()
         if in_first_property_dir and relationDegree >= 1:
-            fristDirection = in_first_property_dir
+            firstDirection = in_first_property_dir
             firstProperty = in_first_property
             if firstProperty == None:
                 firstPropertyURL = ""
             else:
                 firstPropertyURL = self.firstPropertyLabelURLDict[firstProperty]
 
-            propertyDirectionList.append(fristDirection)
+            propertyDirectionList.append(firstDirection)
             selectPropertyURLList[0] = firstPropertyURL
+            self.firstPropertyURL = firstPropertyURL
 
+        self.getSecondDegreeProperty()
         if in_second_property_dir and relationDegree >= 2:
             secondDirection = in_second_property_dir
             secondProperty = in_second_property
@@ -129,7 +91,9 @@ class kwg_linkedData_relationship_finder:
 
             propertyDirectionList.append(secondDirection)
             selectPropertyURLList[1] = secondPropertyURL
+            self.secondPropertyURL = secondPropertyURL
 
+        self.getThirdDegreeProperty()
         if in_third_property_dir and relationDegree >= 3:
             thirdDirection = in_third_property_dir
             thirdProperty = in_third_property
@@ -140,20 +104,13 @@ class kwg_linkedData_relationship_finder:
 
             propertyDirectionList.append(thirdDirection)
             selectPropertyURLList[2] = thirdPropertyURL
+            self.thirdPropertyURL = thirdPropertyURL
 
-        if in_fourth_property_dir and relationDegree >= 4:
-            fourthDirection = in_fourth_property_dir
-            fourthProperty = in_fourth_property
-            if fourthProperty == None:
-                fourthPropertyURL = ""
-            else:
-                fourthPropertyURL = self.thirdPropertyLabelURLDict[fourthProperty]
+        QgsMessageLog.logMessage("propertyDirectionList: {0}".format(propertyDirectionList), "kwg_geoenrichment",
+                                                          level=Qgis.Info)
 
-            propertyDirectionList.append(fourthDirection)
-            selectPropertyURLList[3] = fourthPropertyURL
-
-        # arcpy.AddMessage("propertyDirectionList: {0}".format(propertyDirectionList))
-        # arcpy.AddMessage("selectPropertyURLList: {0}".format(selectPropertyURLList))
+        QgsMessageLog.logMessage("selectPropertyURLList: {0}".format(selectPropertyURLList), "kwg_geoenrichment",
+                                 level=Qgis.Info)
 
         # for the direction list, change "BOTH" to "ORIGIN" and "DESTINATION"
         directionExpendedLists = self.Util.directionListFromBoth2OD(propertyDirectionList)
@@ -175,7 +132,7 @@ class kwg_linkedData_relationship_finder:
         if sparql_endpoint == self.SPARQLUtil._WIKIDATA_SPARQL_ENDPOINT:
 
             triplePropertyLabelJSON = self.SPARQLQuery.locationCommonPropertyLabelQuery(triplePropertyURLList,
-                                                                                   sparql_endpoint=sparql_endpoint)
+                                                                                   sparql_endpoint=self.sparqlEndpoint)
 
             triplePropertyURLList = []
             triplePropertyLabelList = []
@@ -189,90 +146,148 @@ class kwg_linkedData_relationship_finder:
 
         triplePropertyURLLabelDict = dict(zip(triplePropertyURLList, triplePropertyLabelList))
 
-        # TODO: QGIS implementation
-        # tripleStoreTable = arcpy.CreateTable_management(outLocation, outTableName)
-        #
-        # arcpy.AddField_management(tripleStoreTable, "Subject", "TEXT",
-        #                           field_length=Json2Field.fieldLengthDecideByList([triple.s for triple in tripleStore]))
-        # arcpy.AddField_management(tripleStoreTable, "Predicate", "TEXT",
-        #                           field_length=Json2Field.fieldLengthDecideByList([triple.p for triple in tripleStore]))
-        # arcpy.AddField_management(tripleStoreTable, "Object", "TEXT",
-        #                           field_length=Json2Field.fieldLengthDecideByList([triple.o for triple in tripleStore]))
-        # arcpy.AddField_management(tripleStoreTable, "Pred_Label", "TEXT",
-        #                           field_length=Json2Field.fieldLengthDecideByList(
-        #                               [triplePropertyURLLabelDict[triple.p] for triple in tripleStore]))
-        # arcpy.AddField_management(tripleStoreTable, "Degree", "LONG")
+        self.createTripleStoreTable(tripleStore, triplePropertyURLLabelDict, outputLocation=self.path_to_gpkg, ifaceObj=ifaceObj)
 
-        # # Create insert cursor for table
-        # rows = arcpy.InsertCursor(tripleStoreTable)
+        entitySet = set()
+        for triple in tripleStore:
+            entitySet.add(triple.s)
+            entitySet.add(triple.o)
 
-        # for triple in tripleStore:
-        #     row = rows.newRow()
-        #     row.setValue("Subject", triple.s)
-        #     row.setValue("Predicate", triple.p)
-        #     row.setValue("Object", triple.o)
-        #     row.setValue("Pred_Label", triplePropertyURLLabelDict[triple.p])
-        #     row.setValue("Degree", tripleStore[triple])
+        # QgsMessageLog.logMessage("entitySet: {}".format(entitySet), "kwg_geoenrichment", level=Qgis.Info)
 
-        #     rows.insertRow(row)
 
-        # insertCursor = arcpy.da.InsertCursor(tripleStoreTable,
-        #                                      ['Subject', 'Predicate', "Object", 'Pred_Label', "Degree"])
-        # for triple in tripleStore:
-        #     try:
-        #         row = (triple.s, triple.p, triple.o, triplePropertyURLLabelDict[triple.p], tripleStore[triple])
-        #         insertCursor.insertRow(row)
-        #     except Error:
-        #         arcpy.AddMessage(row)
-        #         arcpy.AddMessage("Error inserting triple data: {} {} {}".format(triple.s, triple.p, triple.o))
-        # del insertCursor
-        #
-        # ArcpyViz.visualize_current_layer(out_path=tripleStoreTable)
-        #
-        # entitySet = set()
-        # for triple in tripleStore:
-        #     entitySet.add(triple.s)
-        #     entitySet.add(triple.o)
-        # # for triple in tripleStore:
-        # #   entitySet.add(triple[0])
-        # #   entitySet.add(triple[2])
-        #
-        # arcpy.AddMessage("entitySet: {}".format(entitySet))
-        # # TODO:
-        # placeJSON = self.SPARQLQuery.endPlaceInformationQuery(list(entitySet), sparql_endpoint=sparql_endpoint)
-        #
-        # arcpy.AddMessage("placeJSON: {}".format(placeJSON))
-        #
-        # # create a Shapefile/FeatuerClass for all geographic entities in the triplestore
-        # Json2Field.createFeatureClassFromSPARQLResult(GeoQueryResult=placeJSON,
-        #                                               out_path=outputFeatureClassName,
-        #                                               inPlaceType="",
-        #                                               selectedURL="",
-        #                                               isDirectInstance=False,
-        #                                               viz_res=True)
-        # # Json2Field.creatPlaceFeatureClassFromJSON(placeJSON, outputFeatureClassName, None, "")
-        #
-        # # add their centrold point of each geometry
-        # arcpy.AddField_management(outputFeatureClassName, "POINT_X", "DOUBLE")
-        # arcpy.AddField_management(outputFeatureClassName, "POINT_Y", "DOUBLE")
-        # arcpy.CalculateField_management(outputFeatureClassName, "POINT_X", "!SHAPE.CENTROID.X!", "PYTHON_9.3")
-        # arcpy.CalculateField_management(outputFeatureClassName, "POINT_Y", "!SHAPE.CENTROID.Y!", "PYTHON_9.3")
-        #
-        # arcpy.env.workspace = outLocation
-        #
-        # originFeatureRelationshipClassName = outputFeatureClassName + "_" + outTableName + "_Origin" + "_RelClass"
-        # arcpy.CreateRelationshipClass_management(outputFeatureClassName, outTableName,
-        #                                          originFeatureRelationshipClassName, "SIMPLE",
-        #                                          "S-P-O Link", "Origin of S-P-O Link",
-        #                                          "FORWARD", "ONE_TO_MANY", "NONE", "URL", "Subject")
-        #
-        # endFeatureRelationshipClassName = outputFeatureClassName + "_" + outTableName + "_Destination" + "_RelClass"
-        # arcpy.CreateRelationshipClass_management(outputFeatureClassName, outTableName, endFeatureRelationshipClassName,
-        #                                          "SIMPLE",
-        #                                          "S-P-O Link", "Destination of S-P-O Link",
-        #                                          "FORWARD", "ONE_TO_MANY", "NONE", "URL", "Object")
+        placeJSON = self.SPARQLQuery.endPlaceInformationQuery(list(entitySet), sparql_endpoint=self.sparqlEndpoint)
+        # QgsMessageLog.logMessage("placeJSON: {}".format(placeJSON), "kwg_geoenrichment", level=Qgis.Info);
+
+
+        self.createPlaceGeometryLayer(GeoQueryResult=placeJSON, isDirectInstance=False, ifaceObj=ifaceObj)
 
         return
+
+
+    def createTripleStoreTable(self, tripleStore, triplePropertyURLLabelDict, outputLocation="", ifaceObj=None):
+        tableName = "rel_finder" + "_" + "table"
+
+        layerFields = QgsFields()
+        layerFields.append(QgsField("Subject", QVariant.String))
+        layerFields.append(QgsField("Predicate", QVariant.String))
+        layerFields.append(QgsField("Object", QVariant.String))
+        layerFields.append(QgsField("Pred_Label", QVariant.String))
+        layerFields.append(QgsField("Degree", QVariant.Int))
+
+        vl = QgsVectorLayer("POLYGON" + "?crs=epsg:4326", tableName, "memory")
+        pr = vl.dataProvider()
+        pr.addAttributes(layerFields)
+        vl.updateFields()
+
+        if outputLocation == None:
+            QgsMessageLog.logMessage("No data will be added to the map document.", level=Qgis.Warning)
+        else:
+
+            for triple in tripleStore:
+                feat = QgsFeature()
+
+                feat.setAttributes([triple.s, triple.p, triple.o, triplePropertyURLLabelDict[triple.p], tripleStore[triple]])
+                pr.addFeature(feat)
+            vl.updateExtents()
+
+            options = QgsVectorFileWriter.SaveVectorOptions()
+            options.layerName = tableName
+            options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteLayer
+            context = QgsProject.instance().transformContext()
+            error = QgsVectorFileWriter.writeAsVectorFormatV2(vl, outputLocation, context, options)
+            ifaceObj.addVectorLayer(outputLocation, tableName, 'ogr')
+
+        return error[0] == QgsVectorFileWriter.NoError
+
+
+    def createPlaceGeometryLayer(self, GeoQueryResult, out_path="/var/local/QGIS/kwg_results.gpkg",
+                                         inPlaceType="", selectedURL="",
+                                         isDirectInstance=False,
+                                         ifaceObj=None):
+        '''
+        GeoQueryResult: a sparql query result json obj serialized as a list of dict()
+                    SPARQL query like this:
+                    select distinct ?place ?placeLabel ?placeFlatType ?wkt
+                    where
+                    {...}
+        out_path: the output path for the create geo feature class
+        inPlaceType: the label of user spercified type IRI
+        selectedURL: the user spercified type IRI
+        isDirectInstance: True: use placeFlatType as the type of geo-entity
+                          False: use selectedURL as the type of geo-entity
+        '''
+        # a set of unique WKT for each found places
+        placeIRISet = set()
+        placeList = []
+        geom_type = None
+
+        util_obj = UTIL()
+
+        layerFields = QgsFields()
+        layerFields.append(QgsField('place_iri', QVariant.String))
+        layerFields.append(QgsField('label', QVariant.String))
+        layerFields.append(QgsField('type_iri', QVariant.String))
+
+        for idx, item in enumerate(GeoQueryResult):
+            wkt_literal = item["wkt"]["value"]
+            # for now, make sure all geom has the same geometry type
+            if idx == 0:
+                geom_type = util_obj.get_geometry_type_from_wkt(wkt_literal)
+            else:
+                assert geom_type == util_obj.get_geometry_type_from_wkt(wkt_literal)
+
+            # if isDirectInstance == False:
+            #     placeType = item["placeFlatType"]["value"]
+            # else:
+            placeType = selectedURL
+            print("{}\t{}\t{}".format(
+                item["place"]["value"], item["placeLabel"]["value"], placeType))
+            if len(placeIRISet) == 0 or item["place"]["value"] not in placeIRISet:
+                placeIRISet.add(item["place"]["value"])
+                placeList.append(
+                    [item["place"]["value"], item["placeLabel"]["value"], placeType, wkt_literal])
+
+        if geom_type is None:
+            raise Exception("geometry type not find")
+
+        vl = QgsVectorLayer(geom_type + "?crs=epsg:4326", "geo_results", "memory")
+        pr = vl.dataProvider()
+        pr.addAttributes(layerFields)
+        vl.updateFields()
+
+        if len(placeList) == 0:
+            QgsMessageLog.logMessage("No {0} within the provided polygon can be finded!".format(inPlaceType),
+                                     level=Qgis.Info)
+        else:
+
+            if out_path == None:
+                QgsMessageLog.logMessage("No data will be added to the map document.", level=Qgis.Info)
+            else:
+
+                for item in placeList:
+                    place_iri, label, type_iri, wkt_literal = item
+                    wkt = wkt_literal.replace("<http://www.opengis.net/def/crs/OGC/1.3/CRS84>", "")
+
+                    feat = QgsFeature()
+                    geom = QgsGeometry.fromWkt(wkt)
+
+                    # TODO: handle the CRS
+                    # feat.setGeometry(self.transformSourceCRStoDestinationCRS(geom, src=4326, dest=3857))
+
+                    feat.setGeometry(geom)
+                    feat.setAttributes(item[0:3])
+
+                    pr.addFeature(feat)
+                vl.updateExtents()
+
+                options = QgsVectorFileWriter.SaveVectorOptions()
+                options.layerName = 'rel_finder_geometry'
+                context = QgsProject.instance().transformContext()
+                error = QgsVectorFileWriter.writeAsVectorFormatV2(vl, out_path, context, options)
+                ifaceObj.addVectorLayer(out_path, 'rel_finder_geometry', 'ogr')
+
+        return error[0] == QgsVectorFileWriter.NoError
 
 
     def loadIRIList(self, path_to_gpkg ='/var/local/QGIS/kwg_results.gpkg', layerName="geo_results"):
@@ -293,6 +308,118 @@ class kwg_linkedData_relationship_finder:
         self.inplaceIRIList = iriList
 
         return
+
+
+    def getThirdDegreeProperty(self):
+
+        self.thirdDirection = "BOTH"
+
+        # get the third property URL list
+        thirdPropertyURLListJsonBindingObject = self.SPARQLQuery.relFinderCommonPropertyQuery(self.inplaceIRIList,
+                                                                                         relationDegree=3,
+                                                                                         propertyDirectionList=[
+                                                                                             self.firstDirection,
+                                                                                             self.secondDirection,
+                                                                                             self.thirdDirection],
+                                                                                         selectPropertyURLList=[
+                                                                                             self.firstPropertyURL,
+                                                                                             self.secondPropertyURL, ""],
+                                                                                         sparql_endpoint=self.sparqlEndpoint)
+        thirdPropertyURLList = []
+        for jsonItem in thirdPropertyURLListJsonBindingObject:
+            thirdPropertyURLList.append(jsonItem["p3"]["value"])
+
+        if self.sparqlEndpoint == self.SPARQLUtil._WIKIDATA_SPARQL_ENDPOINT:
+            thirdPropertyLabelJSON = self.SPARQLQuery.locationCommonPropertyLabelQuery(thirdPropertyURLList,
+                                                                                  sparql_endpoint=self.sparqlEndpoint)
+
+            # get the third property label list
+            thirdPropertyURLList = []
+            thirdPropertyLabelList = []
+            for jsonItem in thirdPropertyLabelJSON:
+                propertyURL = jsonItem["p"]["value"]
+                thirdPropertyURLList.append(propertyURL)
+                propertyName = jsonItem["propertyLabel"]["value"]
+                thirdPropertyLabelList.append(propertyName)
+        else:
+            thirdPropertyLabelList = self.SPARQLUtil.make_prefixed_iri_batch(thirdPropertyURLList)
+
+        self.thirdPropertyLabelURLDict = dict(zip(thirdPropertyLabelList, thirdPropertyURLList))
+
+        return thirdPropertyLabelList
+
+
+    def getSecondDegreeProperty(self):
+        self.secondDirection = "BOTH"
+
+        # get the second property URL list
+        secondPropertyURLListJsonBindingObject = self.SPARQLQuery.relFinderCommonPropertyQuery(self.inplaceIRIList,
+                                                                                          relationDegree=2,
+                                                                                          propertyDirectionList=[
+                                                                                              self.firstDirection,
+                                                                                              self.secondDirection],
+                                                                                          selectPropertyURLList=[
+                                                                                              self.firstPropertyURL, "", ""],
+                                                                                          sparql_endpoint=self.sparqlEndpoint)
+        secondPropertyURLList = []
+        for jsonItem in secondPropertyURLListJsonBindingObject:
+            secondPropertyURLList.append(jsonItem["p2"]["value"])
+
+        if self.sparqlEndpoint == self.SPARQLUtil._WIKIDATA_SPARQL_ENDPOINT:
+            secondPropertyLabelJSON = self.SPARQLQuery.locationCommonPropertyLabelQuery(secondPropertyURLList,
+                                                                                   sparql_endpoint=self.sparqlEndpoint)
+            # secondPropertyLabelJSON = secondPropertyLabelJSONObj["results"]["bindings"]
+
+            # get the second property label list
+            secondPropertyURLList = []
+            secondPropertyLabelList = []
+            for jsonItem in secondPropertyLabelJSON:
+                propertyURL = jsonItem["p"]["value"]
+                secondPropertyURLList.append(propertyURL)
+                propertyName = jsonItem["propertyLabel"]["value"]
+                secondPropertyLabelList.append(propertyName)
+        else:
+            secondPropertyLabelList = self.SPARQLUtil.make_prefixed_iri_batch(secondPropertyURLList)
+
+        self.secondPropertyLabelURLDict = dict(zip(secondPropertyLabelList, secondPropertyURLList))
+
+        return secondPropertyLabelList
+
+
+    def getFirstDegreeProperty(self):
+        # decided to work in both directions
+        self.firstDirection = "BOTH"
+        # get the first property URL list
+        firstPropertyURLListJsonBindingObject = self.SPARQLQuery.relFinderCommonPropertyQuery(self.inplaceIRIList,
+                                                                                         relationDegree=1,
+                                                                                         propertyDirectionList=[
+                                                                                             self.firstDirection],
+                                                                                         selectPropertyURLList=["", "",
+                                                                                                                ""],
+                                                                                         sparql_endpoint=self.sparqlEndpoint)
+        firstPropertyURLList = []
+        for jsonItem in firstPropertyURLListJsonBindingObject:
+            firstPropertyURLList.append(jsonItem["p1"]["value"])
+
+        if self.sparqlEndpoint == self.SPARQLUtil._WIKIDATA_SPARQL_ENDPOINT:
+            firstPropertyLabelJSON = self.SPARQLQuery.locationCommonPropertyLabelQuery(firstPropertyURLList,
+                                                       sparql_endpoint=self.sparqlEndpoint)
+            # firstPropertyLabelJSON = firstPropertyLabelJSONObj["results"]["bindings"]
+
+            # get the first property label list
+            firstPropertyURLList = []
+            firstPropertyLabelList = []
+            for jsonItem in firstPropertyLabelJSON:
+                propertyURL = jsonItem["p"]["value"]
+                firstPropertyURLList.append(propertyURL)
+                propertyName = jsonItem["propertyLabel"]["value"]
+                firstPropertyLabelList.append(propertyName)
+        else:
+            firstPropertyLabelList = self.SPARQLUtil.make_prefixed_iri_batch(firstPropertyURLList)
+
+        self.firstPropertyLabelURLDict = dict(zip(firstPropertyLabelList, firstPropertyURLList))
+
+        return firstPropertyLabelList
 
 
 if __name__ == '__main__':

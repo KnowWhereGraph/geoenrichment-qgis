@@ -447,6 +447,8 @@ class kwg_geoenrichment:
             self.first_start = False
         self.dlgRelFinder = kwg_linkedDataDialog()
 
+        relFinder = kwg_linkedData_relationship_finder()
+
         # show the dialog
         self.dlgRelFinder.show()
         # Run the dialog event loop
@@ -455,7 +457,9 @@ class kwg_geoenrichment:
         if result:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
-            pass
+            params = self.getParamsRelFinder()
+            relFinder.execute(params, ifaceObj=self.iface)
+
 
 
     def updateParamsPropertyEnrichment(self, propertiesDict):
@@ -473,32 +477,25 @@ class kwg_geoenrichment:
     def getParamsRelFinder(self):
         params = {}
 
-        params["sparql_endpoint"] = self.dlgPropertyMerge.lineEdit.text()
-        params["feat_class"] = self.dlgPropertyMerge.lineEdit_2.text()
+        params["sparql_endpoint"] = self.dlgRelFinder.lineEdit.text()
+        params["feat_class"] = self.dlgRelFinder.lineEdit_2.text()
 
-        # TODO: set up displaying related tables logic
-        # params["related_tables"] = self.dlgPropertyMerge.comboBox_2.currentText()
+        params["degree_val"] = self.dlgRelFinder.comboBox_degree.currentText()
 
         # get First Degree Property
-        params["first_degree_property"] = self.dlgPropertyMerge.comboBox_2.currentText()
-        # params["first_degree_property_direction"] = self.dlgPropertyMerge.comboBox_3.currentText()
+        params["first_degree_property"] = self.dlgRelFinder.comboBox_1.currentText()
+        # params["first_degree_property_direction"] = self.dlgRelFinder.comboBox_3.currentText()
         params["first_degree_property_direction"] = "BOTH"
 
         # get Second Degree Property
-        params["second_degree_property"] = self.dlgPropertyMerge.comboBox_4.currentText()
-        # params["second_degree_property_direction"] = self.dlgPropertyMerge.comboBox_5.currentText()
+        params["second_degree_property"] = self.dlgRelFinder.comboBox_2.currentText()
+        # params["second_degree_property_direction"] = self.dlgRelFinder.comboBox_5.currentText()
         params["second_degree_property_direction"] = "BOTH"
 
         # get Third Degree Property
-        params["third_degree_property"] = self.dlgPropertyMerge.comboBox_6.currentText()
-        # params["third_degree_property_direction"] = self.dlgPropertyMerge.comboBox_7.currentText()
+        params["third_degree_property"] = self.dlgRelFinder.comboBox_3.currentText()
+        # params["third_degree_property_direction"] = self.dlgRelFinder.comboBox_7.currentText()
         params["third_degree_property_direction"] = "BOTH"
-
-        # Test SetUp
-        # params["first_degree_property"] = ""
-        # params["first_degree_property_direction"] = ""
-        # params["second_degree_property"] = ""
-        # params["second_degree_property_direction"] = ""
 
         return params
 
@@ -531,6 +528,7 @@ class kwg_geoenrichment:
         self.toolname = 'drawPoint'
         self.resetSB()
 
+
     def drawXYPoint(self):
         tuple, ok = XYDialog().getPoint(
             self.iface.mapCanvas().mapSettings().destinationCrs())
@@ -551,6 +549,7 @@ class kwg_geoenrichment:
                 self.drawShape = 'XYpoint'
                 self.draw()
 
+
     def drawDMSPoint(self):
         point, ok = DMSDialog().getPoint()
         self.XYcrs = QgsCoordinateReferenceSystem(4326)
@@ -568,6 +567,7 @@ class kwg_geoenrichment:
                 self.tool.rb.addPoint(point)
                 self.drawShape = 'XYpoint'
                 self.draw()
+
 
     def drawLine(self):
         if self.tool:

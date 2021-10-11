@@ -941,6 +941,60 @@ class kwg_sparqlquery:
         return jsonBindingObject
 
 
+    def endPlaceInformationQuery(self, endPlaceIRIList, sparql_endpoint=None):
+
+        if sparql_endpoint is None:
+            sparql_endpoint = self.sparqlUTIL._WIKIDATA_SPARQL_ENDPOINT
+
+        jsonBindingObject = []
+        i = 0
+        while i < len(endPlaceIRIList):
+            if i + 50 > len(endPlaceIRIList):
+                endPlaceIRISubList = endPlaceIRIList[i:]
+            else:
+                endPlaceIRISubList = endPlaceIRIList[i:(i + 50)]
+
+            queryPrefix = self.sparqlUTIL.make_sparql_prefix()
+
+            if sparql_endpoint == self.sparqlUTIL._WIKIDATA_SPARQL_ENDPOINT:
+                endPlaceQuery = queryPrefix + """SELECT distinct ?place ?placeLabel ?placeFlatType ?wkt
+                                WHERE {
+                                ?place wdt:P625 ?wkt .
+                                # retrieve the English label
+                                SERVICE wikibase:label {bd:serviceParam wikibase:language "en". ?place rdfs:label ?placeLabel .}
+                                ?place wdt:P31 ?placeFlatType.
+                                # ?placeFlatType wdt:P279* wd:Q2221906.
+
+                                VALUES ?place
+                                {"""
+            else:
+                endPlaceQuery = queryPrefix + """SELECT distinct ?place ?placeLabel ?placeFlatType ?wkt
+                                WHERE {
+                                ?place geo:hasGeometry ?geometry .
+                                ?place rdfs:label ?placeLabel .
+                                ?geometry geo:asWKT ?wkt.
+
+                                VALUES ?place
+                                {"""
+            for IRI in endPlaceIRISubList:
+                endPlaceQuery = endPlaceQuery + "<" + IRI + "> \n"
+
+            endPlaceQuery = endPlaceQuery + """
+                            }
+                            }
+                            """
+
+            res_json = self.sparqlUTIL.sparql_requests(query=endPlaceQuery,
+                                                  sparql_endpoint=sparql_endpoint,
+                                                  doInference=False)
+            res_json = res_json["results"]["bindings"]
+            jsonBindingObject.extend(res_json)
+
+            i = i + 50
+
+        return jsonBindingObject
+
+
 if __name__ == "__main__":
     SQ = kwg_sparqlquery()
     SQ.EventTypeSPARQLQuery()
