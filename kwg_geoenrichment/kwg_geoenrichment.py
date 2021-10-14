@@ -22,7 +22,7 @@
  ***************************************************************************/
 """
 from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, qVersion, QVariant
-from qgis.PyQt.QtWidgets import QAction, QMessageBox, QMenu, QInputDialog, QAbstractItemView
+from qgis.PyQt.QtWidgets import QAction, QMessageBox, QMenu, QInputDialog, QAbstractItemView, QLineEdit
 from qgis.PyQt.QtGui import QIcon
 
 from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
@@ -32,13 +32,17 @@ from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
 from qgis.gui import QgsRubberBand
 
 # Initialize Qt resources from file resources.py
+from PyQt5.uic.properties import QtWidgets
+
 from .resources import *
 # Import the code for the dialog
 from .kwg_geoenrichment_dialog import kwg_geoenrichmentDialog
 from .kwg_property_geoenrichment_dialog import kwg_property_geoenrichmentDialog
 from .kwg_property_merge_dialog import kwg_property_mergeDialog
+from .kwg_linkedData_relationship_finder_dialog import kwg_linkedDataDialog
 from .kwg_property_enrichment import kwg_property_enrichment
 from .kwg_property_merge import kwg_property_merge
+from .kwg_linkedData_relationship_finder import kwg_linkedData_relationship_finder
 from .kwg_explore_dialog import kwg_exploreDialog
 from .kwg_sparqlquery import kwg_sparqlquery
 from .kwg_util import kwg_util as UTIL
@@ -118,6 +122,7 @@ class kwg_geoenrichment:
         self.sparqlQuery = kwg_sparqlquery()
 
         self.eventPlaceTypeDict = dict()
+
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -216,6 +221,7 @@ class kwg_geoenrichment:
 
         return action
 
+
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
@@ -236,6 +242,13 @@ class kwg_geoenrichment:
             text=self.tr(u'Property Merge Tool'),
             callback=self.runPropertyMerge,
             parent=self.iface.mainWindow())
+
+        self.add_action(
+            QIcon(':/plugins/kwg_geoenrichment/resources/merge_Data.png'),
+            text=self.tr(u'Link Data Relationship Finder Tool'),
+            callback=self.runRelationshipFinder,
+            parent=self.iface.mainWindow())
+
 
         self.add_action(
             QIcon(':/plugins/kwg_geoenrichment/resources/graph_Query.png'),
@@ -355,6 +368,7 @@ class kwg_geoenrichment:
             # substitute with your code.
             pass
 
+
     def runPropertyEnrichment(self):
         """Run method that performs all the real work"""
 
@@ -417,7 +431,6 @@ class kwg_geoenrichment:
 
         names = [layer.name() for layer in QgsProject.instance().mapLayers().values()]
 
-
         # show the dialog
         self.dlgPropertyMerge.show()
 
@@ -433,6 +446,29 @@ class kwg_geoenrichment:
         return
 
 
+    def runRelationshipFinder(self):
+        """Run method that performs all the real work"""
+
+        # Create the dialog with elements (after translation) and keep reference
+        # Only create GUI ONCE in callback, so that it will only load when the plugin is started
+        if self.first_start == True:
+            self.first_start = False
+        self.dlgRelFinder = kwg_linkedDataDialog()
+
+        relFinder = kwg_linkedData_relationship_finder()
+
+        # show the dialog
+        self.dlgRelFinder.show()
+        # Run the dialog event loop
+        result = self.dlgRelFinder.exec_()
+        # See if OK was pressed
+        if result:
+            # Do something useful here - delete the line containing pass and
+            # substitute with your code.
+            params = self.getParamsRelFinder()
+            relFinder.execute(params, ifaceObj=self.iface)
+
+
     def runKWGExplore(self):
         """Run method that performs all the real work"""
 
@@ -445,12 +481,13 @@ class kwg_geoenrichment:
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
-        result = self.dlg.exec_()
+        result = self.dlgRelFinder.exec_()
         # See if OK was pressed
         if result:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
             pass
+
 
 
     def updateParamsPropertyEnrichment(self, propertiesDict):
@@ -463,6 +500,32 @@ class kwg_geoenrichment:
         listWidget.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         return
+
+
+    def getParamsRelFinder(self):
+        params = {}
+
+        params["sparql_endpoint"] = self.dlgRelFinder.lineEdit.text()
+        params["feat_class"] = self.dlgRelFinder.lineEdit_2.text()
+
+        params["degree_val"] = self.dlgRelFinder.comboBox_degree.currentText()
+
+        # get First Degree Property
+        params["first_degree_property"] = self.dlgRelFinder.comboBox_1.currentText()
+        # params["first_degree_property_direction"] = self.dlgRelFinder.comboBox_3.currentText()
+        params["first_degree_property_direction"] = "BOTH"
+
+        # get Second Degree Property
+        params["second_degree_property"] = self.dlgRelFinder.comboBox_2.currentText()
+        # params["second_degree_property_direction"] = self.dlgRelFinder.comboBox_5.currentText()
+        params["second_degree_property_direction"] = "BOTH"
+
+        # get Third Degree Property
+        params["third_degree_property"] = self.dlgRelFinder.comboBox_3.currentText()
+        # params["third_degree_property_direction"] = self.dlgRelFinder.comboBox_7.currentText()
+        params["third_degree_property_direction"] = "BOTH"
+
+        return params
 
 
     def getPropertyMergeparams(self):
@@ -493,6 +556,7 @@ class kwg_geoenrichment:
         self.toolname = 'drawPoint'
         self.resetSB()
 
+
     def drawXYPoint(self):
         tuple, ok = XYDialog().getPoint(
             self.iface.mapCanvas().mapSettings().destinationCrs())
@@ -513,6 +577,7 @@ class kwg_geoenrichment:
                 self.drawShape = 'XYpoint'
                 self.draw()
 
+
     def drawDMSPoint(self):
         point, ok = DMSDialog().getPoint()
         self.XYcrs = QgsCoordinateReferenceSystem(4326)
@@ -530,6 +595,7 @@ class kwg_geoenrichment:
                 self.tool.rb.addPoint(point)
                 self.drawShape = 'XYpoint'
                 self.draw()
+
 
     def drawLine(self):
         if self.tool:

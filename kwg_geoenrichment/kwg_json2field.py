@@ -298,7 +298,7 @@ class kwg_json2field:
         return keyValueDict
 
 
-    def dataTypeCast(fieldValue, fieldDataType):
+    def dataTypeCast(self, fieldValue, fieldDataType):
         # according to the field data type, cast the data into corresponding data type
         if fieldDataType == "TEXT":
             return fieldValue

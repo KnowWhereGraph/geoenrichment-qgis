@@ -257,3 +257,51 @@ class kwg_util:
                 vlayer.commitChanges()
 
         return 1
+
+    def mergeTripleStoreDicts(self, superTripleStore, childTripleStore):
+        # superTripleStore and childTripleStore: dict() object with key nameTuple Triple("Triple",["s", "p", "o"])
+        # add childTripleStore to superTripleStore.
+        # If S-P-O is in the superTripleStore, update the degree to the smaller one between the original degree in superTripleStore and the one in childTripleStore
+        # If S-P-O is not in the superTripleStore, add it
+        for triple in childTripleStore:
+            if triple not in superTripleStore:
+                superTripleStore[triple] = childTripleStore[triple]
+            else:
+                if superTripleStore[triple] > childTripleStore[triple]:
+                    superTripleStore[triple] = childTripleStore[triple]
+
+        return superTripleStore
+
+    def directionListFromBoth2OD(self, propertyDirectionList):
+        # given a list of direction, return a list of lists which change a list with "BOTH" to two list with "ORIGIN" and "DESTINATION"
+        # e.g. ["BOTH", "ORIGIN", "DESTINATION", "ORIGIN"] -> ["ORIGIN", "ORIGIN", "DESTINATION", "ORIGIN"] and ["DESTINATION", "ORIGIN", "DESTINATION", "ORIGIN"]
+        # propertyDirectionList: a list of direction from ["BOTH", "ORIGIN", "DESTINATION"], it has at most 4 elements
+
+        propertyDirectionExpandedLists = []
+        propertyDirectionExpandedLists.append(propertyDirectionList)
+
+        resultList = []
+
+        for currentPropertyDirectionList in propertyDirectionExpandedLists:
+            i = 0
+            indexOfBOTH = -1
+            while i < len(currentPropertyDirectionList):
+                if currentPropertyDirectionList[i] == "BOTH":
+                    indexOfBOTH = i
+                    break
+                i = i + 1
+
+            if indexOfBOTH != -1:
+                newList1 = currentPropertyDirectionList[:]
+                newList1[indexOfBOTH] = "ORIGIN"
+                propertyDirectionExpandedLists.append(newList1)
+
+                newList2 = currentPropertyDirectionList[:]
+                newList2[indexOfBOTH] = "DESTINATION"
+                propertyDirectionExpandedLists.append(newList2)
+
+            else:
+                if currentPropertyDirectionList not in resultList:
+                    resultList.append(currentPropertyDirectionList)
+
+        return resultList
