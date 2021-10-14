@@ -138,3 +138,9 @@ class kwg_sparqlutil:
 
 
         return entityTypeJson
+
+
+if __name__ == '__main__':
+
+    SU = kwg_sparqlutil()
+    print(SU.make_sparql_prefix())
