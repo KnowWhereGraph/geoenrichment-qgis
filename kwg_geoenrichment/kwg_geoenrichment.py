@@ -481,7 +481,7 @@ class kwg_geoenrichment:
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
-        result = self.dlgRelFinder.exec_()
+        result = self.dlg.exec_()
         # See if OK was pressed
         if result:
             # Do something useful here - delete the line containing pass and

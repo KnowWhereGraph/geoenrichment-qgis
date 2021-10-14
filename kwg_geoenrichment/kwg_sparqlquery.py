@@ -1013,54 +1013,16 @@ class kwg_sparqlquery:
 
         queryPrefix = self.sparqlUTIL.make_sparql_prefix()
 
-        if sparql_endpoint == kwg_sparqlutil._WIKIDATA_SPARQL_ENDPOINT:
-            commonPropertyQuery = queryPrefix + """SELECT ?p ?prop ?propLabel ?NumofSub WHERE
-                                        {
-                                            {
-                                                SELECT ?prop ?p (COUNT(DISTINCT ?s) AS ?NumofSub) WHERE
-                                                {
-
-                                                    hint:Query hint:optimizer "None" .
-
-                                                    ?s ?p ?o .
-                                                    ?prop wikibase:directClaim ?p .
-
-
-                                                    }
-                                                }  GROUP BY ?prop ?p
-                                            }
-
-                                            SERVICE wikibase:label {
-                                                bd:serviceParam wikibase:language "en" .
-                                            }
-
-                                        } ORDER BY DESC (?NumofSub)
-            """
-
-        else:
-            if doSameAs:
-                commonPropertyQuery = queryPrefix + """select distinct ?p (count(distinct ?s) as ?NumofSub)
-                                            where
-                                            {
-                                            ?s owl:sameAs ?wikidataSub.
-                                            ?s ?p ?o.
-                                            VALUES ?wikidataSub
-                                            {"""
-            else:
-                commonPropertyQuery = queryPrefix + """select distinct ?p (count(distinct ?s) as ?NumofSub)
-                                            where
-                                            {
-                                            ?s ?p ?o.
-                                            VALUES ?s
-                                            {"""
-            commonPropertyQuery += iri_list
-
-            commonPropertyQuery += """
-                                            }
-                                            }
-                                            group by ?p
-                                            order by DESC(?NumofSub)
-                                            """
+        commonPropertyQuery = queryPrefix + """
+        select distinct ?p ?plabel 
+        where { 
+            ?s ?p ?o.
+            ?s rdf:type kwg-ont:SoilPolygon. 
+            OPTIONAL {
+                ?p rdfs:label ?plabel .
+            }
+        }
+        """
 
         # QgsMessageLog.logMessage(commonPropertyQuery, "kwg_geoenrichment", level=Qgis.Info)
         res_json = self.sparqlUTIL.sparql_requests(query=commonPropertyQuery,
@@ -1069,27 +1031,21 @@ class kwg_sparqlquery:
         return res_json
 
 
-    def commonSosaObsPropertyExploreQuery(self, inplaceIRIList, sparql_endpoint='https://dbpedia.org/sparql', doSameAs=False):
+    def commonSosaObsPropertyExploreQuery(self, feature, sparql_endpoint='https://dbpedia.org/sparql', doSameAs=False):
         queryPrefix = self.sparqlUTIL.make_sparql_prefix()
 
-        commonPropertyQuery = queryPrefix + """select distinct ?p ?pLabel (count(distinct ?s) as ?NumofSub)
-                                        where {
-                                        ?s sosa:isFeatureOfInterestOf ?obscol .
-                                        ?obscol sosa:hasMember ?obs.
-                                        ?obs sosa:observedProperty ?p .
-                                        OPTIONAL {?p rdfs:label ?pLabel . }
-                                        VALUES ?s
-                                        {
-                                        """
-        for IRI in inplaceIRIList:
-            commonPropertyQuery = commonPropertyQuery + "<" + IRI + "> \n"
-
-        commonPropertyQuery = commonPropertyQuery + """
-                                        }
-                                        }
-                                        group by ?p ?pLabel
-                                        order by DESC(?NumofSub)
-                                        """
+        commonPropertyQuery = queryPrefix + """
+        select distinct ?p ?plabel 
+        where { 
+            ?s sosa:isFeatureOfInterestOf ?obscol .
+            ?obscol sosa:hasMember ?obs.
+            ?obs sosa:observedProperty ?p .
+            ?s rdf:type kwg-ont:SoilPolygon. 
+            OPTIONAL {
+                ?p rdfs:label ?plabel .
+            }
+        }
+        """
 
         res_json = self.sparqlUTIL.sparql_requests(query=commonPropertyQuery,
                                               sparql_endpoint=sparql_endpoint,
@@ -1100,31 +1056,19 @@ class kwg_sparqlquery:
     def inverseCommonPropertyExploreQuery(self, inplaceIRIList, sparql_endpoint='https://dbpedia.org/sparql', doSameAs=True):
         queryPrefix = self.SPARQLUtil.make_sparql_prefix()
 
-        if doSameAs:
-            commonPropertyQuery = queryPrefix + """select distinct ?p (count(distinct ?s) as ?NumofSub)
-                                            where
-                                            { ?s owl:sameAs ?wikidataSub.
-                                            ?o ?p ?s.
-                                            VALUES ?wikidataSub
-                                            {"""
-        else:
-            commonPropertyQuery = queryPrefix + """select distinct ?p (count(distinct ?s) as ?NumofSub)
-                                        where
-                                        {
-                                        ?o ?p ?s.
-                                        VALUES ?s
-                                        {"""
-        for IRI in inplaceIRIList:
-            commonPropertyQuery = commonPropertyQuery + "<" + IRI + "> \n"
+        inversePropertyQuery = queryPrefix + """
+        select distinct ?p ?plabel 
+        where { 
+            ?s owl:sameAs ?wikidataSub.
+            ?s ?p ?o. 
+            ?wikidataSub rdf:type kwg-ont:SoilPolygon. 
+            OPTIONAL {
+                ?p rdfs:label ?plabel .
+            }
+        }
+        """
 
-        commonPropertyQuery = commonPropertyQuery + """
-                                        }
-                                        }
-                                        group by ?p
-                                        order by DESC(?NumofSub)
-                                        """
-
-        res_json = self.sparqlUTIL.sparql_requests(query=commonPropertyQuery,
+        res_json = self.sparqlUTIL.sparql_requests(query=inversePropertyQuery,
                                               sparql_endpoint=sparql_endpoint,
                                               doInference=False)
         return res_json
