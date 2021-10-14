@@ -46,6 +46,8 @@ class kwg_sparqlquery:
                                                     request_method="get")
         GeoQueryResult = GeoQueryResult["results"]["bindings"]
 
+        QgsMessageLog.logMessage(json.dumps(GeoQueryResult), "kwg_ldrf", level=Qgis.Info)
+
         return GeoQueryResult
 
 
