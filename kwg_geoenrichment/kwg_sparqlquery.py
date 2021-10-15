@@ -48,7 +48,7 @@ class kwg_sparqlquery:
                                                     request_method="get")
         GeoQueryResult = GeoQueryResult["results"]["bindings"]
 
-        QgsMessageLog.logMessage(json.dumps(GeoQueryResult), "kwg_ldrf", level=Qgis.Info)
+        # QgsMessageLog.logMessage(json.dumps(GeoQueryResult), "kwg_ldrf", level=Qgis.Info)
 
         return GeoQueryResult
 
@@ -158,7 +158,7 @@ class kwg_sparqlquery:
             # """
             query += "}"
 
-        QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
+        # QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
         GeoQueryResult = SPARQLUtil.sparql_requests(query=query,
                                                     sparql_endpoint=sparql_endpoint,
                                                     doInference=False)
@@ -264,7 +264,7 @@ class kwg_sparqlquery:
 
 
     def inverseCommonPropertyQuery(self, inplaceIRIList, sparql_endpoint='https://dbpedia.org/sparql', doSameAs=True):
-        queryPrefix = self.SPARQLUtil.make_sparql_prefix()
+        queryPrefix = self.sparqlUTIL.make_sparql_prefix()
 
         if doSameAs:
             commonPropertyQuery = queryPrefix + """select distinct ?p (count(distinct ?s) as ?NumofSub)
@@ -1008,31 +1008,36 @@ class kwg_sparqlquery:
     ##
     ##########
 
-    def commonPropertyExploreQuery(self, sparql_endpoint="http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire", doSameAs=True):
-
+    def commonPropertyExploreQuery(self, feature=None, sparql_endpoint="http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire", doSameAs=True):
 
         queryPrefix = self.sparqlUTIL.make_sparql_prefix()
+
+        if feature is None:
+            feature="kwg-ont:SoilPolygon"
 
         commonPropertyQuery = queryPrefix + """
         select distinct ?p ?plabel 
         where { 
             ?s ?p ?o.
-            ?s rdf:type kwg-ont:SoilPolygon. 
+            ?s rdf:type %s. 
             OPTIONAL {
                 ?p rdfs:label ?plabel .
             }
         }
-        """
+        """ % (feature)
 
-        # QgsMessageLog.logMessage(commonPropertyQuery, "kwg_geoenrichment", level=Qgis.Info)
+        # QgsMessageLog.logMessage("commonQuery: " + commonPropertyQuery, "kwg_explore_geoenrichment", level=Qgis.Info)
         res_json = self.sparqlUTIL.sparql_requests(query=commonPropertyQuery,
                                               sparql_endpoint=sparql_endpoint,
                                               doInference=False)
         return res_json
 
 
-    def commonSosaObsPropertyExploreQuery(self, feature, sparql_endpoint='https://dbpedia.org/sparql', doSameAs=False):
+    def commonSosaObsPropertyExploreQuery(self, feature=None, sparql_endpoint='https://dbpedia.org/sparql', doSameAs=False):
         queryPrefix = self.sparqlUTIL.make_sparql_prefix()
+
+        if feature is None:
+            feature="kwg-ont:SoilPolygon"
 
         commonPropertyQuery = queryPrefix + """
         select distinct ?p ?plabel 
@@ -1040,12 +1045,12 @@ class kwg_sparqlquery:
             ?s sosa:isFeatureOfInterestOf ?obscol .
             ?obscol sosa:hasMember ?obs.
             ?obs sosa:observedProperty ?p .
-            ?s rdf:type kwg-ont:SoilPolygon. 
+            ?s rdf:type %s. 
             OPTIONAL {
                 ?p rdfs:label ?plabel .
             }
         }
-        """
+        """ % (feature)
 
         res_json = self.sparqlUTIL.sparql_requests(query=commonPropertyQuery,
                                               sparql_endpoint=sparql_endpoint,
@@ -1053,20 +1058,24 @@ class kwg_sparqlquery:
         return res_json
 
 
-    def inverseCommonPropertyExploreQuery(self, inplaceIRIList, sparql_endpoint='https://dbpedia.org/sparql', doSameAs=True):
-        queryPrefix = self.SPARQLUtil.make_sparql_prefix()
+    def inverseCommonPropertyExploreQuery(self, feature=None, sparql_endpoint='https://dbpedia.org/sparql', doSameAs=True):
+
+        if feature is None:
+            feature="kwg-ont:SoilPolygon"
+
+        queryPrefix = self.sparqlUTIL.make_sparql_prefix()
 
         inversePropertyQuery = queryPrefix + """
         select distinct ?p ?plabel 
         where { 
             ?s owl:sameAs ?wikidataSub.
             ?s ?p ?o. 
-            ?wikidataSub rdf:type kwg-ont:SoilPolygon. 
+            ?wikidataSub rdf:type %s. 
             OPTIONAL {
                 ?p rdfs:label ?plabel .
             }
         }
-        """
+        """ %(feature)
 
         res_json = self.sparqlUTIL.sparql_requests(query=inversePropertyQuery,
                                               sparql_endpoint=sparql_endpoint,

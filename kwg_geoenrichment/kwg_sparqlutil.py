@@ -18,8 +18,8 @@ class kwg_sparqlutil:
 
 
 
-    NAME_SPACE = "http://stko-roy.geog.ucsb.edu/"
-    # NAME_SPACE = "http://stko-kwg.geog.ucsb.edu/"
+    # NAME_SPACE = "http://stko-roy.geog.ucsb.edu"
+    NAME_SPACE = "http://stko-kwg.geog.ucsb.edu"
 
     # _SPARQL_ENDPOINT = "http://stko-roy.geog.ucsb.edu:7200/repositories/kwg-seed-graph-v2"
     _SPARQL_ENDPOINT = "http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire"
@@ -27,7 +27,7 @@ class kwg_sparqlutil:
 
     _PREFIX = {
         "kwgr": "%s/lod/resource/" %  (NAME_SPACE),
-        "kwg-ont": "%s/lod/resource/" %  (NAME_SPACE),
+        "kwg-ont": "%s/lod/ontology/" %  (NAME_SPACE),
         "geo": "http://www.opengis.net/ont/geosparql#",
         "geof": "http://www.opengis.net/def/function/geosparql/",
         "wd": "http://www.wikidata.org/entity/",

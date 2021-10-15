@@ -58,7 +58,8 @@ class kwg_exploreDialog(QtWidgets.QDialog, FORM_CLASS):
 
         self.populateEventPlaceTypes()
         self.updateTableView()
-        self.randTest()
+        self.retrievePropertyList()
+        # self.randTest()
 
 
         # font = QFont()
@@ -125,12 +126,15 @@ class kwg_exploreDialog(QtWidgets.QDialog, FORM_CLASS):
             self.tableWidget.setCellWidget(row, 1, comboBox)
 
 
-    def randTest(self):
-        SPARQLUtil = kwg_sparqlutil()
-        queryPrefix = SPARQLUtil.make_sparql_prefix()
+    def retrievePropertyList(self):
+        commonPropJSON = self.sparqlQuery.commonPropertyExploreQuery()
+        sosaPropJSON = self.sparqlQuery.commonSosaObsPropertyExploreQuery()
+        inversePropJSON = self.sparqlQuery.inverseCommonPropertyExploreQuery()
 
-        QgsMessageLog.logMessage(queryPrefix, "kwg_explore_geoenrichment",
-                                 level=Qgis.Info)
+        QgsMessageLog.logMessage("commonPropJSON : " + json.dumps(commonPropJSON), "kwg_explore_geoenrichment", level= Qgis.Info)
+        QgsMessageLog.logMessage("sosaPropJSON : " + json.dumps(sosaPropJSON), "kwg_explore_geoenrichment", level =Qgis.Info)
+        QgsMessageLog.logMessage("inversePropJSON : " + json.dumps(inversePropJSON), "kwg_explore_geoenrichment", level= Qgis.Info)
 
+        pass
 
 
