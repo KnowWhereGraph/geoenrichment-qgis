@@ -43,7 +43,8 @@ FORM_CLASS, _ = uic.loadUiType(os.path.join(
 
 
 class kwg_exploreDialog(QtWidgets.QDialog, FORM_CLASS):
-    def __init__(self, parent=None):
+    def __init__(self, commonPropertyNameList, commonPropertyURLList, sosaPropertyNameList, \
+                sosaPropertyURLList, inversePropertyNameList, inversePropertyURLList, parent=None):
         """Constructor."""
         super(kwg_exploreDialog, self).__init__(parent)
         # Set up the user interface from Designer through FORM_CLASS.
@@ -68,33 +69,21 @@ class kwg_exploreDialog(QtWidgets.QDialog, FORM_CLASS):
         # KWG module objects
         self.sparqlQuery = kwg_sparqlquery()
 
+        # setting up properties
+        self.commonPropertyNameList = commonPropertyNameList
+        self.commonPropertyURLList = commonPropertyURLList
+
+        self.sosaPropertyNameList = sosaPropertyNameList
+        self.sosaPropertyURLList = sosaPropertyURLList
+
+        self.inversePropertyNameList = inversePropertyNameList
+        self.inversePropertyURLList = inversePropertyURLList
+
+        # populate feature types
         self.populateEventPlaceTypes()
-
-        # retrieving properties
-
-        self.commonPropertyNameList = []
-        self.commonPropertyURLList = []
-        self.commonPropertyURLDict = dict()
-
-        self.sosaPropertyNameList = []
-        self.sosaPropertyURLList = []
-        self.sosaPropertyURLDict = dict()
-
-        self.inversePropertyNameList = []
-        self.inversePropertyURLList = []
-        self.inversePropertyURLDict = dict()
-
-        self.retrievePropertyList()
 
         # populate the table
         self.updateTableView()
-
-
-
-        # font = QFont()
-        # font.setPointSize(20)
-        #
-        # self.label.setFont(font)
 
         # icon
         self.toolButton.setIcon(QIcon(':/plugins/kwg_geoenrichment/resources/icon_DrawPtXY.png'))
@@ -156,47 +145,5 @@ class kwg_exploreDialog(QtWidgets.QDialog, FORM_CLASS):
 
             self.tableWidget.setItem(i, 2, QTableWidgetItem(propertyURLLi[i]))
 
-
-    def retrievePropertyList(self):
-        commonPropJSON = self.sparqlQuery.commonPropertyExploreQuery()
-        self.extractPropertyJSON(commonPropJSON, self.commonPropertyURLDict, self.commonPropertyURLList, self.commonPropertyNameList,"common" )
-
-        sosaPropJSON = self.sparqlQuery.commonSosaObsPropertyExploreQuery()
-        self.extractPropertyJSON(sosaPropJSON, self.sosaPropertyURLDict, self.sosaPropertyURLList, self.sosaPropertyNameList, "sosa")
-
-        inversePropJSON = self.sparqlQuery.inverseCommonPropertyExploreQuery()
-        self.extractPropertyJSON(inversePropJSON, self.inversePropertyURLDict, self.inversePropertyURLList, self.inversePropertyNameList, "inverse")
-        pass
-
-
-    def populatePropertyDict(self, propertyJSON, propertyDict, propertyList, propertyType):
-        resultsBindings = propertyJSON["results"]["bindings"]
-        if len(resultsBindings) > 0:
-            for obj in resultsBindings:
-                if "plabel" in obj:
-                    propertyDict[obj["p"]["value"]] = obj["plabel"]["value"]
-                else:
-                    propertyDict[obj["p"]["value"]] = obj["p"]["value"]
-                propertyList.append(obj["p"]["value"])
-
-        self.logger.info(propertyType + "_li: " + str(propertyList))
-        self.logger.info(propertyType + "_li: " + json.dumps(propertyDict))
-
-
-    def extractPropertyJSON(self, propertyJSON, propertyDict, propertyURLList, propertyNameList, propertyType):
-        resultsBindings = propertyJSON["results"]["bindings"]
-        propertyDict = self.sparqlQuery.extractCommonPropertyJSON(
-            resultsBindings,
-            p_url_list=propertyURLList,
-            p_name_list=propertyNameList,
-            url_dict=propertyDict,
-            p_var="p",
-            plabel_var="plabel",
-            numofsub_var="NumofSub")
-
-        # self.logger.info(propertyType + "_url_li : " + str(propertyURLList))
-        # self.logger.info(propertyType + "_name_li : " + str(propertyNameList))
-        # self.logger.info(propertyType + "_dict : " + str(propertyDict))
         return
-
 

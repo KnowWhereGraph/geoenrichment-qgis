@@ -42,6 +42,7 @@ from .kwg_property_merge_dialog import kwg_property_mergeDialog
 from .kwg_linkedData_relationship_finder_dialog import kwg_linkedDataDialog
 from .kwg_property_enrichment import kwg_property_enrichment
 from .kwg_property_merge import kwg_property_merge
+from .kwg_explore import kwg_explore
 from .kwg_linkedData_relationship_finder import kwg_linkedData_relationship_finder
 from .kwg_explore_dialog import kwg_exploreDialog
 from .kwg_sparqlquery import kwg_sparqlquery
@@ -476,40 +477,88 @@ class kwg_geoenrichment:
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
-        self.exploreDlg = kwg_exploreDialog()
+
+        self.kwg_explore = kwg_explore()
+        commonPropertyNameList, commonPropertyURLList, sosaPropertyNameList, \
+        sosaPropertyURLList, inversePropertyNameList, inversePropertyURLList = self.kwg_explore.getPropertyLists()
+
+        self.exploreDlg = kwg_exploreDialog(commonPropertyNameList, commonPropertyURLList, sosaPropertyNameList, \
+        sosaPropertyURLList, inversePropertyNameList, inversePropertyURLList)
 
         # show the dialog
         self.exploreDlg.show()
+
+        # self.exploreDlg.comboBox.currentIndexChanged(lambda: self.exploreComboboxHandler())
+
+        self.exploreDlg.toolButton.released.connect(self.pointExploreButtonClicked)
+        self.exploreDlg.toolButton_1.released.connect(self.lineExploreButtonClicked)
+        self.exploreDlg.toolButton_2.released.connect(self.polygonExploreButtonClicked)
+
         # Run the dialog event loop
         result = self.exploreDlg.exec_()
         # See if OK was pressed
         if result:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
+            self.getExploreParams()
 
-            params = {}
 
-            params["sparql_endpoint"] = self.exploreDlg.lineEdit.text()
-            params["feature"] = self.exploreDlg.comboBox.currentText()
+    def exploreComboboxHandler(self):
+        self.exploreParams["feature"] = self.exploreDlg.comboBox.currentText()
+        pass
 
-            selectedProp = {}
 
-            for item_count in range(self.exploreDlg.tableWidget.rowCount()):
-                if self.exploreDlg.tableWidget.item(item_count, 0).checkState() == QtCore.Qt.Checked:
-                    prop_name = self.exploreDlg.tableWidget.item(item_count, 0).text()
-                    widget = self.exploreDlg.tableWidget.cellWidget(item_count, 1)
-                    if isinstance(widget, QComboBox):
-                        property_merge_rule = widget.currentText()
+    def getExploreParams(self):
+        self.exploreParams = {}
 
-                    property_uri = self.exploreDlg.tableWidget.item(item_count, 2).text()
-                    selectedProp[prop_name] = {}
-                    selectedProp[prop_name]["merge_rule"] = \
-                        property_merge_rule
-                    selectedProp[prop_name]["property_uri"] = \
-                        property_uri
+        self.exploreParams["sparql_endpoint"] = self.exploreDlg.lineEdit.text()
+        self.exploreParams["feature"] = self.exploreDlg.comboBox.currentText()
 
-            params["selectedProp"] = selectedProp
-            self.logger.info(json.dumps(params, indent=2))
+        selectedProp = {}
+
+        for item_count in range(self.exploreDlg.tableWidget.rowCount()):
+            if self.exploreDlg.tableWidget.item(item_count, 0).checkState() == QtCore.Qt.Checked:
+                prop_name = self.exploreDlg.tableWidget.item(item_count, 0).text()
+                widget = self.exploreDlg.tableWidget.cellWidget(item_count, 1)
+                if isinstance(widget, QComboBox):
+                    property_merge_rule = widget.currentText()
+
+                property_uri = self.exploreDlg.tableWidget.item(item_count, 2).text()
+                selectedProp[prop_name] = {}
+                selectedProp[prop_name]["merge_rule"] = \
+                    property_merge_rule
+                selectedProp[prop_name]["property_uri"] = \
+                    property_uri
+
+        self.exploreParams["selectedProp"] = selectedProp
+
+        self.exploreParams["spatial_relation"] = self.exploreDlg.comboBox_2.currentText()
+        self.exploreParams["layer_name"] = self.exploreDlg.lineEdit_2.text()
+
+        self.logger.info(json.dumps(self.exploreParams, indent=2))
+        return
+
+
+    def pointExploreButtonClicked(self):
+        self.getExploreParams()
+        self.drawPoint(sender="explore")
+        self.exploreDlg.close()
+        QgsMessageLog.logMessage("point" + " clicked! " , "keg_geoenrichment", level=Qgis.Info)
+
+
+    def lineExploreButtonClicked(self):
+        self.getExploreParams()
+        self.drawLine(sender="explore")
+        self.exploreDlg.close()
+        QgsMessageLog.logMessage("line" + " clicked! " , "keg_geoenrichment", level=Qgis.Info)
+
+
+    def polygonExploreButtonClicked(self):
+        self.getExploreParams()
+        self.drawPolygon(sender="explore")
+        self.exploreDlg.close()
+        QgsMessageLog.logMessage("polygon" + " clicked! " , "keg_geoenrichment", level=Qgis.Info)
+
 
 
     def updateParamsPropertyEnrichment(self, propertiesDict):
@@ -567,12 +616,12 @@ class kwg_geoenrichment:
         return params
 
 
-    def drawPoint(self):
+    def drawPoint(self, sender=None):
         if self.tool:
             self.tool.reset()
         self.tool = DrawPoint(self.iface, self.settings.getColor())
         self.tool.setAction(self.actions[0])
-        self.tool.selectionDone.connect(self.draw)
+        self.tool.selectionDone.connect(lambda: self.draw(sender))
         self.iface.mapCanvas().setMapTool(self.tool)
         self.drawShape = 'point'
         self.toolname = 'drawPoint'
@@ -619,12 +668,12 @@ class kwg_geoenrichment:
                 self.draw()
 
 
-    def drawLine(self):
+    def drawLine(self, sender=None):
         if self.tool:
             self.tool.reset()
         self.tool = DrawLine(self.iface, self.settings.getColor())
         self.tool.setAction(self.actions[1])
-        self.tool.selectionDone.connect(self.draw)
+        self.tool.selectionDone.connect(lambda: self.draw(sender))
         self.tool.move.connect(self.updateSB)
         self.iface.mapCanvas().setMapTool(self.tool)
         self.drawShape = 'line'
@@ -658,12 +707,12 @@ class kwg_geoenrichment:
     #     self.toolname = 'drawCircle'
     #     self.resetSB()
 
-    def drawPolygon(self):
+    def drawPolygon(self, sender=None):
         if self.tool:
             self.tool.reset()
         self.tool = DrawPolygon(self.iface, self.settings.getColor())
         self.tool.setAction(self.actions[4])
-        self.tool.selectionDone.connect(self.draw)
+        self.tool.selectionDone.connect(lambda: self.draw(sender))
         self.tool.move.connect(self.updateSB)
         self.iface.mapCanvas().setMapTool(self.tool)
         self.drawShape = 'polygon'
@@ -815,7 +864,7 @@ then select an entity on the map.'
             self.draw()
 
 
-    def draw(self):
+    def draw(self, sender=None):
         rb = self.tool.rb
         g = rb.asGeometry()
 
@@ -896,30 +945,31 @@ then select an entity on the map.'
             self.iface.mapCanvas().refresh()
             QgsMessageLog.logMessage("Your polygon has been saved to a layer", "kwg_geoenrichment", level=Qgis.Info)
 
-            self.dlg = kwg_geoenrichmentDialog()
+            if not sender:
+                self.dlg = kwg_geoenrichmentDialog()
 
-            self.populateEventPlaceTypes()
+                self.populateEventPlaceTypes()
 
-            # show the dialog
-            self.dlg.show()
-            # Run the dialog event loop
-            result = self.dlg.exec_()
-            # See if OK was pressed
-            if result:
-                params = self.getInputs()
+                # show the dialog
+                self.dlg.show()
+                # Run the dialog event loop
+                result = self.dlg.exec_()
+                # See if OK was pressed
+                if result:
+                    params = self.getInputs()
 
-                QgsMessageLog.logMessage("Contacting the server with the geoSPARQL request", "kwg_geoenrichment",
-                                         level=Qgis.Info)
+                    QgsMessageLog.logMessage("Contacting the server with the geoSPARQL request", "kwg_geoenrichment",
+                                             level=Qgis.Info)
 
-                wkt_literal = self.performWKTConversion()
-                self.logger.debug(wkt_literal)
-                geoSPARQLResponse = self.sparqlQuery.TypeAndGeoSPARQLQuery(query_geo_wkt=wkt_literal, selectedURL=params["place_type"], geosparql_func=params["geosparql_func"])
+                    wkt_literal = self.performWKTConversion()
+                    self.logger.debug(wkt_literal)
+                    geoSPARQLResponse = self.sparqlQuery.TypeAndGeoSPARQLQuery(query_geo_wkt=wkt_literal, selectedURL=params["place_type"], geosparql_func=params["geosparql_func"])
 
-                # self.logger.debug(json.dumps(geoSPARQLResponse))
-                QgsMessageLog.logMessage("GeoJSON response received from the server", "kwg_geoenrichment",
-                                         level=Qgis.Info)
-                self.handleGeoJSONObject(geoResult=geoSPARQLResponse)
-                pass
+                    # self.logger.debug(json.dumps(geoSPARQLResponse))
+                    QgsMessageLog.logMessage("GeoJSON response received from the server", "kwg_geoenrichment",
+                                             level=Qgis.Info)
+                    self.handleGeoJSONObject(geoResult=geoSPARQLResponse)
+                    pass
 
         self.tool.reset()
         self.resetSB()
