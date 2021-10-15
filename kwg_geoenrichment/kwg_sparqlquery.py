@@ -1016,7 +1016,7 @@ class kwg_sparqlquery:
             feature="kwg-ont:SoilPolygon"
 
         commonPropertyQuery = queryPrefix + """
-        select distinct ?p ?plabel 
+        select distinct ?p ?plabel (count(distinct ?s) as ?NumofSub)
         where { 
             ?s ?p ?o.
             ?s rdf:type %s. 
@@ -1024,6 +1024,8 @@ class kwg_sparqlquery:
                 ?p rdfs:label ?plabel .
             }
         }
+        group by ?p ?plabel
+        order by DESC(?NumofSub)
         """ % (feature)
 
         # QgsMessageLog.logMessage("commonQuery: " + commonPropertyQuery, "kwg_explore_geoenrichment", level=Qgis.Info)
@@ -1040,7 +1042,7 @@ class kwg_sparqlquery:
             feature="kwg-ont:SoilPolygon"
 
         commonPropertyQuery = queryPrefix + """
-        select distinct ?p ?plabel 
+        select distinct ?p ?plabel (count(distinct ?s) as ?NumofSub)
         where { 
             ?s sosa:isFeatureOfInterestOf ?obscol .
             ?obscol sosa:hasMember ?obs.
@@ -1050,6 +1052,8 @@ class kwg_sparqlquery:
                 ?p rdfs:label ?plabel .
             }
         }
+        group by ?p ?plabel
+        order by DESC(?NumofSub)
         """ % (feature)
 
         res_json = self.sparqlUTIL.sparql_requests(query=commonPropertyQuery,
@@ -1066,7 +1070,7 @@ class kwg_sparqlquery:
         queryPrefix = self.sparqlUTIL.make_sparql_prefix()
 
         inversePropertyQuery = queryPrefix + """
-        select distinct ?p ?plabel 
+        select distinct ?p ?plabel (count(distinct ?s) as ?NumofSub)
         where { 
             ?s owl:sameAs ?wikidataSub.
             ?s ?p ?o. 
@@ -1075,6 +1079,8 @@ class kwg_sparqlquery:
                 ?p rdfs:label ?plabel .
             }
         }
+        group by ?p ?plabel
+        order by DESC(?NumofSub)
         """ %(feature)
 
         res_json = self.sparqlUTIL.sparql_requests(query=inversePropertyQuery,

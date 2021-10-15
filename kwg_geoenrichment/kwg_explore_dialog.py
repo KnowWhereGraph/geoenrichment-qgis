@@ -22,6 +22,7 @@
  ***************************************************************************/
 """
 import json
+import logging
 import os
 
 from qgis.PyQt import uic
@@ -53,13 +54,41 @@ class kwg_exploreDialog(QtWidgets.QDialog, FORM_CLASS):
         self.setupUi(self)
         self.eventPlaceTypeDict = dict()
 
+        # logging
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.DEBUG)  # or whatever
+        handler = logging.FileHandler(
+            '/var/local/QGIS/kwg_geoenrichment.log', 'w',
+            'utf-8')  # or whatever
+        formatter = logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')  # or whatever
+        handler.setFormatter(formatter)  # Pass handler as a parameter, not assign
+        self.logger.addHandler(handler)
+
         # KWG module objects
         self.sparqlQuery = kwg_sparqlquery()
 
         self.populateEventPlaceTypes()
-        self.updateTableView()
+
+        # retrieving properties
+
+        self.commonPropertyNameList = []
+        self.commonPropertyURLList = []
+        self.commonPropertyURLDict = dict()
+
+        self.sosaPropertyNameList = []
+        self.sosaPropertyURLList = []
+        self.sosaPropertyURLDict = dict()
+
+        self.inversePropertyNameList = []
+        self.inversePropertyURLList = []
+        self.inversePropertyURLDict = dict()
+
         self.retrievePropertyList()
-        # self.randTest()
+
+        # populate the table
+        self.updateTableView()
+
 
 
         # font = QFont()
@@ -94,47 +123,80 @@ class kwg_exploreDialog(QtWidgets.QDialog, FORM_CLASS):
 
 
     def updateTableView(self):
+
+        propertyNameLi =  self.commonPropertyNameList.copy()
+        propertyNameLi.extend(self.sosaPropertyNameList)
+        propertyNameLi.extend(self.inversePropertyNameList)
+
+        propertyURLLi = self.commonPropertyURLList.copy()
+        propertyURLLi.extend(self.sosaPropertyURLList)
+        propertyURLLi.extend(self.inversePropertyURLList)
+
         self.tableWidget.setColumnCount(3)
-        self.tableWidget.setRowCount(3)
+        self.tableWidget.setRowCount(len(propertyNameLi))
         self.tableWidget.verticalHeader().setVisible(False)
         self.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         tableHeader = ['Property', 'Merge Rule', "URI"]
         self.tableWidget.setHorizontalHeaderLabels(tableHeader)
 
-        propertyList = ["rdf:Label", "rdfType", "kwg:affectedBy", "kwg:somrRandProperty"]
 
-
-        for val in propertyList:
-            row =0
-            chkBoxItem = QTableWidgetItem(val)
-            chkBoxItem.setText(val)
+        for i in range(len(propertyNameLi)):
+            chkBoxItem = QTableWidgetItem(propertyNameLi[i])
+            chkBoxItem.setText(propertyNameLi[i])
             chkBoxItem.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
             chkBoxItem.setCheckState(QtCore.Qt.Unchecked)
 
-            self.tableWidget.setItem(row, 0, chkBoxItem)
+            self.tableWidget.setItem(i, 0, chkBoxItem)
 
-            self.tableWidget.setItem(row, 2, QTableWidgetItem(val))
+            self.tableWidget.setItem(i, 2, QTableWidgetItem(propertyURLLi[i]))
 
-            # self.tableWidget.setItem(row, 3, QTableWidgetItem("Text"))
-            row += 1
-
-        for row in range(3):
             comboBox = QComboBox()
-            for txt in ["", "ADD", "MEAN", "FIRST", "LAST", "CONCAT", "COUNT", "SUBTRACT", "STD DEV"]:
+            for txt in ["", "SUM", "MIN", "MAX", "STD-DEV", "MEAN", "COUNT", "CONCAT", "FIRST", "LAST"]:
                 comboBox.addItem(txt)
-            self.tableWidget.setCellWidget(row, 1, comboBox)
+            self.tableWidget.setCellWidget(i, 1, comboBox)
 
 
     def retrievePropertyList(self):
         commonPropJSON = self.sparqlQuery.commonPropertyExploreQuery()
+        self.extractPropertyJSON(commonPropJSON, self.commonPropertyURLDict, self.commonPropertyURLList, self.commonPropertyNameList,"common" )
+
         sosaPropJSON = self.sparqlQuery.commonSosaObsPropertyExploreQuery()
+        self.extractPropertyJSON(sosaPropJSON, self.sosaPropertyURLDict, self.sosaPropertyURLList, self.sosaPropertyNameList, "sosa")
+
         inversePropJSON = self.sparqlQuery.inverseCommonPropertyExploreQuery()
-
-        QgsMessageLog.logMessage("commonPropJSON : " + json.dumps(commonPropJSON), "kwg_explore_geoenrichment", level= Qgis.Info)
-        QgsMessageLog.logMessage("sosaPropJSON : " + json.dumps(sosaPropJSON), "kwg_explore_geoenrichment", level =Qgis.Info)
-        QgsMessageLog.logMessage("inversePropJSON : " + json.dumps(inversePropJSON), "kwg_explore_geoenrichment", level= Qgis.Info)
-
+        self.extractPropertyJSON(inversePropJSON, self.inversePropertyURLDict, self.inversePropertyURLList, self.inversePropertyNameList, "inverse")
         pass
+
+
+    def populatePropertyDict(self, propertyJSON, propertyDict, propertyList, propertyType):
+        resultsBindings = propertyJSON["results"]["bindings"]
+        if len(resultsBindings) > 0:
+            for obj in resultsBindings:
+                if "plabel" in obj:
+                    propertyDict[obj["p"]["value"]] = obj["plabel"]["value"]
+                else:
+                    propertyDict[obj["p"]["value"]] = obj["p"]["value"]
+                propertyList.append(obj["p"]["value"])
+
+        self.logger.info(propertyType + "_li: " + str(propertyList))
+        self.logger.info(propertyType + "_li: " + json.dumps(propertyDict))
+
+
+    def extractPropertyJSON(self, propertyJSON, propertyDict, propertyURLList, propertyNameList, propertyType):
+        resultsBindings = propertyJSON["results"]["bindings"]
+        propertyDict = self.sparqlQuery.extractCommonPropertyJSON(
+            resultsBindings,
+            p_url_list=propertyURLList,
+            p_name_list=propertyNameList,
+            url_dict=propertyDict,
+            p_var="p",
+            plabel_var="plabel",
+            numofsub_var="NumofSub")
+
+        # self.logger.info(propertyType + "_url_li : " + str(propertyURLList))
+        # self.logger.info(propertyType + "_name_li : " + str(propertyNameList))
+        # self.logger.info(propertyType + "_dict : " + str(propertyDict))
+        return
 
 
