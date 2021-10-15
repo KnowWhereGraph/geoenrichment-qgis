@@ -22,7 +22,7 @@
  ***************************************************************************/
 """
 from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, qVersion, QVariant
-from qgis.PyQt.QtWidgets import QAction, QMessageBox, QMenu, QInputDialog, QAbstractItemView, QLineEdit
+from qgis.PyQt.QtWidgets import QAction, QMessageBox, QMenu, QInputDialog, QAbstractItemView, QLineEdit, QComboBox
 from qgis.PyQt.QtGui import QIcon
 
 from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
@@ -476,18 +476,40 @@ class kwg_geoenrichment:
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
-        self.dlg = kwg_exploreDialog()
+        self.exploreDlg = kwg_exploreDialog()
 
         # show the dialog
-        self.dlg.show()
+        self.exploreDlg.show()
         # Run the dialog event loop
-        result = self.dlg.exec_()
+        result = self.exploreDlg.exec_()
         # See if OK was pressed
         if result:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
-            pass
 
+            params = {}
+
+            params["sparql_endpoint"] = self.exploreDlg.lineEdit.text()
+            params["feature"] = self.exploreDlg.comboBox.currentText()
+
+            selectedProp = {}
+
+            for item_count in range(self.exploreDlg.tableWidget.rowCount()):
+                if self.exploreDlg.tableWidget.item(item_count, 0).checkState() == QtCore.Qt.Checked:
+                    prop_name = self.exploreDlg.tableWidget.item(item_count, 0).text()
+                    widget = self.exploreDlg.tableWidget.cellWidget(item_count, 1)
+                    if isinstance(widget, QComboBox):
+                        property_merge_rule = widget.currentText()
+
+                    property_uri = self.exploreDlg.tableWidget.item(item_count, 2).text()
+                    selectedProp[prop_name] = {}
+                    selectedProp[prop_name]["merge_rule"] = \
+                        property_merge_rule
+                    selectedProp[prop_name]["property_uri"] = \
+                        property_uri
+
+            params["selectedProp"] = selectedProp
+            self.logger.info(json.dumps(params, indent=2))
 
 
     def updateParamsPropertyEnrichment(self, propertiesDict):

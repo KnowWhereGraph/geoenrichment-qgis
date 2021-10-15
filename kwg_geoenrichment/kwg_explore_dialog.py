@@ -149,12 +149,12 @@ class kwg_exploreDialog(QtWidgets.QDialog, FORM_CLASS):
 
             self.tableWidget.setItem(i, 0, chkBoxItem)
 
-            self.tableWidget.setItem(i, 2, QTableWidgetItem(propertyURLLi[i]))
-
             comboBox = QComboBox()
             for txt in ["", "SUM", "MIN", "MAX", "STD-DEV", "MEAN", "COUNT", "CONCAT", "FIRST", "LAST"]:
                 comboBox.addItem(txt)
             self.tableWidget.setCellWidget(i, 1, comboBox)
+
+            self.tableWidget.setItem(i, 2, QTableWidgetItem(propertyURLLi[i]))
 
 
     def retrievePropertyList(self):
