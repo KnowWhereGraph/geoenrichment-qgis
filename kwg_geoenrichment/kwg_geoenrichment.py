@@ -479,16 +479,14 @@ class kwg_geoenrichment:
             self.first_start = False
 
         self.kwg_explore = kwg_explore()
-        commonPropertyNameList, commonPropertyURLList, sosaPropertyNameList, \
-        sosaPropertyURLList, inversePropertyNameList, inversePropertyURLList = self.kwg_explore.getPropertyLists()
+        self.exploreParams = dict()
+        eventPlaceTypeDict = self.kwg_explore.getEventPlaceTypes()
 
-        self.exploreDlg = kwg_exploreDialog(commonPropertyNameList, commonPropertyURLList, sosaPropertyNameList, \
-        sosaPropertyURLList, inversePropertyNameList, inversePropertyURLList)
+        self.exploreDlg = kwg_exploreDialog(eventPlaceTypeDict, [],[],[],[],[],[])
 
         # show the dialog
         self.exploreDlg.show()
-
-        # self.exploreDlg.comboBox.currentIndexChanged(lambda: self.exploreComboboxHandler())
+        self.exploreDlg.comboBox.currentIndexChanged.connect(lambda: self.exploreComboboxHandler())
 
         self.exploreDlg.toolButton.released.connect(self.pointExploreButtonClicked)
         self.exploreDlg.toolButton_1.released.connect(self.lineExploreButtonClicked)
@@ -502,14 +500,21 @@ class kwg_geoenrichment:
             # substitute with your code.
             self.getExploreParams()
 
+        return
+
 
     def exploreComboboxHandler(self):
         self.exploreParams["feature"] = self.exploreDlg.comboBox.currentText()
-        pass
+
+        commonPropertyNameList, commonPropertyURLList, sosaPropertyNameList, \
+        sosaPropertyURLList, inversePropertyNameList, inversePropertyURLList = self.kwg_explore.getPropertyLists()
+
+        self.exploreDlg.setPropertyLists(commonPropertyNameList, commonPropertyURLList, sosaPropertyNameList, \
+        sosaPropertyURLList, inversePropertyNameList, inversePropertyURLList)
+        return
 
 
     def getExploreParams(self):
-        self.exploreParams = {}
 
         self.exploreParams["sparql_endpoint"] = self.exploreDlg.lineEdit.text()
         self.exploreParams["feature"] = self.exploreDlg.comboBox.currentText()

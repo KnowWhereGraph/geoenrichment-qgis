@@ -36,6 +36,8 @@ class kwg_explore:
         self.path_to_gpkg = "/var/local/QGIS/kwg_results.gpkg"
         self.layerName = "geo_results"
 
+        self.eventPlaceTypeDict = dict()
+
         # retrieving properties
         self.commonPropertyNameList = []
         self.commonPropertyURLList = []
@@ -49,7 +51,22 @@ class kwg_explore:
         self.inversePropertyURLList = []
         self.inversePropertyURLDict = dict()
 
-        self.retrievePropertyList()
+
+    def getEventPlaceTypes(self):
+        # QgsMessageLog.logMessage("sending query", "kwg_explore_geoenrichment",
+        #                          level=Qgis.Info)
+
+        sparqlResultJSON = self.sparqlQuery.EventTypeSPARQLQuery()
+
+        # QgsMessageLog.logMessage(json.dumps(sparqlResultJSON), "kwg_explore_geoenrichment",
+        #                          level=Qgis.Info)
+
+        for obj in sparqlResultJSON:
+            if((obj["entityType"] is not None and obj["entityType"]["type"] is not None and obj["entityType"]["type"] == "uri" ) and
+                    (obj["entityTypeLabel"] is not None and obj["entityTypeLabel"]["type"] is not None and obj["entityTypeLabel"]["type"] == "literal" )):
+                self.eventPlaceTypeDict[obj["entityTypeLabel"]["value"]] = obj["entityType"]["value"]
+
+        return self.eventPlaceTypeDict
 
 
     def retrievePropertyList(self):
@@ -96,6 +113,7 @@ class kwg_explore:
 
 
     def getPropertyLists(self):
+        self.retrievePropertyList()
         return self.commonPropertyNameList, self.commonPropertyURLList, self.sosaPropertyNameList, \
                 self.sosaPropertyURLList, self.inversePropertyNameList, self.inversePropertyURLList
 

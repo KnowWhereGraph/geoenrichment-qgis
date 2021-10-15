@@ -43,7 +43,7 @@ FORM_CLASS, _ = uic.loadUiType(os.path.join(
 
 
 class kwg_exploreDialog(QtWidgets.QDialog, FORM_CLASS):
-    def __init__(self, commonPropertyNameList, commonPropertyURLList, sosaPropertyNameList, \
+    def __init__(self, eventPlaceTypeDict, commonPropertyNameList, commonPropertyURLList, sosaPropertyNameList, \
                 sosaPropertyURLList, inversePropertyNameList, inversePropertyURLList, parent=None):
         """Constructor."""
         super(kwg_exploreDialog, self).__init__(parent)
@@ -53,7 +53,7 @@ class kwg_exploreDialog(QtWidgets.QDialog, FORM_CLASS):
         # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
-        self.eventPlaceTypeDict = dict()
+        self.eventPlaceTypeDict = eventPlaceTypeDict
 
         # logging
         self.logger = logging.getLogger()
@@ -92,19 +92,6 @@ class kwg_exploreDialog(QtWidgets.QDialog, FORM_CLASS):
 
 
     def populateEventPlaceTypes(self):
-        # QgsMessageLog.logMessage("sending query", "kwg_explore_geoenrichment",
-        #                          level=Qgis.Info)
-
-        sparqlResultJSON = self.sparqlQuery.EventTypeSPARQLQuery()
-
-        # QgsMessageLog.logMessage(json.dumps(sparqlResultJSON), "kwg_explore_geoenrichment",
-        #                          level=Qgis.Info)
-
-        for obj in sparqlResultJSON:
-            if((obj["entityType"] is not None and obj["entityType"]["type"] is not None and obj["entityType"]["type"] == "uri" ) and
-                    (obj["entityTypeLabel"] is not None and obj["entityTypeLabel"]["type"] is not None and obj["entityTypeLabel"]["type"] == "literal" )):
-                self.eventPlaceTypeDict[obj["entityTypeLabel"]["value"]] = obj["entityType"]["value"]
-
         for key in self.eventPlaceTypeDict:
             self.comboBox.addItem(key)
 
@@ -146,4 +133,20 @@ class kwg_exploreDialog(QtWidgets.QDialog, FORM_CLASS):
             self.tableWidget.setItem(i, 2, QTableWidgetItem(propertyURLLi[i]))
 
         return
+
+
+    def setPropertyLists(self, commonPropertyNameList, commonPropertyURLList, sosaPropertyNameList, \
+        sosaPropertyURLList, inversePropertyNameList, inversePropertyURLList):
+        # re-setting up properties
+        self.commonPropertyNameList = commonPropertyNameList
+        self.commonPropertyURLList = commonPropertyURLList
+
+        self.sosaPropertyNameList = sosaPropertyNameList
+        self.sosaPropertyURLList = sosaPropertyURLList
+
+        self.inversePropertyNameList = inversePropertyNameList
+        self.inversePropertyURLList = inversePropertyURLList
+
+        # populate the table
+        self.updateTableView()
 
