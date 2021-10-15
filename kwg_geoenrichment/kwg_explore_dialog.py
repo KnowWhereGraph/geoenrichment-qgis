@@ -94,7 +94,6 @@ class kwg_exploreDialog(QtWidgets.QDialog, FORM_CLASS):
     def populateEventPlaceTypes(self):
         for key in self.eventPlaceTypeDict:
             self.comboBox.addItem(key)
-
         return
 
 
@@ -149,4 +148,3 @@ class kwg_exploreDialog(QtWidgets.QDialog, FORM_CLASS):
 
         # populate the table
         self.updateTableView()
-

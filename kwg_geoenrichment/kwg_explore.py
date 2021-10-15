@@ -118,8 +118,26 @@ class kwg_explore:
                 self.sosaPropertyURLList, self.inversePropertyNameList, self.inversePropertyURLList
 
 
-    def exectue(self):
+    def exectue(self, exploreParams):
+        self.exploreParams = exploreParams
+        QgsMessageLog.logMessage(json.dumps(self.exploreParams, indent=2), "kwg_geoenrichment", level=Qgis.Info )
+
+        self.decideFunctionalOrNonFunctional()
         pass
+
+
+    def decideFunctionalOrNonFunctional(self):
+        self.selectedPropertyURL = []
+        for prop in self.exploreParams["selectedProp"]:
+            self.selectedPropertyURL.append(self.exploreParams["selectedProp"][prop]["property_uri"])
+
+        self.functionalProperty = self.sparqlQuery.functionalPropertyQuery(self.selectedPropertyURL)
+
+        self.nonFunctionalProperty = [item for item in self.selectedPropertyURL if item not in self.functionalProperty]
+        QgsMessageLog.logMessage("functional_property" + json.dumps(self.functionalProperty, indent=2), "kwg_geoenrichment", level=Qgis.Info)
+        QgsMessageLog.logMessage("non_functional_property" + json.dumps(self.nonFunctionalProperty , indent=2),
+                                 "kwg_geoenrichment", level=Qgis.Info)
+
 
 
 if __name__ == '__main__':

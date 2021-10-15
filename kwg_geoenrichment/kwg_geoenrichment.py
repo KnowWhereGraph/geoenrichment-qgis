@@ -548,22 +548,18 @@ class kwg_geoenrichment:
         self.getExploreParams()
         self.drawPoint(sender="explore")
         self.exploreDlg.close()
-        QgsMessageLog.logMessage("point" + " clicked! " , "keg_geoenrichment", level=Qgis.Info)
 
 
     def lineExploreButtonClicked(self):
         self.getExploreParams()
         self.drawLine(sender="explore")
         self.exploreDlg.close()
-        QgsMessageLog.logMessage("line" + " clicked! " , "keg_geoenrichment", level=Qgis.Info)
 
 
     def polygonExploreButtonClicked(self):
         self.getExploreParams()
         self.drawPolygon(sender="explore")
         self.exploreDlg.close()
-        QgsMessageLog.logMessage("polygon" + " clicked! " , "keg_geoenrichment", level=Qgis.Info)
-
 
 
     def updateParamsPropertyEnrichment(self, propertiesDict):
@@ -975,6 +971,10 @@ then select an entity on the map.'
                                              level=Qgis.Info)
                     self.handleGeoJSONObject(geoResult=geoSPARQLResponse)
                     pass
+
+            else:
+                self.exploreParams["wkt"] = self.performWKTConversion()
+                self.kwg_explore.exectue(self.exploreParams)
 
         self.tool.reset()
         self.resetSB()
