@@ -226,119 +226,121 @@ class kwg_geoenrichment:
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
-        self.add_action(
-            QIcon(':/plugins/kwg_geoenrichment/resources/graph_Query.png'),
-            text=self.tr(u'GeoSPARQL Query'),
-            callback=self.run,
-            parent=self.iface.mainWindow())
-
-        self.add_action(
-            QIcon(':/plugins/kwg_geoenrichment/resources/enrich_Data.png'),
-            text=self.tr(u'Property Enrichment Query'),
-            callback=self.runPropertyEnrichment,
-            parent=self.iface.mainWindow())
-
-        self.add_action(
-            QIcon(':/plugins/kwg_geoenrichment/resources/merge_Data.png'),
-            text=self.tr(u'Property Merge Tool'),
-            callback=self.runPropertyMerge,
-            parent=self.iface.mainWindow())
-
-        self.add_action(
-            QIcon(':/plugins/kwg_geoenrichment/resources/merge_Data.png'),
-            text=self.tr(u'Link Data Relationship Finder Tool'),
-            callback=self.runRelationshipFinder,
-            parent=self.iface.mainWindow())
-
-
-        self.add_action(
-            QIcon(':/plugins/kwg_geoenrichment/resources/graph_Query.png'),
-            text=self.tr(u'KWG Explore Tool'),
-            callback=self.runKWGExplore,
-            parent=self.iface.mainWindow())
-
-        # Adding menu to toolbar
-        pointMenu = QMenu()
-        pointMenu.addAction(
-            QIcon(':/plugins/kwg_geoenrichment/resources/icon_DrawPtXY.png'),
-            self.tr('XY Point drawing tool'), self.drawXYPoint)
-        pointMenu.addAction(
-            QIcon(':/plugins/kwg_geoenrichment/resources/icon_DrawPtDMS.png'),
-            self.tr('DMS Point drawing tool'), self.drawDMSPoint)
-        icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawPt.png'
-        self.add_action(
-            icon_path,
-            text=self.tr('Point drawing tool'),
-            checkable=True,
-            menu=pointMenu,
-            add_to_toolbar=True,
-            callback=self.drawPoint,
-            parent=self.iface.mainWindow()
-        )
-        icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawL.png'
-        self.add_action(
-            icon_path,
-            text=self.tr('Line drawing tool'),
-            checkable=True,
-            add_to_toolbar=True,
-            callback=self.drawLine,
-            parent=self.iface.mainWindow()
-        )
-        # icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawR.png'
-        # self.add_action(
-        #     icon_path,
-        #     text=self.tr('Rectangle drawing tool'),
-        #     checkable=True,
-        #     add_to_toolbar=True,
-        #     callback=self.drawRect,
-        #     parent=self.iface.mainWindow()
-        # )
-        # icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawC.png'
-        # self.add_action(
-        #     icon_path,
-        #     text=self.tr('Circle drawing tool'),
-        #     checkable=True,
-        #     add_to_toolbar=True,
-        #     callback=self.drawCircle,
-        #     parent=self.iface.mainWindow()
-        # )
-        icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawP.png'
-        self.add_action(
-            icon_path,
-            text=self.tr('Polygon drawing tool'),
-            checkable=True,
-            add_to_toolbar=True,
-            callback=self.drawPolygon,
-            parent=self.iface.mainWindow()
-        )
-        bufferMenu = QMenu()
-        polygonBufferAction = QAction(
-            QIcon(':/plugins/kwg_geoenrichment/resources/icon_DrawTP.png'),
-            self.tr('Polygon buffer drawing tool on the selected layer'),
-            bufferMenu)
-        polygonBufferAction.triggered.connect(self.drawPolygonBuffer)
-        bufferMenu.addAction(polygonBufferAction)
-        icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawT.png'
-        self.add_action(
-            icon_path,
-            text=self.tr('Buffer drawing tool on the selected layer'),
-            checkable=True,
-            add_to_toolbar=True,
-            menu=bufferMenu,
-            callback=self.drawBuffer,
-            parent=self.iface.mainWindow()
-        )
-        icon_path = ':/plugins/kwg_geoenrichment/resources/icon_Settings.png'
-        self.add_action(
-            icon_path,
-            text=self.tr('Settings'),
-            add_to_toolbar=True,
-            callback=self.showSettingsWindow,
-            parent=self.iface.mainWindow()
-        )
-
         # will be set False in run()
         self.first_start = True
+
+        if self.first_start:
+
+            self.add_action(
+                QIcon(':/plugins/kwg_geoenrichment/resources/graph_Query.png'),
+                text=self.tr(u'GeoSPARQL Query'),
+                callback=self.run,
+                parent=self.iface.mainWindow())
+
+            self.add_action(
+                QIcon(':/plugins/kwg_geoenrichment/resources/enrich_Data.png'),
+                text=self.tr(u'Property Enrichment Query'),
+                callback=self.runPropertyEnrichment,
+                parent=self.iface.mainWindow())
+
+            self.add_action(
+                QIcon(':/plugins/kwg_geoenrichment/resources/merge_Data.png'),
+                text=self.tr(u'Property Merge Tool'),
+                callback=self.runPropertyMerge,
+                parent=self.iface.mainWindow())
+
+            self.add_action(
+                QIcon(':/plugins/kwg_geoenrichment/resources/merge_Data.png'),
+                text=self.tr(u'Link Data Relationship Finder Tool'),
+                callback=self.runRelationshipFinder,
+                parent=self.iface.mainWindow())
+
+
+            self.add_action(
+                QIcon(':/plugins/kwg_geoenrichment/resources/graph_Query.png'),
+                text=self.tr(u'KWG Explore Tool'),
+                callback=self.runKWGExplore,
+                parent=self.iface.mainWindow())
+
+            # Adding menu to toolbar
+            pointMenu = QMenu()
+            pointMenu.addAction(
+                QIcon(':/plugins/kwg_geoenrichment/resources/icon_DrawPtXY.png'),
+                self.tr('XY Point drawing tool'), self.drawXYPoint)
+            pointMenu.addAction(
+                QIcon(':/plugins/kwg_geoenrichment/resources/icon_DrawPtDMS.png'),
+                self.tr('DMS Point drawing tool'), self.drawDMSPoint)
+            icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawPt.png'
+            self.add_action(
+                icon_path,
+                text=self.tr('Point drawing tool'),
+                checkable=True,
+                menu=pointMenu,
+                add_to_toolbar=True,
+                callback=self.drawPoint,
+                parent=self.iface.mainWindow()
+            )
+            icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawL.png'
+            self.add_action(
+                icon_path,
+                text=self.tr('Line drawing tool'),
+                checkable=True,
+                add_to_toolbar=True,
+                callback=self.drawLine,
+                parent=self.iface.mainWindow()
+            )
+            # icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawR.png'
+            # self.add_action(
+            #     icon_path,
+            #     text=self.tr('Rectangle drawing tool'),
+            #     checkable=True,
+            #     add_to_toolbar=True,
+            #     callback=self.drawRect,
+            #     parent=self.iface.mainWindow()
+            # )
+            # icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawC.png'
+            # self.add_action(
+            #     icon_path,
+            #     text=self.tr('Circle drawing tool'),
+            #     checkable=True,
+            #     add_to_toolbar=True,
+            #     callback=self.drawCircle,
+            #     parent=self.iface.mainWindow()
+            # )
+            icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawP.png'
+            self.add_action(
+                icon_path,
+                text=self.tr('Polygon drawing tool'),
+                checkable=True,
+                add_to_toolbar=True,
+                callback=self.drawPolygon,
+                parent=self.iface.mainWindow()
+            )
+            bufferMenu = QMenu()
+            polygonBufferAction = QAction(
+                QIcon(':/plugins/kwg_geoenrichment/resources/icon_DrawTP.png'),
+                self.tr('Polygon buffer drawing tool on the selected layer'),
+                bufferMenu)
+            polygonBufferAction.triggered.connect(self.drawPolygonBuffer)
+            bufferMenu.addAction(polygonBufferAction)
+            icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawT.png'
+            self.add_action(
+                icon_path,
+                text=self.tr('Buffer drawing tool on the selected layer'),
+                checkable=True,
+                add_to_toolbar=True,
+                menu=bufferMenu,
+                callback=self.drawBuffer,
+                parent=self.iface.mainWindow()
+            )
+            icon_path = ':/plugins/kwg_geoenrichment/resources/icon_Settings.png'
+            self.add_action(
+                icon_path,
+                text=self.tr('Settings'),
+                add_to_toolbar=True,
+                callback=self.showSettingsWindow,
+                parent=self.iface.mainWindow()
+            )
 
 
     def unload(self):
