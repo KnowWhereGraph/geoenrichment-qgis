@@ -506,7 +506,10 @@ class kwg_sparqlquery:
                     label = jsonItem[plabel_var]["value"]
                 if label.strip() == "":
                     label = self.sparqlUTIL.make_prefixed_iri(propertyURL)
-                propertyName = f"""{label} [{jsonItem[numofsub_var]["value"]}]"""
+                if numofsub_var is None:
+                    propertyName = label
+                else:
+                    propertyName = f"""{label} [{jsonItem[numofsub_var]["value"]}]"""
                 p_name_list.append(propertyName)
 
         url_dict = dict(zip(p_name_list, p_url_list))
@@ -993,7 +996,7 @@ class kwg_sparqlquery:
             feature="kwg-ont:SoilPolygon"
 
         commonPropertyQuery = queryPrefix + """
-        select distinct ?p ?plabel (count(distinct ?s) as ?NumofSub)
+        select distinct ?p ?plabel
         where { 
             ?s ?p ?o.
             ?s rdf:type %s. 
@@ -1001,8 +1004,6 @@ class kwg_sparqlquery:
                 ?p rdfs:label ?plabel .
             }
         }
-        group by ?p ?plabel
-        order by DESC(?NumofSub)
         """ % (feature)
 
         # QgsMessageLog.logMessage("commonQuery: " + commonPropertyQuery, "kwg_explore_geoenrichment", level=Qgis.Info)
@@ -1019,7 +1020,7 @@ class kwg_sparqlquery:
             feature="kwg-ont:SoilPolygon"
 
         commonPropertyQuery = queryPrefix + """
-        select distinct ?p ?plabel (count(distinct ?s) as ?NumofSub)
+        select distinct ?p ?plabel
         where { 
             ?s sosa:isFeatureOfInterestOf ?obscol .
             ?obscol sosa:hasMember ?obs.
@@ -1029,8 +1030,6 @@ class kwg_sparqlquery:
                 ?p rdfs:label ?plabel .
             }
         }
-        group by ?p ?plabel
-        order by DESC(?NumofSub)
         """ % (feature)
 
         res_json = self.sparqlUTIL.sparql_requests(query=commonPropertyQuery,
@@ -1048,7 +1047,7 @@ class kwg_sparqlquery:
 
         inversePropertyQuery = queryPrefix + """
         select
-        distinct ?inverse_p ?plabel (count(distinct ?s) as ?NumofSub)
+        distinct ?inverse_p ?plabel
         where
         { 
             ?s ?p ?o. 
@@ -1059,8 +1058,6 @@ class kwg_sparqlquery:
                 ?inverse_p rdfs:label ?plabel.
             }
         }
-        group by ?inverse_p ?plabel
-        order by DESC(?NumofSub)
         """ %(feature)
 
 

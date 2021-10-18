@@ -110,7 +110,7 @@ class kwg_explore:
             url_dict=propertyDict,
             p_var=p_var,
             plabel_var="plabel",
-            numofsub_var="NumofSub")
+            numofsub_var=None)
         return
 
 
@@ -323,8 +323,8 @@ class kwg_explore:
                                                                          sparql_endpoint=self.sparqlEndpoint,
                                                                          doSameAs=False)
 
-            QgsMessageLog.logMessage("functionalPropertyJSON: {0}".format(json.dumps(functionalPropertyJSON)),
-                                     "kwg_geoenrichment", level=Qgis.Info)
+            # QgsMessageLog.logMessage("functionalPropertyJSON: {0}".format(json.dumps(functionalPropertyJSON)),
+            #                          "kwg_geoenrichment", level=Qgis.Info)
 
             # # TODO: handle this adding to table
             results = self.JSON2Field.addFieldInTableByMapping(functionalPropertyJSON, "wikidataSub", "o",
