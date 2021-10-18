@@ -70,29 +70,7 @@ class kwg_sparqlquery:
         SPARQLUtil = kwg_sparqlutil()
         queryPrefix = SPARQLUtil.make_sparql_prefix()
 
-        # query = queryPrefix + """
-        #         select distinct ?place ?placeLabel ?placeFlatType ?wkt
-        #         where
-        #         {
 
-        #             ?place geo:hasGeometry ?geometry .
-        #             ?place rdfs:label ?placeLabel .
-        #             ?geometry geo:asWKT ?wkt.
-        #             FILTER (""" + geosparql_func[0] + """('''
-        #         <http://www.opengis.net/def/crs/OGC/1.3/CRS84>
-        #         """ + query_geo_wkt + """
-        #         '''^^geo:wktLiteral, ?wkt)
-        #     """
-        # if len(geosparql_func) == 1:
-        #     query += ")"
-        # elif len(geosparql_func) == 2:
-        #     query += """ ||
-        #         """ + geosparql_func[1] + """('''
-        #         <http://www.opengis.net/def/crs/OGC/1.3/CRS84>
-        #         """ + query_geo_wkt + """
-        #         '''^^geo:wktLiteral, ?wkt)
-        #         )
-        #     """
         query = queryPrefix + """
                 select distinct ?place ?placeLabel ?placeFlatType ?wkt
                 where
@@ -107,8 +85,6 @@ class kwg_sparqlquery:
                 """ + query_geo_wkt + """
                 '''^^geo:wktLiteral """ + geosparql_func[0] + """  ?geometry .}
             """
-        # if len(geosparql_func) == 1:
-        #     query += ")"
         if len(geosparql_func) == 2:
             query += """ union
                     { '''
@@ -1082,6 +1058,8 @@ class kwg_sparqlquery:
         group by ?p ?plabel
         order by DESC(?NumofSub)
         """ %(feature)
+
+        # select distinct ?inverse_p ?plabel where { ?s ?p ?o . ?o ?inverse_p ?s. ?o rdf:type " + feature + ". OPTIONAL {?inverse_p rdfs:label ?plabel .} }
 
         res_json = self.sparqlUTIL.sparql_requests(query=inversePropertyQuery,
                                               sparql_endpoint=sparql_endpoint,

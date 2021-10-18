@@ -11,8 +11,8 @@ from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
 import json
 import re
 import os
+import geojson
 
-# Initialize Qt resources from file resources.py
 from .resources import *
 # Import the code for the dialog
 
@@ -23,10 +23,12 @@ from .kwg_json2field import kwg_json2field as Json2Field
 
 class kwg_explore:
 
-    def __init__(self):
+    def __init__(self, ifaceObj = None):
         """Define the tool (tool name is the name of the class)."""
         self.label = "Linked Data Geographic Entities Property Enrichment"
         self.description = "Get the most common properties from a Knowledge Graph which supports GeoSPARQL based on the retrieved KG entities"
+
+        self.ifaceObj = ifaceObj
 
         self.sparqlQuery = kwg_sparqlquery()
         self.SPARQLUtil = UTIL()
@@ -105,10 +107,6 @@ class kwg_explore:
             p_var="p",
             plabel_var="plabel",
             numofsub_var="NumofSub")
-
-        # self.logger.info(propertyType + "_url_li : " + str(propertyURLList))
-        # self.logger.info(propertyType + "_name_li : " + str(propertyNameList))
-        # self.logger.info(propertyType + "_dict : " + str(propertyDict))
         return
 
 
@@ -119,24 +117,153 @@ class kwg_explore:
 
 
     def exectue(self, exploreParams):
+
         self.exploreParams = exploreParams
-        QgsMessageLog.logMessage(json.dumps(self.exploreParams, indent=2), "kwg_geoenrichment", level=Qgis.Info )
 
+        # update the location params:
+        if self.exploreParams["output_location"] is not None: self.path_to_gpkg = self.exploreParams["output_location"]
+        if self.exploreParams["feature_class"] is not None: self.layerName = self.exploreParams["feature_class"]
+
+        self.updateExploreParams()
         self.decideFunctionalOrNonFunctional()
-        pass
 
+        self.retrievePlaceIRI()
+        return
 
     def decideFunctionalOrNonFunctional(self):
         self.selectedPropertyURL = []
         for prop in self.exploreParams["selectedProp"]:
             self.selectedPropertyURL.append(self.exploreParams["selectedProp"][prop]["property_uri"])
 
-        self.functionalProperty = self.sparqlQuery.functionalPropertyQuery(self.selectedPropertyURL)
+        self.exploreParams["functionalPropertyList"] = self.sparqlQuery.functionalPropertyQuery(self.selectedPropertyURL)
 
-        self.nonFunctionalProperty = [item for item in self.selectedPropertyURL if item not in self.functionalProperty]
-        QgsMessageLog.logMessage("functional_property" + json.dumps(self.functionalProperty, indent=2), "kwg_geoenrichment", level=Qgis.Info)
-        QgsMessageLog.logMessage("non_functional_property" + json.dumps(self.nonFunctionalProperty , indent=2),
-                                 "kwg_geoenrichment", level=Qgis.Info)
+        self.exploreParams["nonFunctionalPropertyList"] = [item for item in self.selectedPropertyURL if item not in self.exploreParams["functionalPropertyList"]]
+
+        return
+
+
+    def updateExploreParams(self):
+        # get the function
+        geosparql_func = list()
+        if self.exploreParams["spatial_rel"] == "Contains or Intersects":
+            geosparql_func = ["geo:sfContains", "geo:sfIntersects"]
+        elif self.exploreParams["spatial_rel"] == "Contains":
+            geosparql_func = ["geo:sfContains"]
+        elif self.exploreParams["spatial_rel"] == "Within":
+            geosparql_func = ["geo:sfWithin"]
+        elif self.exploreParams["spatial_rel"] == "Intersect":
+            geosparql_func = ["geo:sfIntersects"]
+        else:
+            QgsMessageLog.logMessage("The spatial relation is not supported!", "kwg_geoenrichment", level=Qgis.Critical)
+
+        self.exploreParams["geosparql_func"] = geosparql_func
+
+        self.exploreParams["feature_type"] = self.eventPlaceTypeDict[self.exploreParams["feature"]]
+        return
+
+
+    def retrievePlaceIRI(self):
+        geoSPARQLResponse = self.sparqlQuery.TypeAndGeoSPARQLQuery(query_geo_wkt=self.exploreParams["wkt"], selectedURL=self.exploreParams["feature_type"],
+                              geosparql_func=self.exploreParams["geosparql_func"])
+
+        # self.logger.debug(json.dumps(geoSPARQLResponse))
+        # QgsMessageLog.logMessage("GeoJSON response received from the server", "kwg_geoenrichment",
+        #                          level=Qgis.Info)
+
+        geopackagedResponse = self.createGeoPackageFromSPARQLResult(geoSPARQLResponse, className=self.layerName, out_path=self.path_to_gpkg)
+        # self.createShapeFileFromSPARQLResult(geoResult)
+
+        if (geopackagedResponse):
+            QgsMessageLog.logMessage("Successfully created a geopackage file", "kwg_geoenrichment", level=Qgis.Info)
+        else:
+            QgsMessageLog.logMessage("Error while writing geopackage", "kwg_geoenrichment", level=Qgis.Error)
+        return
+
+
+    def createGeoPackageFromSPARQLResult(self, GeoQueryResult, className="geo_results_default", out_path="/var/local/QGIS/kwg_results.gpkg", inPlaceType="", selectedURL="",
+                                           isDirectInstance=False):
+        '''
+        GeoQueryResult: a sparql query result json obj serialized as a list of dict()
+                    SPARQL query like this:
+                    select distinct ?place ?placeLabel ?placeFlatType ?wkt
+                    where
+                    {...}
+        out_path: the output path for the create geo feature class
+        inPlaceType: the label of user spercified type IRI
+        selectedURL: the user spercified type IRI
+        isDirectInstance: True: use placeFlatType as the type of geo-entity
+                          False: use selectedURL as the type of geo-entity
+        '''
+        # a set of unique WKT for each found places
+        placeIRISet = set()
+        placeList = []
+        geom_type = None
+
+        util_obj = UTIL()
+
+        layerFields = QgsFields()
+        layerFields.append(QgsField('place_iri', QVariant.String))
+        layerFields.append(QgsField('label', QVariant.String))
+        layerFields.append(QgsField('type_iri', QVariant.String))
+
+        for idx, item in enumerate(GeoQueryResult):
+            wkt_literal = item["wkt"]["value"]
+            # for now, make sure all geom has the same geometry type
+            if idx == 0:
+                geom_type = util_obj.get_geometry_type_from_wkt(wkt_literal)
+            else:
+                assert geom_type == util_obj.get_geometry_type_from_wkt(wkt_literal)
+
+            if isDirectInstance == False:
+                placeType = item["placeFlatType"]["value"]
+            else:
+                placeType = selectedURL
+            print("{}\t{}\t{}".format(
+                item["place"]["value"], item["placeLabel"]["value"], placeType))
+            if len(placeIRISet) == 0 or item["place"]["value"] not in placeIRISet:
+                placeIRISet.add(item["place"]["value"])
+                placeList.append(
+                    [item["place"]["value"], item["placeLabel"]["value"], placeType, wkt_literal])
+
+        if geom_type is None:
+            raise Exception("geometry type not find")
+
+        vl = QgsVectorLayer(geom_type+"?crs=epsg:4326", className, "memory")
+        pr = vl.dataProvider()
+        pr.addAttributes(layerFields)
+        vl.updateFields()
+
+        if len(placeList) == 0:
+            QgsMessageLog.logMessage("No {0} within the provided polygon can be found!".format(inPlaceType), level=Qgis.Info)
+        else:
+
+            if out_path == None:
+                QgsMessageLog.logMessage("No data will be added to the map document.", level=Qgis.Info)
+            else:
+
+                for item in placeList:
+                    place_iri, label, type_iri, wkt_literal = item
+                    wkt = wkt_literal.replace("<http://www.opengis.net/def/crs/OGC/1.3/CRS84>", "")
+
+                    feat = QgsFeature()
+                    geom = QgsGeometry.fromWkt(wkt)
+
+                    # TODO: handle the CRS
+                    # feat.setGeometry(self.transformSourceCRStoDestinationCRS(geom, src=4326, dest=3857))
+
+                    feat.setGeometry(geom)
+                    feat.setAttributes(item[0:3])
+
+                    pr.addFeature(feat)
+                vl.updateExtents()
+
+                options = QgsVectorFileWriter.SaveVectorOptions()
+                options.layerName = className
+                context = QgsProject.instance().transformContext()
+                error = QgsVectorFileWriter.writeAsVectorFormatV2(vl, out_path, context, options)
+                self.ifaceObj.addVectorLayer(out_path, className, 'ogr')
+
+        return error[0] == QgsVectorFileWriter.NoError
 
 
 

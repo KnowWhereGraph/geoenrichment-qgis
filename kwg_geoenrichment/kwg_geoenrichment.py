@@ -478,7 +478,7 @@ class kwg_geoenrichment:
         if self.first_start == True:
             self.first_start = False
 
-        self.kwg_explore = kwg_explore()
+        self.kwg_explore = kwg_explore(ifaceObj = self.iface)
         self.exploreParams = dict()
         eventPlaceTypeDict = self.kwg_explore.getEventPlaceTypes()
 
@@ -518,6 +518,7 @@ class kwg_geoenrichment:
 
         self.exploreParams["sparql_endpoint"] = self.exploreDlg.lineEdit.text()
         self.exploreParams["feature"] = self.exploreDlg.comboBox.currentText()
+        self.exploreParams["output_location"] = "/var/local/QGIS/kwg_results.gpkg"
 
         selectedProp = {}
 
@@ -537,8 +538,8 @@ class kwg_geoenrichment:
 
         self.exploreParams["selectedProp"] = selectedProp
 
-        self.exploreParams["spatial_relation"] = self.exploreDlg.comboBox_2.currentText()
-        self.exploreParams["layer_name"] = self.exploreDlg.lineEdit_2.text()
+        self.exploreParams["spatial_rel"] = self.exploreDlg.comboBox_2.currentText()
+        self.exploreParams["feature_class"] = self.exploreDlg.lineEdit_2.text()
 
         self.logger.info(json.dumps(self.exploreParams, indent=2))
         return
@@ -972,7 +973,7 @@ then select an entity on the map.'
                     self.handleGeoJSONObject(geoResult=geoSPARQLResponse)
                     pass
 
-            else:
+            if sender:
                 self.exploreParams["wkt"] = self.performWKTConversion()
                 self.kwg_explore.exectue(self.exploreParams)
 
