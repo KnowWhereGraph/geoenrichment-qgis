@@ -167,7 +167,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>kwg-explore</string>
+    <string>geo_results</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_5">

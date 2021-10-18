@@ -305,6 +305,7 @@ class kwg_sparqlquery:
             jsonBindingObject.extend(res_json["results"]["bindings"])
 
             i = i + 50
+            self.logger.info(str(jsonBindingObject))
         return jsonBindingObject
 
 
@@ -1046,18 +1047,22 @@ class kwg_sparqlquery:
         queryPrefix = self.sparqlUTIL.make_sparql_prefix()
 
         inversePropertyQuery = queryPrefix + """
-        select distinct ?p ?plabel (count(distinct ?s) as ?NumofSub)
-        where { 
-            ?s owl:sameAs ?wikidataSub.
+        select
+        distinct ?inverse_p ?plabel (count(distinct ?s) as ?NumofSub)
+        where
+        { 
             ?s ?p ?o. 
-            ?wikidataSub rdf:type %s. 
-            OPTIONAL {
-                ?p rdfs:label ?plabel .
+            ?o ?inverse_p ?s. 
+            ?o rdf:type %s.
+            OPTIONAL
+            {
+                ?inverse_p rdfs:label ?plabel.
             }
         }
-        group by ?p ?plabel
+        group by ?inverse_p ?plabel
         order by DESC(?NumofSub)
         """ %(feature)
+
 
         # select distinct ?inverse_p ?plabel where { ?s ?p ?o . ?o ?inverse_p ?s. ?o rdf:type " + feature + ". OPTIONAL {?inverse_p rdfs:label ?plabel .} }
 

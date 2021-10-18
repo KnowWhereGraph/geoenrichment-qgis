@@ -72,13 +72,13 @@ class kwg_explore:
 
 
     def retrievePropertyList(self):
-        commonPropJSON = self.sparqlQuery.commonPropertyExploreQuery()
+        commonPropJSON = self.sparqlQuery.commonPropertyExploreQuery(sparql_endpoint=self.sparqlEndpoint)
         self.extractPropertyJSON(commonPropJSON, self.commonPropertyURLDict, self.commonPropertyURLList, self.commonPropertyNameList,"common" )
 
-        sosaPropJSON = self.sparqlQuery.commonSosaObsPropertyExploreQuery()
+        sosaPropJSON = self.sparqlQuery.commonSosaObsPropertyExploreQuery(sparql_endpoint=self.sparqlEndpoint)
         self.extractPropertyJSON(sosaPropJSON, self.sosaPropertyURLDict, self.sosaPropertyURLList, self.sosaPropertyNameList, "sosa")
 
-        inversePropJSON = self.sparqlQuery.inverseCommonPropertyExploreQuery()
+        inversePropJSON = self.sparqlQuery.inverseCommonPropertyExploreQuery(sparql_endpoint=self.sparqlEndpoint)
         self.extractPropertyJSON(inversePropJSON, self.inversePropertyURLDict, self.inversePropertyURLList, self.inversePropertyNameList, "inverse")
         pass
 
@@ -94,17 +94,21 @@ class kwg_explore:
                 propertyList.append(obj["p"]["value"])
 
         self.logger.info(propertyType + "_li: " + str(propertyList))
-        self.logger.info(propertyType + "_li: " + json.dumps(propertyDict))
+        self.logger.info(propertyType + "_dict: " + json.dumps(propertyDict))
 
 
     def extractPropertyJSON(self, propertyJSON, propertyDict, propertyURLList, propertyNameList, propertyType):
+        if propertyType == "inverse":
+            p_var = "inverse_p"
+        else:
+            p_var = "p"
         resultsBindings = propertyJSON["results"]["bindings"]
         propertyDict = self.sparqlQuery.extractCommonPropertyJSON(
             resultsBindings,
             p_url_list=propertyURLList,
             p_name_list=propertyNameList,
             url_dict=propertyDict,
-            p_var="p",
+            p_var=p_var,
             plabel_var="plabel",
             numofsub_var="NumofSub")
         return
@@ -128,14 +132,25 @@ class kwg_explore:
         self.decideFunctionalOrNonFunctional()
 
         self.retrievePlaceIRI()
+
+        self.performPropertyEnrichment()
+
+        # QgsMessageLog.logMessage("exploreP: {0}".format(json.dumps(self.exploreParams)), "kwg_geoenrichment",
+        #                          level=Qgis.Info)
         return
+
 
     def decideFunctionalOrNonFunctional(self):
         self.selectedPropertyURL = []
         for prop in self.exploreParams["selectedProp"]:
             self.selectedPropertyURL.append(self.exploreParams["selectedProp"][prop]["property_uri"])
+        self.exploreParams["selectedPropURL"] = self.selectedPropertyURL
 
-        self.exploreParams["functionalPropertyList"] = self.sparqlQuery.functionalPropertyQuery(self.selectedPropertyURL)
+        jsonBindingObjFunctionalProp = self.sparqlQuery.functionalPropertyQuery(self.selectedPropertyURL, sparql_endpoint=self.sparqlEndpoint)
+
+        self.exploreParams["functionalPropertyList"] = []
+        for obj in jsonBindingObjFunctionalProp:
+            self.exploreParams["functionalPropertyList"].append(obj["property"]["value"])
 
         self.exploreParams["nonFunctionalPropertyList"] = [item for item in self.selectedPropertyURL if item not in self.exploreParams["functionalPropertyList"]]
 
@@ -264,6 +279,67 @@ class kwg_explore:
                 self.ifaceObj.addVectorLayer(out_path, className, 'ogr')
 
         return error[0] == QgsVectorFileWriter.NoError
+
+
+    def performPropertyEnrichment(self):
+        self.loadIRIList(path_to_gpkg=self.path_to_gpkg, layerName=self.layerName)
+        self.performFunctionalPropertyEnrichment()
+
+        pass
+
+
+    def loadIRIList(self, path_to_gpkg ='/var/local/QGIS/kwg_results.gpkg', layerName="geo_results"):
+        # get the path to a geopackage e.g. /home/project/data/data.gpkg
+        iriList = []
+
+        gpkg_places_layer = path_to_gpkg + "|layername=%s"%(layerName)
+
+        vlayer = QgsVectorLayer(gpkg_places_layer, layerName, "ogr")
+
+        if not vlayer.isValid():
+            return iriList
+        else:
+            for feature in vlayer.getFeatures():
+                attrs = feature.attributes()
+                iriList.append(attrs[1])
+
+        self.inplaceIRIList = iriList
+
+        # QgsMessageLog.logMessage("inplaceIRI: {0}".format(json.dumps(self.inplaceIRIList)),
+        #                          "kwg_geoenrichment", level=Qgis.Info)
+
+        return
+
+
+
+    def performFunctionalPropertyEnrichment(self):
+        # add these functionalProperty value to feature class table
+
+        # QgsMessageLog.logMessage("explroeParams: {0}".format(json.dumps(self.exploreParams, indent=2)),
+        #                          "kwg_geoenrichment", level=Qgis.Info)
+
+        for functionalProperty in self.exploreParams["functionalPropertyList"]:
+            functionalPropertyJSON = self.sparqlQuery.propertyValueQuery(self.inplaceIRIList, functionalProperty,
+                                                                         sparql_endpoint=self.sparqlEndpoint,
+                                                                         doSameAs=False)
+
+            QgsMessageLog.logMessage("functionalPropertyJSON: {0}".format(json.dumps(functionalPropertyJSON)),
+                                     "kwg_geoenrichment", level=Qgis.Info)
+
+            # # TODO: handle this adding to table
+            results = self.JSON2Field.addFieldInTableByMapping(functionalPropertyJSON, "wikidataSub", "o",
+                                                               "place_iri", functionalProperty, False,
+                                                               gpkgLocation=self.path_to_gpkg, featureClassName=self.layerName)
+
+            if results:
+                self.ifaceObj.mapCanvas().refresh()
+                QgsMessageLog.logMessage("update - functional property write successful",
+                                         "kwg_geoenrichment", level=Qgis.Info)
+        pass
+
+
+    def perfromNonFunctionalPropertyEnrichment(self):
+        pass
 
 
 
