@@ -1,4 +1,4 @@
-
+import logging
 from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, qVersion, QVariant
 from qgis.PyQt.QtWidgets import QAction, QMessageBox, QMenu, QInputDialog
 from qgis.PyQt.QtGui import QIcon
@@ -30,8 +30,19 @@ class kwg_explore:
 
         self.ifaceObj = ifaceObj
 
+        # logging
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.DEBUG)  # or whatever
+        handler = logging.FileHandler(
+            '/var/local/QGIS/kwg_geoenrichment.log', 'w',
+            'utf-8')  # or whatever
+        formatter = logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')  # or whatever
+        handler.setFormatter(formatter)  # Pass handler as a parameter, not assign
+        self.logger.addHandler(handler)
+
         self.sparqlQuery = kwg_sparqlquery()
-        self.SPARQLUtil = UTIL()
+        self.kwg_util = UTIL()
         self.JSON2Field  = Json2Field()
 
         self.sparqlEndpoint = "http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire"
@@ -139,6 +150,8 @@ class kwg_explore:
 
         # QgsMessageLog.logMessage("exploreP: {0}".format(json.dumps(self.exploreParams)), "kwg_geoenrichment",
         #                          level=Qgis.Info)
+        self.logger.info("exploreP: {0}".format(json.dumps(self.exploreParams, indent=2)))
+        self.performNonFunctionalPropertyMerge()
         return
 
 
@@ -329,7 +342,6 @@ class kwg_explore:
         return
 
 
-
     def performFunctionalPropertyEnrichment(self):
         # add these functionalProperty value to feature class table
 
@@ -351,7 +363,7 @@ class kwg_explore:
 
             if results:
                 self.ifaceObj.mapCanvas().refresh()
-                QgsMessageLog.logMessage("update - functional property write successful",
+                QgsMessageLog.logMessage("update - functional property saved successfully in the default table.",
                                          "kwg_geoenrichment", level=Qgis.Info)
         pass
 
@@ -372,14 +384,6 @@ class kwg_explore:
 
             if success:
                 self.ifaceObj.mapCanvas().refresh()
-
-            # TODO:  QGIS implementation for relationship class
-            # creat relationship class between the original feature class and the created table
-            #
-            # relationshipClassName = featureClassName + "_" + tableName + "_RelClass"
-            # arcpy.CreateRelationshipClass_management(featureClassName, tableName, relationshipClassName, "SIMPLE",
-            #                                          noFunctionalProperty, "features from Knowledge Graph",
-            #                                          "FORWARD", "ONE_TO_MANY", "NONE", "URL", "URL")
 
             # check whether the object of propertyURL is geo-entity
             # if it is create new feature class
@@ -406,7 +410,7 @@ class kwg_explore:
                 #     "kwg_geoenrichment", level=Qgis.Info)
                 # in_place_IRI_desc = arcpy.Describe(in_place_IRI)
 
-                prop_name = self.SPARQLUtil.getPropertyName(propertyURL)
+                prop_name = self.kwg_util.getPropertyName(propertyURL)
 
                 out_geo_feature_class_name = "{}_{}".format(self.layerName, prop_name)
                 self.JSON2Field.createQGISFeatureClassFromSPARQLResult(GeoQueryResult=GeoQueryResult,
@@ -438,6 +442,70 @@ class kwg_explore:
 
             if success:
                 self.ifaceObj.mapCanvas().refresh()
+
+
+    def performNonFunctionalPropertyMerge(self):
+
+        for prop in self.exploreParams["nonFunctionalPropertyList"]:
+
+            inputFeatureClassName = self.layerName
+
+            currentValuePropertyName = self.kwg_util.getPropertyName(prop)
+
+            # currentValuePropertyName = SPARQLUtil.make_prefixed_iri(valuePropertyURL)
+            if prop in self.inversePropertyURLList:
+                currentValuePropertyName = "is_" + currentValuePropertyName + "_Of"
+
+            selectTableName = "URL_" + currentValuePropertyName
+
+            selectMergeRule = "NONE"
+            for propVal in self.exploreParams["selectedProp"]:
+                if self.exploreParams["selectedProp"][propVal]["property_uri"] == prop:
+                    selectMergeRule = self.exploreParams["selectedProp"][propVal]["merge_rule"]
+                    break
+
+            if len(inputFeatureClassName) > 0:
+
+                selectFieldName = selectTableName.split("_")[1]
+
+                noFunctionalPropertyDict = self.kwg_util.buildMultiValueDictFromNoFunctionalProperty(selectFieldName,
+                                                                                                     selectTableName,
+                                                                                                     URLFieldName='URL')
+
+                res = 0
+                if noFunctionalPropertyDict != -1:
+                    if selectMergeRule == 'CONCATENATE':
+                        selectDelimiter = 'COMMA'
+                        delimiter = ','
+
+                        # ['DASH', 'COMMA', 'VERTICAL BAR', 'TAB', 'SPACE']
+                        if selectDelimiter == 'DASH':
+                            delimiter = '-'
+                        elif selectDelimiter == 'COMMA':
+                            delimiter = ','
+                        elif selectDelimiter == 'VERTICAL BAR':
+                            delimiter = '|'
+                        elif selectDelimiter == 'TAB':
+                            delimiter = '   '
+                        elif selectDelimiter == 'SPACE':
+                            delimiter = ' '
+                    else:
+                        delimiter = ''
+
+                    res = self.kwg_util.appendFieldInFeatureClassByMergeRule(inputFeatureClassName,
+                                                                             noFunctionalPropertyDict,
+                                                                             selectFieldName, selectTableName,
+                                                                             selectMergeRule, delimiter)
+
+
+                if res:
+                    QgsMessageLog.logMessage(
+                        "Successfully updated the input feature class with the non functional property.",
+                        "kwg_geoenrichment", level=Qgis.Info)
+                else:
+                    QgsMessageLog.logMessage("Error updating the input feature class with the non functional property!",
+                                             "kwg_geoenrichment", level=Qgis.Info)
+            return
 
 
 if __name__ == '__main__':

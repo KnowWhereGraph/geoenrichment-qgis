@@ -625,7 +625,10 @@ class kwg_geoenrichment:
             self.tool.reset()
         self.tool = DrawPoint(self.iface, self.settings.getColor())
         self.tool.setAction(self.actions[0])
-        self.tool.selectionDone.connect(lambda: self.draw(sender))
+        if sender == "explore":
+            self.tool.selectionDone.connect(lambda: self.drawExplore())
+        else:
+            self.tool.selectionDone.connect(lambda: self.draw())
         self.iface.mapCanvas().setMapTool(self.tool)
         self.drawShape = 'point'
         self.toolname = 'drawPoint'
@@ -677,7 +680,10 @@ class kwg_geoenrichment:
             self.tool.reset()
         self.tool = DrawLine(self.iface, self.settings.getColor())
         self.tool.setAction(self.actions[1])
-        self.tool.selectionDone.connect(lambda: self.draw(sender))
+        if sender == "explore":
+            self.tool.selectionDone.connect(lambda: self.drawExplore())
+        else:
+            self.tool.selectionDone.connect(lambda: self.draw())
         self.tool.move.connect(self.updateSB)
         self.iface.mapCanvas().setMapTool(self.tool)
         self.drawShape = 'line'
@@ -716,7 +722,10 @@ class kwg_geoenrichment:
             self.tool.reset()
         self.tool = DrawPolygon(self.iface, self.settings.getColor())
         self.tool.setAction(self.actions[4])
-        self.tool.selectionDone.connect(lambda: self.draw(sender))
+        if sender == "explore":
+            self.tool.selectionDone.connect(lambda: self.drawExplore())
+        else:
+            self.tool.selectionDone.connect(lambda: self.draw())
         self.tool.move.connect(self.updateSB)
         self.iface.mapCanvas().setMapTool(self.tool)
         self.drawShape = 'polygon'
@@ -868,7 +877,7 @@ then select an entity on the map.'
             self.draw()
 
 
-    def draw(self, sender=None):
+    def draw(self):
         rb = self.tool.rb
         g = rb.asGeometry()
 
@@ -949,35 +958,121 @@ then select an entity on the map.'
             self.iface.mapCanvas().refresh()
             QgsMessageLog.logMessage("Your polygon has been saved to a layer", "kwg_geoenrichment", level=Qgis.Info)
 
-            if not sender:
-                self.dlg = kwg_geoenrichmentDialog()
 
-                self.populateEventPlaceTypes()
+            self.dlg = kwg_geoenrichmentDialog()
 
-                # show the dialog
-                self.dlg.show()
-                # Run the dialog event loop
-                result = self.dlg.exec_()
-                # See if OK was pressed
-                if result:
-                    params = self.getInputs()
+            self.populateEventPlaceTypes()
 
-                    QgsMessageLog.logMessage("Contacting the server with the geoSPARQL request", "kwg_geoenrichment",
-                                             level=Qgis.Info)
+            # show the dialog
+            self.dlg.show()
+            # Run the dialog event loop
+            result = self.dlg.exec_()
+            # See if OK was pressed
+            if result:
+                params = self.getInputs()
 
-                    wkt_literal = self.performWKTConversion()
-                    self.logger.debug(wkt_literal)
-                    geoSPARQLResponse = self.sparqlQuery.TypeAndGeoSPARQLQuery(query_geo_wkt=wkt_literal, selectedURL=params["place_type"], geosparql_func=params["geosparql_func"])
+                QgsMessageLog.logMessage("Contacting the server with the geoSPARQL request", "kwg_geoenrichment",
+                                         level=Qgis.Info)
 
-                    # self.logger.debug(json.dumps(geoSPARQLResponse))
-                    QgsMessageLog.logMessage("GeoJSON response received from the server", "kwg_geoenrichment",
-                                             level=Qgis.Info)
-                    self.handleGeoJSONObject(geoResult=geoSPARQLResponse)
-                    pass
+                wkt_literal = self.performWKTConversion()
+                self.logger.debug(wkt_literal)
+                geoSPARQLResponse = self.sparqlQuery.TypeAndGeoSPARQLQuery(query_geo_wkt=wkt_literal, selectedURL=params["place_type"], geosparql_func=params["geosparql_func"])
 
-            if sender:
-                self.exploreParams["wkt"] = self.performWKTConversion()
-                self.kwg_explore.exectue(self.exploreParams)
+                # self.logger.debug(json.dumps(geoSPARQLResponse))
+                QgsMessageLog.logMessage("GeoJSON response received from the server", "kwg_geoenrichment",
+                                         level=Qgis.Info)
+                self.handleGeoJSONObject(geoResult=geoSPARQLResponse)
+                pass
+
+        self.tool.reset()
+        self.resetSB()
+        self.bGeom = None
+
+
+    def drawExplore(self):
+        rb = self.tool.rb
+        g = rb.asGeometry()
+
+        ok = True
+        warning = False
+        errBuffer_noAtt = False
+        errBuffer_Vertices = False
+
+        layer = self.iface.layerTreeView().currentLayer()
+        if self.toolname == 'drawBuffer':
+            if self.bGeom is None:
+                warning = True
+                errBuffer_noAtt = True
+            else:
+                perim, ok = QInputDialog.getDouble(
+                    self.iface.mainWindow(), self.tr('Perimeter'),
+                    self.tr('Give a perimeter in m:')
+                    + '\n'+self.tr('(works only with metric crs)'),
+                    min=0)
+                g = self.bGeom.buffer(perim, 40)
+                rb.setToGeometry(g, QgsVectorLayer(
+                    "Polygon?crs="+layer.crs().authid(), "", "memory"))
+                if g.length() == 0 and ok:
+                    warning = True
+                    errBuffer_Vertices = True
+
+        if self.toolname == 'drawCopies':
+            if g.length() < 0:
+                warning = True
+                errBuffer_noAtt = True
+
+        if ok and not warning:
+
+            name = "geo_enrichment_polygon"
+
+            # save the buffer
+            if self.drawShape == 'point':
+                layer = QgsVectorLayer(
+                    "Point?crs=" + self.iface.mapCanvas().mapSettings().destinationCrs().authid() + "&field=" + self.tr(
+                        'Geometry') + ":string(255)", name, "memory")
+                g = g.centroid()  # force geometry as point
+            elif self.drawShape == 'XYpoint':
+                layer = QgsVectorLayer(
+                    "Point?crs=" + self.XYcrs.authid() + "&field=" + self.tr('Geometry') + ":string(255)", name,
+                    "memory")
+                g = g.centroid()
+            elif self.drawShape == 'line':
+                layer = QgsVectorLayer(
+                    "LineString?crs=" + self.iface.mapCanvas().mapSettings().destinationCrs().authid() + "&field=" + self.tr(
+                        'Geometry') + ":string(255)", name, "memory")
+                # fix_print_with_import
+                print(
+                    "LineString?crs=" + self.iface.mapCanvas().mapSettings().destinationCrs().authid() + "&field=" + self.tr(
+                        'Geometry') + ":string(255)")
+            else:
+                layer = QgsVectorLayer(
+                    "Polygon?crs=" + self.iface.mapCanvas().mapSettings().destinationCrs().authid() + "&field=" + self.tr(
+                        'Geometry') + ":string(255)", name, "memory")
+
+            layer.startEditing()
+            symbols = layer.renderer().symbols(QgsRenderContext())  # todo which context ?
+            symbols[0].setColor(self.settings.getColor())
+            feature = QgsFeature()
+            feature.setGeometry(g)
+            feature.setAttributes([name])
+            layer.dataProvider().addFeatures([feature])
+            layer.commitChanges()
+
+            pjt = QgsProject.instance()
+            pjt.addMapLayer(layer, False)
+            if pjt.layerTreeRoot().findGroup(self.tr('Geometry')) is None:
+                pjt.layerTreeRoot().insertChildNode(
+                    0, QgsLayerTreeGroup(self.tr('Geometry')))
+            group = pjt.layerTreeRoot().findGroup(
+                self.tr('Geometry'))
+            group.insertLayer(0, layer)
+            self.iface.layerTreeView().refreshLayerSymbology(layer.id())
+            self.iface.mapCanvas().refresh()
+            QgsMessageLog.logMessage("Update: Your polygon has been saved to a layer", "kwg_geoenrichment", level=Qgis.Info)
+
+
+            self.exploreParams["wkt"] = self.performWKTConversion()
+            self.kwg_explore.exectue(self.exploreParams)
 
         self.tool.reset()
         self.resetSB()
@@ -1026,13 +1121,13 @@ then select an entity on the map.'
 
     def performWKTConversion(self):
         layers = QgsProject.instance().mapLayers().values()
-        QgsMessageLog.logMessage("Reading all the layers", "kwg_geoenrichment", level=Qgis.Info)
+        QgsMessageLog.logMessage("Update: Reading all the layers", "kwg_geoenrichment", level=Qgis.Info)
 
         # crs = QgsCoordinateReferenceSystem("EPSG:4326")
         for layer in layers:
             # self.logger.debug(layer.name())
             if layer.name() == "geo_enrichment_polygon":
-                QgsMessageLog.logMessage("Retrieving features from the geoenrichment layer", "kwg_geoenrichment", level=Qgis.Info)
+                QgsMessageLog.logMessage("Update: Retrieving features from the geoenrichment layer", "kwg_geoenrichment", level=Qgis.Info)
                 feat = layer.getFeatures()
                 for f in feat:
                     geom = f.geometry()
@@ -1040,7 +1135,7 @@ then select an entity on the map.'
                     # TODO: handle the CRS
                     # geom = self.transformSourceCRStoDestinationCRS(geom)
 
-                    QgsMessageLog.logMessage("Geometry found", "kwg_geoenrichment", level=Qgis.Info)
+                    QgsMessageLog.logMessage("Update: Geometry found", "kwg_geoenrichment", level=Qgis.Info)
                     wkt = geom.asWkt()
                 break
 
@@ -1048,7 +1143,7 @@ then select an entity on the map.'
         wkt_rep = ""
         wkt_rep = wkt_literal_list[0].upper() + wkt_literal_list[1]
 
-        QgsMessageLog.logMessage("wkt representation :  " + wkt_rep , "kwg_geoenrichment", level=Qgis.Info)
+        # QgsMessageLog.logMessage("wkt representation :  " + wkt_rep , "kwg_geoenrichment", level=Qgis.Info)
 
         return wkt_rep
 
