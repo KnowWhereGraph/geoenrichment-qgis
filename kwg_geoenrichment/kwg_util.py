@@ -181,7 +181,7 @@ class kwg_util:
             mergeRuleField = 'MIN'
         elif mergeRule == 'MAX':
             mergeRuleField = 'MAX'
-        elif mergeRule == 'STDEV':
+        elif mergeRule == 'STD-DEV' or mergeRule == 'STDEV':
             mergeRuleField = 'STD'
         elif mergeRule == 'MEAN':
             mergeRuleField = 'MEN'

@@ -22,7 +22,7 @@
  ***************************************************************************/
 """
 from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, qVersion, QVariant
-from qgis.PyQt.QtWidgets import QAction, QMessageBox, QMenu, QInputDialog, QAbstractItemView, QLineEdit
+from qgis.PyQt.QtWidgets import QAction, QMessageBox, QMenu, QInputDialog, QAbstractItemView, QLineEdit, QComboBox
 from qgis.PyQt.QtGui import QIcon
 
 from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
@@ -42,7 +42,9 @@ from .kwg_property_merge_dialog import kwg_property_mergeDialog
 from .kwg_linkedData_relationship_finder_dialog import kwg_linkedDataDialog
 from .kwg_property_enrichment import kwg_property_enrichment
 from .kwg_property_merge import kwg_property_merge
+from .kwg_explore import kwg_explore
 from .kwg_linkedData_relationship_finder import kwg_linkedData_relationship_finder
+from .kwg_explore_dialog import kwg_exploreDialog
 from .kwg_sparqlquery import kwg_sparqlquery
 from .kwg_util import kwg_util as UTIL
 from .kwg_json2field import kwg_json2field as Json2Field
@@ -224,112 +226,121 @@ class kwg_geoenrichment:
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
-        self.add_action(
-            QIcon(':/plugins/kwg_geoenrichment/resources/graph_Query.png'),
-            text=self.tr(u'GeoSPARQL Query'),
-            callback=self.run,
-            parent=self.iface.mainWindow())
-
-        self.add_action(
-            QIcon(':/plugins/kwg_geoenrichment/resources/enrich_Data.png'),
-            text=self.tr(u'Property Enrichment Query'),
-            callback=self.runPropertyEnrichment,
-            parent=self.iface.mainWindow())
-
-        self.add_action(
-            QIcon(':/plugins/kwg_geoenrichment/resources/merge_Data.png'),
-            text=self.tr(u'Property Merge Tool'),
-            callback=self.runPropertyMerge,
-            parent=self.iface.mainWindow())
-
-        self.add_action(
-            QIcon(':/plugins/kwg_geoenrichment/resources/merge_Data.png'),
-            text=self.tr(u'Link Data Relationship Finder Tool'),
-            callback=self.runRelationshipFinder,
-            parent=self.iface.mainWindow())
-
-        # Adding menu to toolbar
-        pointMenu = QMenu()
-        pointMenu.addAction(
-            QIcon(':/plugins/kwg_geoenrichment/resources/icon_DrawPtXY.png'),
-            self.tr('XY Point drawing tool'), self.drawXYPoint)
-        pointMenu.addAction(
-            QIcon(':/plugins/kwg_geoenrichment/resources/icon_DrawPtDMS.png'),
-            self.tr('DMS Point drawing tool'), self.drawDMSPoint)
-        icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawPt.png'
-        self.add_action(
-            icon_path,
-            text=self.tr('Point drawing tool'),
-            checkable=True,
-            menu=pointMenu,
-            add_to_toolbar=True,
-            callback=self.drawPoint,
-            parent=self.iface.mainWindow()
-        )
-        icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawL.png'
-        self.add_action(
-            icon_path,
-            text=self.tr('Line drawing tool'),
-            checkable=True,
-            add_to_toolbar=True,
-            callback=self.drawLine,
-            parent=self.iface.mainWindow()
-        )
-        # icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawR.png'
-        # self.add_action(
-        #     icon_path,
-        #     text=self.tr('Rectangle drawing tool'),
-        #     checkable=True,
-        #     add_to_toolbar=True,
-        #     callback=self.drawRect,
-        #     parent=self.iface.mainWindow()
-        # )
-        # icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawC.png'
-        # self.add_action(
-        #     icon_path,
-        #     text=self.tr('Circle drawing tool'),
-        #     checkable=True,
-        #     add_to_toolbar=True,
-        #     callback=self.drawCircle,
-        #     parent=self.iface.mainWindow()
-        # )
-        icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawP.png'
-        self.add_action(
-            icon_path,
-            text=self.tr('Polygon drawing tool'),
-            checkable=True,
-            add_to_toolbar=True,
-            callback=self.drawPolygon,
-            parent=self.iface.mainWindow()
-        )
-        bufferMenu = QMenu()
-        polygonBufferAction = QAction(
-            QIcon(':/plugins/kwg_geoenrichment/resources/icon_DrawTP.png'),
-            self.tr('Polygon buffer drawing tool on the selected layer'),
-            bufferMenu)
-        polygonBufferAction.triggered.connect(self.drawPolygonBuffer)
-        bufferMenu.addAction(polygonBufferAction)
-        icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawT.png'
-        self.add_action(
-            icon_path,
-            text=self.tr('Buffer drawing tool on the selected layer'),
-            checkable=True,
-            add_to_toolbar=True,
-            menu=bufferMenu,
-            callback=self.drawBuffer,
-            parent=self.iface.mainWindow()
-        )
-        icon_path = ':/plugins/kwg_geoenrichment/resources/icon_Settings.png'
-        self.add_action(
-            icon_path,
-            text=self.tr('Settings'),
-            add_to_toolbar=True,
-            callback=self.showSettingsWindow,
-            parent=self.iface.mainWindow()
-        )
-
         # will be set False in run()
         self.first_start = True
+
+        if self.first_start:
+
+            self.add_action(
+                QIcon(':/plugins/kwg_geoenrichment/resources/graph_Query.png'),
+                text=self.tr(u'GeoSPARQL Query'),
+                callback=self.run,
+                parent=self.iface.mainWindow())
+
+            self.add_action(
+                QIcon(':/plugins/kwg_geoenrichment/resources/enrich_Data.png'),
+                text=self.tr(u'Property Enrichment Query'),
+                callback=self.runPropertyEnrichment,
+                parent=self.iface.mainWindow())
+
+            self.add_action(
+                QIcon(':/plugins/kwg_geoenrichment/resources/merge_Data.png'),
+                text=self.tr(u'Property Merge Tool'),
+                callback=self.runPropertyMerge,
+                parent=self.iface.mainWindow())
+
+            self.add_action(
+                QIcon(':/plugins/kwg_geoenrichment/resources/merge_Data.png'),
+                text=self.tr(u'Link Data Relationship Finder Tool'),
+                callback=self.runRelationshipFinder,
+                parent=self.iface.mainWindow())
+
+
+            self.add_action(
+                QIcon(':/plugins/kwg_geoenrichment/resources/graph_Query.png'),
+                text=self.tr(u'KWG Explore Tool'),
+                callback=self.runKWGExplore,
+                parent=self.iface.mainWindow())
+
+            # Adding menu to toolbar
+            pointMenu = QMenu()
+            pointMenu.addAction(
+                QIcon(':/plugins/kwg_geoenrichment/resources/icon_DrawPtXY.png'),
+                self.tr('XY Point drawing tool'), self.drawXYPoint)
+            pointMenu.addAction(
+                QIcon(':/plugins/kwg_geoenrichment/resources/icon_DrawPtDMS.png'),
+                self.tr('DMS Point drawing tool'), self.drawDMSPoint)
+            icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawPt.png'
+            self.add_action(
+                icon_path,
+                text=self.tr('Point drawing tool'),
+                checkable=True,
+                menu=pointMenu,
+                add_to_toolbar=True,
+                callback=self.drawPoint,
+                parent=self.iface.mainWindow()
+            )
+            icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawL.png'
+            self.add_action(
+                icon_path,
+                text=self.tr('Line drawing tool'),
+                checkable=True,
+                add_to_toolbar=True,
+                callback=self.drawLine,
+                parent=self.iface.mainWindow()
+            )
+            # icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawR.png'
+            # self.add_action(
+            #     icon_path,
+            #     text=self.tr('Rectangle drawing tool'),
+            #     checkable=True,
+            #     add_to_toolbar=True,
+            #     callback=self.drawRect,
+            #     parent=self.iface.mainWindow()
+            # )
+            # icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawC.png'
+            # self.add_action(
+            #     icon_path,
+            #     text=self.tr('Circle drawing tool'),
+            #     checkable=True,
+            #     add_to_toolbar=True,
+            #     callback=self.drawCircle,
+            #     parent=self.iface.mainWindow()
+            # )
+            icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawP.png'
+            self.add_action(
+                icon_path,
+                text=self.tr('Polygon drawing tool'),
+                checkable=True,
+                add_to_toolbar=True,
+                callback=self.drawPolygon,
+                parent=self.iface.mainWindow()
+            )
+            bufferMenu = QMenu()
+            polygonBufferAction = QAction(
+                QIcon(':/plugins/kwg_geoenrichment/resources/icon_DrawTP.png'),
+                self.tr('Polygon buffer drawing tool on the selected layer'),
+                bufferMenu)
+            polygonBufferAction.triggered.connect(self.drawPolygonBuffer)
+            bufferMenu.addAction(polygonBufferAction)
+            icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawT.png'
+            self.add_action(
+                icon_path,
+                text=self.tr('Buffer drawing tool on the selected layer'),
+                checkable=True,
+                add_to_toolbar=True,
+                menu=bufferMenu,
+                callback=self.drawBuffer,
+                parent=self.iface.mainWindow()
+            )
+            icon_path = ':/plugins/kwg_geoenrichment/resources/icon_Settings.png'
+            self.add_action(
+                icon_path,
+                text=self.tr('Settings'),
+                add_to_toolbar=True,
+                callback=self.showSettingsWindow,
+                parent=self.iface.mainWindow()
+            )
 
 
     def unload(self):
@@ -461,6 +472,98 @@ class kwg_geoenrichment:
             relFinder.execute(params, ifaceObj=self.iface)
 
 
+    def runKWGExplore(self):
+        """Run method that performs all the real work"""
+
+        # Create the dialog with elements (after translation) and keep reference
+        # Only create GUI ONCE in callback, so that it will only load when the plugin is started
+        if self.first_start == True:
+            self.first_start = False
+
+        self.kwg_explore = kwg_explore(ifaceObj = self.iface)
+        self.exploreParams = dict()
+        eventPlaceTypeDict = self.kwg_explore.getEventPlaceTypes()
+
+        self.exploreDlg = kwg_exploreDialog(eventPlaceTypeDict, [],[],[],[],[],[])
+
+        # show the dialog
+        self.exploreDlg.show()
+        self.exploreDlg.comboBox.currentIndexChanged.connect(lambda: self.exploreComboboxHandler())
+
+        self.exploreDlg.toolButton.released.connect(self.pointExploreButtonClicked)
+        self.exploreDlg.toolButton_1.released.connect(self.lineExploreButtonClicked)
+        self.exploreDlg.toolButton_2.released.connect(self.polygonExploreButtonClicked)
+
+        # Run the dialog event loop
+        result = self.exploreDlg.exec_()
+        # See if OK was pressed
+        if result:
+            # Do something useful here - delete the line containing pass and
+            # substitute with your code.
+            self.getExploreParams()
+
+        return
+
+
+    def exploreComboboxHandler(self):
+        self.exploreParams["feature"] = self.exploreDlg.comboBox.currentText()
+
+        commonPropertyNameList, commonPropertyURLList, sosaPropertyNameList, \
+        sosaPropertyURLList, inversePropertyNameList, inversePropertyURLList = self.kwg_explore.getPropertyLists()
+
+        self.exploreDlg.setPropertyLists(commonPropertyNameList, commonPropertyURLList, sosaPropertyNameList, \
+        sosaPropertyURLList, inversePropertyNameList, inversePropertyURLList)
+        return
+
+
+    def getExploreParams(self):
+
+        self.exploreParams["sparql_endpoint"] = self.exploreDlg.lineEdit.text()
+        self.exploreParams["feature"] = self.exploreDlg.comboBox.currentText()
+        self.exploreParams["output_location"] = "/var/local/QGIS/kwg_results.gpkg"
+
+        selectedProp = {}
+
+        for item_count in range(self.exploreDlg.tableWidget.rowCount()):
+            if self.exploreDlg.tableWidget.item(item_count, 0).checkState() == QtCore.Qt.Checked:
+                prop_name = self.exploreDlg.tableWidget.item(item_count, 0).text()
+                widget = self.exploreDlg.tableWidget.cellWidget(item_count, 1)
+                if isinstance(widget, QComboBox):
+                    property_merge_rule = widget.currentText()
+
+                property_uri = self.exploreDlg.tableWidget.item(item_count, 2).text()
+                selectedProp[prop_name] = {}
+                selectedProp[prop_name]["merge_rule"] = \
+                    property_merge_rule
+                selectedProp[prop_name]["property_uri"] = \
+                    property_uri
+
+        self.exploreParams["selectedProp"] = selectedProp
+
+        self.exploreParams["spatial_rel"] = self.exploreDlg.comboBox_2.currentText()
+        self.exploreParams["feature_class"] = self.exploreDlg.lineEdit_2.text()
+
+        self.logger.info(json.dumps(self.exploreParams, indent=2))
+        return
+
+
+    def pointExploreButtonClicked(self):
+        self.getExploreParams()
+        self.drawPoint(sender="explore")
+        self.exploreDlg.close()
+
+
+    def lineExploreButtonClicked(self):
+        self.getExploreParams()
+        self.drawLine(sender="explore")
+        self.exploreDlg.close()
+
+
+    def polygonExploreButtonClicked(self):
+        self.getExploreParams()
+        self.drawPolygon(sender="explore")
+        self.exploreDlg.close()
+
 
     def updateParamsPropertyEnrichment(self, propertiesDict):
         listWidget = self.dlgPropertyEnrichment.listWidget
@@ -517,12 +620,15 @@ class kwg_geoenrichment:
         return params
 
 
-    def drawPoint(self):
+    def drawPoint(self, sender=None):
         if self.tool:
             self.tool.reset()
         self.tool = DrawPoint(self.iface, self.settings.getColor())
         self.tool.setAction(self.actions[0])
-        self.tool.selectionDone.connect(self.draw)
+        if sender == "explore":
+            self.tool.selectionDone.connect(lambda: self.drawExplore())
+        else:
+            self.tool.selectionDone.connect(lambda: self.draw())
         self.iface.mapCanvas().setMapTool(self.tool)
         self.drawShape = 'point'
         self.toolname = 'drawPoint'
@@ -569,12 +675,15 @@ class kwg_geoenrichment:
                 self.draw()
 
 
-    def drawLine(self):
+    def drawLine(self, sender=None):
         if self.tool:
             self.tool.reset()
         self.tool = DrawLine(self.iface, self.settings.getColor())
         self.tool.setAction(self.actions[1])
-        self.tool.selectionDone.connect(self.draw)
+        if sender == "explore":
+            self.tool.selectionDone.connect(lambda: self.drawExplore())
+        else:
+            self.tool.selectionDone.connect(lambda: self.draw())
         self.tool.move.connect(self.updateSB)
         self.iface.mapCanvas().setMapTool(self.tool)
         self.drawShape = 'line'
@@ -608,12 +717,15 @@ class kwg_geoenrichment:
     #     self.toolname = 'drawCircle'
     #     self.resetSB()
 
-    def drawPolygon(self):
+    def drawPolygon(self, sender=None):
         if self.tool:
             self.tool.reset()
         self.tool = DrawPolygon(self.iface, self.settings.getColor())
         self.tool.setAction(self.actions[4])
-        self.tool.selectionDone.connect(self.draw)
+        if sender == "explore":
+            self.tool.selectionDone.connect(lambda: self.drawExplore())
+        else:
+            self.tool.selectionDone.connect(lambda: self.draw())
         self.tool.move.connect(self.updateSB)
         self.iface.mapCanvas().setMapTool(self.tool)
         self.drawShape = 'polygon'
@@ -846,6 +958,7 @@ then select an entity on the map.'
             self.iface.mapCanvas().refresh()
             QgsMessageLog.logMessage("Your polygon has been saved to a layer", "kwg_geoenrichment", level=Qgis.Info)
 
+
             self.dlg = kwg_geoenrichmentDialog()
 
             self.populateEventPlaceTypes()
@@ -870,6 +983,96 @@ then select an entity on the map.'
                                          level=Qgis.Info)
                 self.handleGeoJSONObject(geoResult=geoSPARQLResponse)
                 pass
+
+        self.tool.reset()
+        self.resetSB()
+        self.bGeom = None
+
+
+    def drawExplore(self):
+        rb = self.tool.rb
+        g = rb.asGeometry()
+
+        ok = True
+        warning = False
+        errBuffer_noAtt = False
+        errBuffer_Vertices = False
+
+        layer = self.iface.layerTreeView().currentLayer()
+        if self.toolname == 'drawBuffer':
+            if self.bGeom is None:
+                warning = True
+                errBuffer_noAtt = True
+            else:
+                perim, ok = QInputDialog.getDouble(
+                    self.iface.mainWindow(), self.tr('Perimeter'),
+                    self.tr('Give a perimeter in m:')
+                    + '\n'+self.tr('(works only with metric crs)'),
+                    min=0)
+                g = self.bGeom.buffer(perim, 40)
+                rb.setToGeometry(g, QgsVectorLayer(
+                    "Polygon?crs="+layer.crs().authid(), "", "memory"))
+                if g.length() == 0 and ok:
+                    warning = True
+                    errBuffer_Vertices = True
+
+        if self.toolname == 'drawCopies':
+            if g.length() < 0:
+                warning = True
+                errBuffer_noAtt = True
+
+        if ok and not warning:
+
+            name = "geo_enrichment_polygon"
+
+            # save the buffer
+            if self.drawShape == 'point':
+                layer = QgsVectorLayer(
+                    "Point?crs=" + self.iface.mapCanvas().mapSettings().destinationCrs().authid() + "&field=" + self.tr(
+                        'Geometry') + ":string(255)", name, "memory")
+                g = g.centroid()  # force geometry as point
+            elif self.drawShape == 'XYpoint':
+                layer = QgsVectorLayer(
+                    "Point?crs=" + self.XYcrs.authid() + "&field=" + self.tr('Geometry') + ":string(255)", name,
+                    "memory")
+                g = g.centroid()
+            elif self.drawShape == 'line':
+                layer = QgsVectorLayer(
+                    "LineString?crs=" + self.iface.mapCanvas().mapSettings().destinationCrs().authid() + "&field=" + self.tr(
+                        'Geometry') + ":string(255)", name, "memory")
+                # fix_print_with_import
+                print(
+                    "LineString?crs=" + self.iface.mapCanvas().mapSettings().destinationCrs().authid() + "&field=" + self.tr(
+                        'Geometry') + ":string(255)")
+            else:
+                layer = QgsVectorLayer(
+                    "Polygon?crs=" + self.iface.mapCanvas().mapSettings().destinationCrs().authid() + "&field=" + self.tr(
+                        'Geometry') + ":string(255)", name, "memory")
+
+            layer.startEditing()
+            symbols = layer.renderer().symbols(QgsRenderContext())  # todo which context ?
+            symbols[0].setColor(self.settings.getColor())
+            feature = QgsFeature()
+            feature.setGeometry(g)
+            feature.setAttributes([name])
+            layer.dataProvider().addFeatures([feature])
+            layer.commitChanges()
+
+            pjt = QgsProject.instance()
+            pjt.addMapLayer(layer, False)
+            if pjt.layerTreeRoot().findGroup(self.tr('Geometry')) is None:
+                pjt.layerTreeRoot().insertChildNode(
+                    0, QgsLayerTreeGroup(self.tr('Geometry')))
+            group = pjt.layerTreeRoot().findGroup(
+                self.tr('Geometry'))
+            group.insertLayer(0, layer)
+            self.iface.layerTreeView().refreshLayerSymbology(layer.id())
+            self.iface.mapCanvas().refresh()
+            QgsMessageLog.logMessage("Update: Your polygon has been saved to a layer", "kwg_geoenrichment", level=Qgis.Info)
+
+
+            self.exploreParams["wkt"] = self.performWKTConversion()
+            self.kwg_explore.exectue(self.exploreParams)
 
         self.tool.reset()
         self.resetSB()
@@ -918,13 +1121,13 @@ then select an entity on the map.'
 
     def performWKTConversion(self):
         layers = QgsProject.instance().mapLayers().values()
-        QgsMessageLog.logMessage("Reading all the layers", "kwg_geoenrichment", level=Qgis.Info)
+        QgsMessageLog.logMessage("Update: Reading all the layers", "kwg_geoenrichment", level=Qgis.Info)
 
         # crs = QgsCoordinateReferenceSystem("EPSG:4326")
         for layer in layers:
             # self.logger.debug(layer.name())
             if layer.name() == "geo_enrichment_polygon":
-                QgsMessageLog.logMessage("Retrieving features from the geoenrichment layer", "kwg_geoenrichment", level=Qgis.Info)
+                QgsMessageLog.logMessage("Update: Retrieving features from the geoenrichment layer", "kwg_geoenrichment", level=Qgis.Info)
                 feat = layer.getFeatures()
                 for f in feat:
                     geom = f.geometry()
@@ -932,7 +1135,7 @@ then select an entity on the map.'
                     # TODO: handle the CRS
                     # geom = self.transformSourceCRStoDestinationCRS(geom)
 
-                    QgsMessageLog.logMessage("Geometry found", "kwg_geoenrichment", level=Qgis.Info)
+                    QgsMessageLog.logMessage("Update: Geometry found", "kwg_geoenrichment", level=Qgis.Info)
                     wkt = geom.asWkt()
                 break
 
@@ -940,7 +1143,7 @@ then select an entity on the map.'
         wkt_rep = ""
         wkt_rep = wkt_literal_list[0].upper() + wkt_literal_list[1]
 
-        QgsMessageLog.logMessage("wkt representation :  " + wkt_rep , "kwg_geoenrichment", level=Qgis.Info)
+        # QgsMessageLog.logMessage("wkt representation :  " + wkt_rep , "kwg_geoenrichment", level=Qgis.Info)
 
         return wkt_rep
 
@@ -1139,4 +1342,3 @@ then select an entity on the map.'
         geom_converter = QgsCoordinateTransform(src_crs, dest_crs, QgsProject.instance())
         geom_reproj = geom_converter.transform(geom)
         return geom_reproj
-

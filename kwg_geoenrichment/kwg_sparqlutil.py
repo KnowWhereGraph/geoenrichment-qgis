@@ -18,8 +18,8 @@ class kwg_sparqlutil:
 
 
 
-    NAME_SPACE = "http://stko-roy.geog.ucsb.edu/"
-    # NAME_SPACE = "http://stko-kwg.geog.ucsb.edu/"
+    # NAME_SPACE = "http://stko-roy.geog.ucsb.edu"
+    NAME_SPACE = "http://stko-kwg.geog.ucsb.edu"
 
     # _SPARQL_ENDPOINT = "http://stko-roy.geog.ucsb.edu:7200/repositories/kwg-seed-graph-v2"
     _SPARQL_ENDPOINT = "http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire"
@@ -27,7 +27,7 @@ class kwg_sparqlutil:
 
     _PREFIX = {
         "kwgr": "%s/lod/resource/" %  (NAME_SPACE),
-        "kwg-ont": "%s/lod/resource/" %  (NAME_SPACE),
+        "kwg-ont": "%s/lod/ontology/" %  (NAME_SPACE),
         "geo": "http://www.opengis.net/ont/geosparql#",
         "geof": "http://www.opengis.net/def/function/geosparql/",
         "wd": "http://www.wikidata.org/entity/",
@@ -107,7 +107,9 @@ class kwg_sparqlutil:
         self.logger.debug(query)
 
         if sparql_endpoint is None:
-            sparql_endpoint = self.SPARQL_ENDPOINT
+            url = self.SPARQL_ENDPOINT
+        else:
+            url = sparql_endpoint
 
         sparqlParam = {'query': query, 'format': 'json', 'infer': "true" if doInference else "false"}
         headers = {'Accept': 'application/sparql-results+json'}
@@ -115,7 +117,7 @@ class kwg_sparqlutil:
 
         try:
             if request_method == 'post':
-                sparqlRequest = requests.post(url="http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire", data=sparqlParam, headers=headers)
+                sparqlRequest = requests.post(url=url, data=sparqlParam, headers=headers)
                 if sparqlRequest.status_code == 200:
                     entityTypeJson = sparqlRequest.json()  # ["results"]["bindings"]
                     self.logger.debug("HTTP request OK")
@@ -123,7 +125,7 @@ class kwg_sparqlutil:
                     self.logger.debug("!200")
                     self.logger.debug(sparqlRequest.text)
             elif request_method == 'get':
-                sparqlRequest = requests.get(url="http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire", params=sparqlParam, headers=headers)
+                sparqlRequest = requests.get(url=url, params=sparqlParam, headers=headers)
                 if sparqlRequest.status_code == 200:
                     entityTypeJson = sparqlRequest.json()  # ["results"]["bindings"]
                     self.logger.debug("HTTP request OK")
@@ -138,3 +140,9 @@ class kwg_sparqlutil:
 
 
         return entityTypeJson
+
+
+if __name__ == '__main__':
+
+    SU = kwg_sparqlutil()
+    print(SU.make_sparql_prefix())
