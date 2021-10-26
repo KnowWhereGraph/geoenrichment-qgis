@@ -28,6 +28,7 @@ from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
+from PyQt5.QtWidgets import QLabel, QHBoxLayout, QComboBox, QLayout
 from qgis._core import QgsMessageLog, Qgis, QgsVectorLayer
 
 from .kwg_sparqlquery import kwg_sparqlquery
@@ -49,6 +50,9 @@ class kwg_linkedDataDialog(QtWidgets.QDialog, FORM_CLASS):
         # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
+        # self.verticalLayout.setSpacing(20)
+        # self.verticalLayout.setSizeConstraint(QLayout.SetNoConstraint)
+        self.setWindowTitle("KWG Linked-Data Relation Finder tool")
         self.firstPropertyLabelURLDict = dict()
         self.secondPropertyLabelURLDict = dict()
         self.thirdPropertyLabelURLDict = dict()
@@ -62,25 +66,36 @@ class kwg_linkedDataDialog(QtWidgets.QDialog, FORM_CLASS):
         self.path_to_gpkg = "/var/local/QGIS/kwg_results.gpkg"
         self.layerName = "geo_results"
         self.inplaceIRIList = []
+        self.propertyCounter = 0
+        self.counterDict = {
+            1: "First",
+            2: "Second",
+            3: "Third",
+            4: "Fourth"
+        }
 
         self.secondDegreeInit = False
         self.thirdDegreeInit = False
 
         self.processRelFinder()
+        # self.processLRDF()
 
 
     def processRelFinder(self):
+        # initialize the first click
+        self.onClick()
+        # bind the event to the button click
+        self.addContent.clicked.connect(self.onClick)
+
+        # load the place IRI list
         self.loadIRIList()
         QgsMessageLog.logMessage("place URIs loaded successfully.", "kwg_geoenrichment",
                                  level=Qgis.Info)
 
-        self.degreeVal = self.comboBox_degree.currentText()
-        self.comboBox_degree.currentIndexChanged.connect(self.updateDegreeVal)
-
-        self.populateFirstDegreeProperty()
-
-        if int(self.degreeVal) > 2:
-            self.comboBox_2.currentIndexChanged.connect(self.populateThirdDegreeProperty)
+        # self.populateFirstDegreeProperty()
+        #
+        # if int(self.degreeVal) > 2:
+        #     self.comboBox_2.currentIndexChanged.connect(self.populateThirdDegreeProperty)
 
 
     def updateDegreeVal(self):
@@ -283,3 +298,27 @@ class kwg_linkedDataDialog(QtWidgets.QDialog, FORM_CLASS):
             self.thirdPropertyURL = ""
         else:
             self.thirdPropertyURL = self.thirdPropertyLabelURLDict[self.thirdPropertyLabel]
+
+
+    def onClick(self):
+        self.propertyCounter += 1
+        if self.propertyCounter == 1:
+            labelString = "Keep exploring content"
+        else:
+            labelString = "More Content"
+
+        self.labelObj = QLabel()
+        self.labelObj.setText(labelString)
+        self.labelObj.setObjectName("labelObj_{}".format(str(self.propertyCounter)))
+        self.verticalLayout.addWidget(self.labelObj)
+
+        self.comboBox = QComboBox()
+        self.comboBox.setObjectName("comboBox{}".format(str(self.propertyCounter)))
+        self.comboBox.setFixedWidth(500)
+
+
+
+        self.verticalLayout.addWidget(self.comboBox)
+
+        if self.propertyCounter == 4:
+            self.addContent.setEnabled(False)
