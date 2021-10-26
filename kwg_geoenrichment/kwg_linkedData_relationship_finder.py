@@ -23,12 +23,12 @@ from .kwg_json2field import kwg_json2field as Json2Field
 
 
 class kwg_linkedData_relationship_finder:
-    def __init__(self):
+    def __init__(self, a,b,c,d):
         """Define the tool (tool name is the name of the class)."""
-        self.firstPropertyLabelURLDict = dict()
-        self.secondPropertyLabelURLDict = dict()
-        self.thirdPropertyLabelURLDict = dict()
-        self.fourthPropertyLabelURLDict = dict()
+        self.firstPropertyLabelURLDict = a
+        self.secondPropertyLabelURLDict = b
+        self.thirdPropertyLabelURLDict = c
+        self.fourthPropertyLabelURLDict = d
         self.label = "Linked Data Relationship Finder"
         self.description = """Getting a table of S-P-O triples for the relationships from locations features."""
         self.canRunInBackground = False
@@ -67,7 +67,6 @@ class kwg_linkedData_relationship_finder:
         propertyDirectionList = []
         selectPropertyURLList = ["", "", ""]
 
-        self.getFirstDegreeProperty()
         if in_first_property_dir and relationDegree >= 1:
             firstDirection = in_first_property_dir
             firstProperty = in_first_property
@@ -80,7 +79,6 @@ class kwg_linkedData_relationship_finder:
             selectPropertyURLList[0] = firstPropertyURL
             self.firstPropertyURL = firstPropertyURL
 
-        self.getSecondDegreeProperty()
         if in_second_property_dir and relationDegree >= 2:
             secondDirection = in_second_property_dir
             secondProperty = in_second_property
@@ -93,7 +91,6 @@ class kwg_linkedData_relationship_finder:
             selectPropertyURLList[1] = secondPropertyURL
             self.secondPropertyURL = secondPropertyURL
 
-        self.getThirdDegreeProperty()
         if in_third_property_dir and relationDegree >= 3:
             thirdDirection = in_third_property_dir
             thirdProperty = in_third_property
@@ -114,6 +111,7 @@ class kwg_linkedData_relationship_finder:
 
         # for the direction list, change "BOTH" to "ORIGIN" and "DESTINATION"
         directionExpendedLists = self.Util.directionListFromBoth2OD(propertyDirectionList)
+
         tripleStore = dict()
         for currentDirectionList in directionExpendedLists:
             # get a list of triples for current specified property path

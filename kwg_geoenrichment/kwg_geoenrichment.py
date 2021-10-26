@@ -458,8 +458,6 @@ class kwg_geoenrichment:
             self.first_start = False
         self.dlgRelFinder = kwg_linkedDataDialog()
 
-        relFinder = kwg_linkedData_relationship_finder()
-
         # show the dialog
         self.dlgRelFinder.show()
         # Run the dialog event loop
@@ -468,8 +466,38 @@ class kwg_geoenrichment:
         if result:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
+
+            a,b,c,d = self.dlgRelFinder.getPropertyLabelURLDict()
+            relFinder = kwg_linkedData_relationship_finder(a,b,c,d)
+
             params = self.getParamsRelFinder()
+            params["degree_val"] = self.dlgRelFinder.getPropertyLabelURLDict()
             relFinder.execute(params, ifaceObj=self.iface)
+
+
+    def getParamsRelFinder(self):
+        params = {}
+
+        params["sparql_endpoint"] = self.dlgRelFinder.lineEdit.text()
+        params["feat_class"] = self.dlgRelFinder.lineEdit_2.text()
+
+        # get First Degree Property
+        params["first_degree_property"] = self.dlgRelFinder.comboBox_1.currentText()
+        # params["first_degree_property_direction"] = self.dlgRelFinder.comboBox_3.currentText()
+        params["first_degree_property_direction"] = "BOTH"
+
+        # get Second Degree Property
+        params["second_degree_property"] = self.dlgRelFinder.comboBox_2.currentText()
+        # params["second_degree_property_direction"] = self.dlgRelFinder.comboBox_5.currentText()
+        params["second_degree_property_direction"] = "BOTH"
+
+        # get Third Degree Property
+        params["third_degree_property"] = self.dlgRelFinder.comboBox_3.currentText()
+        # params["third_degree_property_direction"] = self.dlgRelFinder.comboBox_7.currentText()
+        params["third_degree_property_direction"] = "BOTH"
+
+        return params
+
 
 
     def runKWGExplore(self):
