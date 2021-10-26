@@ -98,8 +98,8 @@ class kwg_linkedDataDialog(QtWidgets.QDialog, FORM_CLASS):
         # bind the event to the button click
         self.addContent.clicked.connect(self.onClick)
 
-        QgsMessageLog.logMessage("place URIs loaded successfully.", "kwg_geoenrichment",
-                                 level=Qgis.Info)
+        # QgsMessageLog.logMessage("place URIs loaded successfully.", "kwg_geoenrichment",
+        #                          level=Qgis.Info)
         #
         # if int(self.degreeVal) > 2:
         #     self.comboBox_2.currentIndexChanged.connect(self.populateThirdDegreeProperty)
@@ -136,7 +136,7 @@ class kwg_linkedDataDialog(QtWidgets.QDialog, FORM_CLASS):
         if self.propertyCounter > 0:
             firstPropertyURLList = ["--- SELECT ---"]
             firstPropertyURLList.extend(self.getFirstDegreeProperty())
-            QgsMessageLog.logMessage(",".join(firstPropertyURLList))
+            # QgsMessageLog.logMessage(",".join(firstPropertyURLList))
             # self.comboBox_1.clear()
             self.widgets["comboBox_1"].addItems(firstPropertyURLList)
             self.widgets["comboBox_1"].currentIndexChanged.connect(self.updateFirstDegreeSelection)
@@ -330,11 +330,17 @@ class kwg_linkedDataDialog(QtWidgets.QDialog, FORM_CLASS):
 
 
     def getPropertyLabelURLDict(self):
-        return self.firstPropertyLabelURLDict, self.secondPropertyLabelURLDict, self.thirdPropertyLabelURLDict, self.fourthPropertyLabelURLDict
+        return self.firstPropertyLabelURLDict, self.secondPropertyLabelURLDict,\
+               self.thirdPropertyLabelURLDict, self.fourthPropertyLabelURLDict
 
 
     def getDegreeVal(self):
         return self.propertyCounter
+
+
+    def getPropertyLabels(self):
+        return self.firstPropertyLabel, self.secondPropertyLabel,\
+               self.thirdPropertyLabel, self.fourthPropertyLabel
 
 
     def onClick(self):
@@ -352,7 +358,7 @@ class kwg_linkedDataDialog(QtWidgets.QDialog, FORM_CLASS):
 
         comboBox = QComboBox()
         comboBox.setAccessibleName("comboBox_{}".format(str(self.propertyCounter)))
-        QgsMessageLog.logMessage("comboBox_{}".format(str(self.propertyCounter)), "kwg_groenrichment", level=Qgis.Info)
+        # QgsMessageLog.logMessage("comboBox_{}".format(str(self.propertyCounter)), "kwg_groenrichment", level=Qgis.Info)
         comboBox.setFixedWidth(500)
         comboBox.setInsertPolicy(6)
         self.verticalLayout.addWidget(comboBox)

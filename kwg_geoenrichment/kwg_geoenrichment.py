@@ -461,43 +461,42 @@ class kwg_geoenrichment:
         # show the dialog
         self.dlgRelFinder.show()
         # Run the dialog event loop
-        result = self.dlgRelFinder.exec_()
-        # See if OK was pressed
-        if result:
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
-
-            a,b,c,d = self.dlgRelFinder.getPropertyLabelURLDict()
-            relFinder = kwg_linkedData_relationship_finder(a,b,c,d)
-
-            params = self.getParamsRelFinder()
-            params["degree_val"] = self.dlgRelFinder.getPropertyLabelURLDict()
-            relFinder.execute(params, ifaceObj=self.iface)
+        self.dlgRelFinder.pushButton.clicked.connect(self.getParamsRelFinder)
 
 
     def getParamsRelFinder(self):
         params = {}
+        QgsMessageLog.logMessage("Run pressed")
+        # Do something useful here - delete the line containing pass and
+        # substitute with your code.
 
+        firstPropLabelDict, secondPropLabelDict, thirdPropLabelDict, fourthPropLabelDict = self.dlgRelFinder.getPropertyLabelURLDict()
+        relFinder = kwg_linkedData_relationship_finder(firstPropLabelDict, secondPropLabelDict, thirdPropLabelDict,
+                                                       fourthPropLabelDict)
+
+        firstPropLabel, secondPropLabel, thirdPropLabel, fourthPropLabel = self.dlgRelFinder.getPropertyLabels()
         params["sparql_endpoint"] = self.dlgRelFinder.lineEdit.text()
         params["feat_class"] = self.dlgRelFinder.lineEdit_2.text()
+        params["degree_val"] = self.dlgRelFinder.getDegreeVal()
 
         # get First Degree Property
-        params["first_degree_property"] = self.dlgRelFinder.comboBox_1.currentText()
-        # params["first_degree_property_direction"] = self.dlgRelFinder.comboBox_3.currentText()
+        params["first_degree_property"] = firstPropLabel
         params["first_degree_property_direction"] = "BOTH"
 
         # get Second Degree Property
-        params["second_degree_property"] = self.dlgRelFinder.comboBox_2.currentText()
-        # params["second_degree_property_direction"] = self.dlgRelFinder.comboBox_5.currentText()
+        params["second_degree_property"] = secondPropLabel
         params["second_degree_property_direction"] = "BOTH"
 
         # get Third Degree Property
-        params["third_degree_property"] = self.dlgRelFinder.comboBox_3.currentText()
-        # params["third_degree_property_direction"] = self.dlgRelFinder.comboBox_7.currentText()
+        params["third_degree_property"] = thirdPropLabel
         params["third_degree_property_direction"] = "BOTH"
 
-        return params
+        # get Third Degree Property
+        params["fourth_degree_property"] = fourthPropLabel
+        params["fourth_degree_property_direction"] = "BOTH"
 
+        relFinder.execute(params, ifaceObj=self.iface)
+        return
 
 
     def runKWGExplore(self):
@@ -603,32 +602,6 @@ class kwg_geoenrichment:
         listWidget.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         return
-
-
-    def getParamsRelFinder(self):
-        params = {}
-
-        params["sparql_endpoint"] = self.dlgRelFinder.lineEdit.text()
-        params["feat_class"] = self.dlgRelFinder.lineEdit_2.text()
-
-        params["degree_val"] = self.dlgRelFinder.comboBox_degree.currentText()
-
-        # get First Degree Property
-        params["first_degree_property"] = self.dlgRelFinder.comboBox_1.currentText()
-        # params["first_degree_property_direction"] = self.dlgRelFinder.comboBox_3.currentText()
-        params["first_degree_property_direction"] = "BOTH"
-
-        # get Second Degree Property
-        params["second_degree_property"] = self.dlgRelFinder.comboBox_2.currentText()
-        # params["second_degree_property_direction"] = self.dlgRelFinder.comboBox_5.currentText()
-        params["second_degree_property_direction"] = "BOTH"
-
-        # get Third Degree Property
-        params["third_degree_property"] = self.dlgRelFinder.comboBox_3.currentText()
-        # params["third_degree_property_direction"] = self.dlgRelFinder.comboBox_7.currentText()
-        params["third_degree_property_direction"] = "BOTH"
-
-        return params
 
 
     def getPropertyMergeparams(self):

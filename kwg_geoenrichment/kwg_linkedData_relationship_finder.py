@@ -23,12 +23,12 @@ from .kwg_json2field import kwg_json2field as Json2Field
 
 
 class kwg_linkedData_relationship_finder:
-    def __init__(self, a,b,c,d):
+    def __init__(self, firstPropLabel,secondPropLabel,thirdPropLabel,fourthPropLabel):
         """Define the tool (tool name is the name of the class)."""
-        self.firstPropertyLabelURLDict = a
-        self.secondPropertyLabelURLDict = b
-        self.thirdPropertyLabelURLDict = c
-        self.fourthPropertyLabelURLDict = d
+        self.firstPropertyLabelURLDict = firstPropLabel
+        self.secondPropertyLabelURLDict = secondPropLabel
+        self.thirdPropertyLabelURLDict = secondPropLabel
+        self.fourthPropertyLabelURLDict = secondPropLabel
         self.label = "Linked Data Relationship Finder"
         self.description = """Getting a table of S-P-O triples for the relationships from locations features."""
         self.canRunInBackground = False
@@ -122,6 +122,8 @@ class kwg_linkedData_relationship_finder:
 
             tripleStore = self.Util.mergeTripleStoreDicts(tripleStore, newTripleStore)
 
+
+
         triplePropertyURLList = []
         for triple in tripleStore:
             if triple.p not in triplePropertyURLList:
@@ -184,10 +186,12 @@ class kwg_linkedData_relationship_finder:
 
             for triple in tripleStore:
                 feat = QgsFeature()
-
-                feat.setAttributes([triple.s, triple.p, triple.o, triplePropertyURLLabelDict[triple.p], tripleStore[triple]])
+                attribs = [triple.s, triple.p, triple.o, triplePropertyURLLabelDict[triple.p], int(tripleStore[triple])]
+                # QgsMessageLog.logMessage(json.dumps(attribs))
+                feat.setAttributes(attribs)
                 pr.addFeature(feat)
-            vl.updateExtents()
+            vl.commitChanges()
+            # vl.updateExtents()
 
             options = QgsVectorFileWriter.SaveVectorOptions()
             options.layerName = tableName
@@ -247,15 +251,15 @@ class kwg_linkedData_relationship_finder:
                     [item["place"]["value"], item["placeLabel"]["value"], placeType, wkt_literal])
 
         if geom_type is None:
-            raise Exception("geometry type not find")
+            raise Exception("Geometry type not found")
 
-        vl = QgsVectorLayer(geom_type + "?crs=epsg:4326", "geo_results", "memory")
+        vl = QgsVectorLayer(geom_type + "?crs=epsg:4326", "rel_finder_geometry", "memory")
         pr = vl.dataProvider()
         pr.addAttributes(layerFields)
         vl.updateFields()
 
         if len(placeList) == 0:
-            QgsMessageLog.logMessage("No {0} within the provided polygon can be finded!".format(inPlaceType),
+            QgsMessageLog.logMessage("No {0} within the provided polygon can be found!".format(inPlaceType),
                                      level=Qgis.Info)
         else:
 
