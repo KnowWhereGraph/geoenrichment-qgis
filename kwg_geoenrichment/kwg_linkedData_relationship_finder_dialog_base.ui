@@ -62,7 +62,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>geo_results</string>
+    <string>rel_finder_table</string>
    </property>
   </widget>
   <widget class="QPushButton" name="addContent">

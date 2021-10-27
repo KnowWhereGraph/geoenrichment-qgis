@@ -466,7 +466,8 @@ class kwg_geoenrichment:
 
     def getParamsRelFinder(self):
         params = {}
-        QgsMessageLog.logMessage("Run pressed")
+        # QgsMessageLog.logMessage("Run pressed")
+        self.dlgRelFinder.close()
         # Do something useful here - delete the line containing pass and
         # substitute with your code.
 
