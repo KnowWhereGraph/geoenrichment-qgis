@@ -28,6 +28,8 @@ from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
+from PyQt5.QtWidgets import QLabel, QHBoxLayout, QComboBox, QLayout
+from PyQt5.uic.properties import QtCore
 from qgis._core import QgsMessageLog, Qgis, QgsVectorLayer
 
 from .kwg_sparqlquery import kwg_sparqlquery
@@ -49,10 +51,18 @@ class kwg_linkedDataDialog(QtWidgets.QDialog, FORM_CLASS):
         # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
+        # self.verticalLayout.setSpacing(20)
+        # self.verticalLayout.setSizeConstraint(QLayout.SetNoConstraint)
+        self.setWindowTitle("KWG Linked-Data Relation Finder tool")
         self.firstPropertyLabelURLDict = dict()
         self.secondPropertyLabelURLDict = dict()
         self.thirdPropertyLabelURLDict = dict()
         self.fourthPropertyLabelURLDict = dict()
+        self.firstPropertyLabel = None
+        self.secondPropertyLabel = None
+        self.thirdPropertyLabel = None
+        self.fourthPropertyLabel = None
+        self.widgets = dict()
         self.SPARQLQuery = kwg_sparqlquery()
         self.SPARQLUtil = kwg_sparqlutil()
         self.inplaceIRIList = []
@@ -62,25 +72,37 @@ class kwg_linkedDataDialog(QtWidgets.QDialog, FORM_CLASS):
         self.path_to_gpkg = "/var/local/QGIS/kwg_results.gpkg"
         self.layerName = "geo_results"
         self.inplaceIRIList = []
+        self.propertyCounter = 0
+        self.counterDict = {
+            1: "First",
+            2: "Second",
+            3: "Third",
+            4: "Fourth"
+        }
 
         self.secondDegreeInit = False
         self.thirdDegreeInit = False
 
         self.processRelFinder()
+        # self.processLRDF()
 
 
     def processRelFinder(self):
+        # load the place IRI list
         self.loadIRIList()
-        QgsMessageLog.logMessage("place URIs loaded successfully.", "kwg_geoenrichment",
-                                 level=Qgis.Info)
 
-        self.degreeVal = self.comboBox_degree.currentText()
-        self.comboBox_degree.currentIndexChanged.connect(self.updateDegreeVal)
-
+        # init
+        self.onClick()
         self.populateFirstDegreeProperty()
 
-        if int(self.degreeVal) > 2:
-            self.comboBox_2.currentIndexChanged.connect(self.populateThirdDegreeProperty)
+        # bind the event to the button click
+        self.addContent.clicked.connect(self.onClick)
+
+        # QgsMessageLog.logMessage("place URIs loaded successfully.", "kwg_geoenrichment",
+        #                          level=Qgis.Info)
+        #
+        # if int(self.degreeVal) > 2:
+        #     self.comboBox_2.currentIndexChanged.connect(self.populateThirdDegreeProperty)
 
 
     def updateDegreeVal(self):
@@ -111,11 +133,14 @@ class kwg_linkedDataDialog(QtWidgets.QDialog, FORM_CLASS):
 
 
     def populateFirstDegreeProperty(self):
-        firstPropertyURLList = self.getFirstDegreeProperty()
-        # self.comboBox_1.clear()
-        self.comboBox_1.addItems(list(set(firstPropertyURLList)))
-        self.comboBox_1.currentIndexChanged.connect(self.updateFirstDegreeSelection)
-        return
+        if self.propertyCounter > 0:
+            firstPropertyURLList = ["--- SELECT ---"]
+            firstPropertyURLList.extend(self.getFirstDegreeProperty())
+            # QgsMessageLog.logMessage(",".join(firstPropertyURLList))
+            # self.comboBox_1.clear()
+            self.widgets["comboBox_1"].addItems(firstPropertyURLList)
+            self.widgets["comboBox_1"].currentIndexChanged.connect(self.updateFirstDegreeSelection)
+            return
 
 
     def getFirstDegreeProperty(self):
@@ -151,30 +176,39 @@ class kwg_linkedDataDialog(QtWidgets.QDialog, FORM_CLASS):
 
         self.firstPropertyLabelURLDict = dict(zip(firstPropertyLabelList, firstPropertyURLList))
 
-        return firstPropertyLabelList
+        return list(set(firstPropertyLabelList))
 
 
     def updateFirstDegreeSelection(self):
-        self.firstPropertyLabel = self.comboBox_1.currentText()
+        self.firstPropertyLabel = self.widgets["comboBox_1"].currentText()
 
-        if self.firstPropertyLabel == None or self.firstPropertyLabel == "''":
+        if self.firstPropertyLabel == None or self.firstPropertyLabel == "--- SELECT ---":
             self.firstPropertyURL = ""
+            return
         else:
             self.firstPropertyURL = self.firstPropertyLabelURLDict[self.firstPropertyLabel]
 
-        if int(self.degreeVal) > 1:
+        if self.propertyCounter > 1:
+            try:
+                self.widgets["comboBox_2"].currentIndexChanged.disconnect(self.updateFirstDegreeSelection)
+            except Exception as e:
+                pass
+            self.widgets["comboBox_2"].clear()
             self.populateSecondDegreeProperty()
+        return
 
 
     def populateSecondDegreeProperty(self):
-        secondPropertyURLList = self.getSecondDegreeProperty()
-        # QgsMessageLog.logMessage(", ".join(secondPropertyURLList), "kwg_geoenrichment",
-        #                                                   level=Qgis.Info)
+        if self.propertyCounter > 1:
+            secondPropertyURLList  = ["--- SELECT ---"]
+            secondPropertyURLList.extend(self.getSecondDegreeProperty())
+            # QgsMessageLog.logMessage(", ".join(secondPropertyURLList), "kwg_geoenrichment",
+            #                                                   level=Qgis.Info)
 
-        # self.comboBox_2.clear()
-        self.comboBox_2.addItems(list(set(secondPropertyURLList)))
-        self.comboBox_2.currentIndexChanged.connect(self.updateSecondDegreeSelection)
-        return
+            # self.comboBox_2.clear()
+            self.widgets["comboBox_2"].addItems(secondPropertyURLList)
+            self.widgets["comboBox_2"].currentIndexChanged.connect(self.updateSecondDegreeSelection)
+            return
 
 
     def getSecondDegreeProperty(self):
@@ -211,30 +245,38 @@ class kwg_linkedDataDialog(QtWidgets.QDialog, FORM_CLASS):
 
         self.secondPropertyLabelURLDict = dict(zip(secondPropertyLabelList, secondPropertyURLList))
 
-        return secondPropertyLabelList
+        return list(set(secondPropertyLabelList))
 
 
     def updateSecondDegreeSelection(self):
-        self.secondPropertyLabel = self.comboBox_2.currentText()
+        self.secondPropertyLabel = self.widgets["comboBox_2"].currentText()
 
-        if self.secondPropertyLabel == None or self.secondPropertyLabel == "''":
+        if self.secondPropertyLabel == None or self.secondPropertyLabel == "--- SELECT ---":
             self.secondPropertyURL = ""
+            return
         else:
             self.secondPropertyURL = self.secondPropertyLabelURLDict[self.secondPropertyLabel]
 
-        if int(self.degreeVal) > 2:
+        if self.propertyCounter > 2:
+            try:
+                self.widgets["comboBox_3"].currentIndexChanged.disconnect(self.updateFirstDegreeSelection)
+            except Exception as e:
+                pass
+            self.widgets["comboBox_3"].clear()
             self.populateThirdDegreeProperty()
 
 
     def populateThirdDegreeProperty(self):
-        thirdPropertyURLList = self.getThirdDegreeProperty()
-        # QgsMessageLog.logMessage(", ".join(secondPropertyURLList), "kwg_geoenrichment",
-        #                                                   level=Qgis.Info)
+        if self.propertyCounter > 2:
+            thirdPropertyURLList = ["--- SELECT ---"]
+            thirdPropertyURLList.extend(self.getThirdDegreeProperty())
+            # QgsMessageLog.logMessage(", ".join(secondPropertyURLList), "kwg_geoenrichment",
+            #                                                   level=Qgis.Info)
 
-        # self.comboBox_3.clear()
-        self.comboBox_3.addItems(list(set(thirdPropertyURLList)))
-        self.comboBox_3.currentIndexChanged.connect(self.updateThirdDegreeSelection)
-        return
+            # self.comboBox_3.clear()
+            self.widgets["comboBox_3"].addItems(thirdPropertyURLList)
+            self.widgets["comboBox_3"].currentIndexChanged.connect(self.updateThirdDegreeSelection)
+            return
 
 
     def getThirdDegreeProperty(self):
@@ -273,13 +315,67 @@ class kwg_linkedDataDialog(QtWidgets.QDialog, FORM_CLASS):
 
         self.thirdPropertyLabelURLDict = dict(zip(thirdPropertyLabelList, thirdPropertyURLList))
 
-        return thirdPropertyLabelList
+        return list(set(thirdPropertyLabelList))
 
 
     def updateThirdDegreeSelection(self):
-        self.thirdPropertyLabel = self.comboBox_3.currentText()
+        self.thirdPropertyLabel = self.widgets["comboBox_3"].currentText()
 
-        if self.thirdPropertyLabel == None or self.thirdPropertyLabel == "''":
+        if self.thirdPropertyLabel == None or self.thirdPropertyLabel == "--- SELECT ---":
             self.thirdPropertyURL = ""
+            return
         else:
             self.thirdPropertyURL = self.thirdPropertyLabelURLDict[self.thirdPropertyLabel]
+        return
+
+
+    def getPropertyLabelURLDict(self):
+        return self.firstPropertyLabelURLDict, self.secondPropertyLabelURLDict,\
+               self.thirdPropertyLabelURLDict, self.fourthPropertyLabelURLDict
+
+
+    def getDegreeVal(self):
+        return self.propertyCounter
+
+
+    def getPropertyLabels(self):
+        return self.firstPropertyLabel, self.secondPropertyLabel,\
+               self.thirdPropertyLabel, self.fourthPropertyLabel
+
+
+    def onClick(self):
+        self.propertyCounter += 1
+        if self.propertyCounter == 1:
+            labelString = "Keep exploring content"
+        else:
+            labelString = "More Content"
+
+        labelObj = QLabel()
+        labelObj.setText(labelString)
+        labelObj.setObjectName("labelObj_{}".format(str(self.propertyCounter)))
+        self.verticalLayout.addWidget(labelObj)
+        self.widgets["labelObj_{}".format(str(self.propertyCounter))] = labelObj
+
+        comboBox = QComboBox()
+        comboBox.setAccessibleName("comboBox_{}".format(str(self.propertyCounter)))
+        # QgsMessageLog.logMessage("comboBox_{}".format(str(self.propertyCounter)), "kwg_groenrichment", level=Qgis.Info)
+        comboBox.setFixedWidth(500)
+        comboBox.setInsertPolicy(6)
+        self.verticalLayout.addWidget(comboBox)
+        self.widgets["comboBox_{}".format(str(self.propertyCounter))] = comboBox
+        self.handlePropertyAdd()
+
+
+        if self.propertyCounter == 4:
+            self.addContent.setEnabled(False)
+
+
+    def handlePropertyAdd(self):
+
+        if self.propertyCounter == 2 and self.firstPropertyLabel is not None:
+            self.populateSecondDegreeProperty()
+
+        if self.propertyCounter == 3 and self.secondPropertyLabel is not None:
+            self.populateThirdDegreeProperty()
+
+        pass

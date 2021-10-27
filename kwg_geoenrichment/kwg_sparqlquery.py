@@ -632,9 +632,6 @@ class kwg_sparqlquery:
                     elif propertyDirectionList[3] == "DESTINATION":
                         relFinderPropertyQuery += """?o4 <"""+ selectPropertyURLList[3] + """> ?o3.\n"""
 
-
-
-
             relFinderPropertyQuery += """
                             VALUES ?place
                             {"""
