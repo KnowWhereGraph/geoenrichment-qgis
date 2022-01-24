@@ -40,7 +40,7 @@ class kwg_sparqlquery:
                 {
                 '''<http://www.opengis.net/def/crs/OGC/1.3/CRS84>
                 """ + wkt_literal + """
-                '''^^geo:wktLiteral """ + geosparql_func[0] + """ ?geometry .}}
+                '''^^geo:wktLiteral """ + geosparql_func[0] + """ ?geometry .}
             """
 
         if len(geosparql_func) == 2:
@@ -50,6 +50,8 @@ class kwg_sparqlquery:
                 """ + wkt_literal + """
                 '''^^geo:wktLiteral  """ + geosparql_func[1] + """ ?geometry .}}
             """
+        else:
+            query += """}"""
 
         QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
 

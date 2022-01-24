@@ -591,6 +591,7 @@ then select an entity on the map.'
 
     def addContent(self):
         params = self.getInputs()
+        params["ifaceObj"] = self.iface
         contentItems = {}
 
         self.dlgEnrichment.show()
@@ -627,23 +628,6 @@ then select an entity on the map.'
         # QgsMessageLog.logMessage("wkt representation :  " + wkt_rep , "kwg_geoenrichment", level=Qgis.Info)
 
         return wkt_rep
-
-
-    def handleGeoJSONObject(self, geoResult):
-        QgsMessageLog.logMessage("handleGeoJSONObject", "kwg_geoenrichment", level=Qgis.Info)
-
-        with open('/var/local/QGIS/kwg_data.geojson', 'w') as f:
-            geojson.dump(geoResult, f)
-
-        geopackagedResponse = self.createGeoPackageFromSPARQLResult(geoResult)
-        # self.createShapeFileFromSPARQLResult(geoResult)
-
-        if (geopackagedResponse):
-            QgsMessageLog.logMessage("Successfully created a geopackage file", "kwg_geoenrichment", level=Qgis.Info)
-        else:
-            QgsMessageLog.logMessage("Error while writing geopackage", "kwg_geoenrichment", level=Qgis.Error)
-
-        pass
 
 
     def createShapeFileFromSPARQLResult(self, GeoQueryResult, out_path="/var/local/QGIS/kwg_results.shp", inPlaceType="", selectedURL="",
