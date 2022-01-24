@@ -13,11 +13,11 @@
   <property name="windowTitle">
    <string>KWG Geoenrichment</string>
   </property>
-  <widget class="QLabel" name="label_8">
+  <widget class="QLabel" name="label_keepExploringContent">
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>70</y>
+     <y>20</y>
      <width>171</width>
      <height>16</height>
     </rect>
@@ -39,54 +39,41 @@
     <string>Add Content</string>
    </property>
   </widget>
-  <widget class="QLabel" name="label_2">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>20</y>
-     <width>161</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Explore Knowledge Graph</string>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="comboBox_3">
+  <widget class="QComboBox" name="comboBox_S0">
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>110</y>
+     <y>60</y>
      <width>141</width>
      <height>32</height>
     </rect>
    </property>
   </widget>
-  <widget class="QComboBox" name="comboBox_4">
+  <widget class="QComboBox" name="comboBox_P0">
    <property name="geometry">
     <rect>
-     <x>250</x>
-     <y>110</y>
+     <x>240</x>
+     <y>60</y>
      <width>141</width>
      <height>32</height>
     </rect>
    </property>
   </widget>
-  <widget class="QComboBox" name="comboBox_5">
+  <widget class="QComboBox" name="comboBox_O0">
    <property name="geometry">
     <rect>
      <x>460</x>
-     <y>110</y>
+     <y>60</y>
      <width>141</width>
      <height>32</height>
     </rect>
    </property>
   </widget>
-  <widget class="QLabel" name="label_9">
+  <widget class="QLabel" name="label_S0">
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>90</y>
+     <y>40</y>
      <width>21</width>
      <height>16</height>
     </rect>
@@ -95,11 +82,11 @@
     <string>S</string>
    </property>
   </widget>
-  <widget class="QLabel" name="label_10">
+  <widget class="QLabel" name="label_P0">
    <property name="geometry">
     <rect>
-     <x>260</x>
-     <y>90</y>
+     <x>250</x>
+     <y>40</y>
      <width>21</width>
      <height>16</height>
     </rect>
@@ -108,11 +95,11 @@
     <string>P</string>
    </property>
   </widget>
-  <widget class="QLabel" name="label_11">
+  <widget class="QLabel" name="label_O0">
    <property name="geometry">
     <rect>
      <x>470</x>
-     <y>90</y>
+     <y>40</y>
      <width>21</width>
      <height>16</height>
     </rect>

@@ -20,7 +20,7 @@ class kwg_sparqlquery:
         handler.setFormatter(formatter)  # Pass handler as a parameter, not assign
         self.logger.addHandler(handler)
 
-    def EventTypeSPARQLQuery( self, sparql_endpoint="http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire"):
+    def EventTypeSPARQLQuery( self, sparql_endpoint="http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire", wkt_literal="", geosparql_func=[]):
         """
         Performs a HTTP request to retrieve all the event / place
         type as defined by the GEOSPARQL quer
@@ -31,16 +31,27 @@ class kwg_sparqlquery:
         queryPrefix = SPARQLUtil.make_sparql_prefix()
 
         query = queryPrefix + """
-            select distinct ?entityType ?entityTypeLabel
+            select distinct ?entityType
             where
             {
                 ?entity rdf:type ?entityType .
-                ?entity geo:hasGeometry ?aGeom .
-                ?entityType rdfs:label ?entityTypeLabel
-            }
-        """
-        #
-        # QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
+                ?entity geo:hasGeometry ?geometry .
+                ?geometry geo:asWKT ?wkt.
+                {
+                '''<http://www.opengis.net/def/crs/OGC/1.3/CRS84>
+                """ + wkt_literal + """
+                '''^^geo:wktLiteral """ + geosparql_func[0] + """ ?geometry .}}
+            """
+
+        if len(geosparql_func) == 2:
+            query += """ union
+                {
+                '''<http://www.opengis.net/def/crs/OGC/1.3/CRS84>
+                """ + wkt_literal + """
+                '''^^geo:wktLiteral  """ + geosparql_func[1] + """ ?geometry .}}
+            """
+
+        QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
 
         GeoQueryResult = SPARQLUtil.sparql_requests(query=query,
                                                     sparql_endpoint=sparql_endpoint,
@@ -94,20 +105,6 @@ class kwg_sparqlquery:
             """
 
         if selectedURL != None and selectedURL != "":
-            # query = queryPrefix + """
-            #     select distinct ?place ?placeLabel ?placeFlatType ?wkt
-            #     where
-            #     {
-
-            #         ?place geo:hasGeometry ?geometry .
-            #         ?place rdfs:label ?placeLabel .
-            #         ?geometry geo:asWKT ?wkt.
-            #         FILTER (""" + geosparql_func[0] + """('''
-            #     <http://www.opengis.net/def/crs/OGC/1.3/CRS84>
-            #     """ + query_geo_wkt + """
-            #     '''^^geo:wktLiteral, ?wkt)
-            #     )
-            # """
             if isDirectInstance == False:
                 query += """
                     ?place rdf:type ?placeFlatType.
@@ -118,20 +115,6 @@ class kwg_sparqlquery:
                 # show results ordered by distance
             query += """}"""
         else:
-            # query = queryPrefix + """
-            #     select distinct ?place ?placeLabel ?placeFlatType ?wkt
-            #     where
-            #     {
-
-            #         ?place geo:hasGeometry ?geometry .
-            #         ?place rdfs:label ?placeLabel .
-            #         ?geometry geo:asWKT ?wkt.
-            #         FILTER (""" + geosparql_func[0] + """('''
-            #     <http://www.opengis.net/def/crs/OGC/1.3/CRS84>
-            #     """ + query_geo_wkt + """
-            #     '''^^geo:wktLiteral, ?wkt))
-            #     }
-            # """
             query += "}"
 
         # QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)

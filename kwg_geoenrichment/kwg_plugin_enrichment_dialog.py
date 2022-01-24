@@ -63,4 +63,40 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
             '%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')  # or whatever
         handler.setFormatter(formatter)  # Pass handler as a parameter, not assign
         self.logger.addHandler(handler)
+        self.params = {}
+
+        self.sparql_query = kwg_sparqlquery()
+        self.sparql_util = kwg_sparqlutil()
+
+
+    def setParams(self, params):
+        self.params.update(params)
+
+
+    def execute(self):
+        self.populateFirstDegreeSubject()
+        self.comboBox_S0.currentIndexChanged.connect(lambda: self.firstDegreeSubjectHandler())
+
+        pass
+
+
+    def populateFirstDegreeSubject(self):
+        entityType = self.sparql_query.EventTypeSPARQLQuery(sparql_endpoint=self.params["end_point"],
+                                               wkt_literal=self.params["wkt_literal"],
+                                               geosparql_func=self.params["geosparql_func"])
+
+        QgsMessageLog.logMessage("entityType: " + json.dumps(entityType), "kwg_geoenrichment", level=Qgis.Info)
+
+        for entityTypeObject in entityType:
+            val = self.sparql_util.make_prefixed_iri(entityTypeObject["entityType"]["value"])
+            self.comboBox_S0.addItem(val)
+
+
+    def firstDegreeSubjectHandler(self):
+        self.sub0 = self.comboBox_S0.currentText()
+        # self.sparql_query.TypeAndGeoSPARQLQuery(wkt_literal=self.params["wkt_literal"],
+        #                                        geosparql_func=self.params["geosparql_func"])
+        QgsMessageLog.logMessage(self.sparql_util.remake_prefixed_iri(self.sub0),"kwg_geoenrichment", level=Qgis.Info)
+
+
 

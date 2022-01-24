@@ -53,6 +53,16 @@ class kwg_sparqlutil:
         "wdtn": "http://www.wikidata.org/prop/direct-normalized/"
     }
 
+    _SPARQL_ENDPOINT_DICT = {
+        "prod" : {
+            "kwg-v2" : "http://stko-kwg.geog.ucsb.edu:7200/repositories/kwg-v2"
+        },
+        "test" : {
+            "plume_soil_wildfire" : "http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire",
+
+        }
+    }
+
 
     def make_sparql_prefix(self):
         """
@@ -77,6 +87,21 @@ class kwg_sparqlutil:
             return iri
         else:
             return prefixed_iri
+
+
+    def remake_prefixed_iri(self, prefixed_iri):
+        """
+
+        """
+        striped_iri = prefixed_iri.split(":")
+        iri = prefixed_iri
+
+        if striped_iri[0] in self._PREFIX:
+            self.logger.info(striped_iri[0])
+            self.logger.info(striped_iri[1])
+            iri = self._PREFIX[striped_iri[0]] + striped_iri[1]
+
+        return iri
 
 
     def make_prefixed_iri_batch(self, iri_list):
