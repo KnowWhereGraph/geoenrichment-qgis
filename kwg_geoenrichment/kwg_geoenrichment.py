@@ -29,22 +29,16 @@ from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
     QgsCoordinateTransform, QgsCoordinateTransformContext, QgsMapLayer, \
     QgsFeatureRequest, QgsVectorLayer, QgsLayerTreeGroup, QgsRenderContext, \
     QgsCoordinateReferenceSystem, QgsWkbTypes, QgsMessageLog, Qgis, QgsFields, QgsField, QgsVectorFileWriter
-from qgis.gui import QgsRubberBand
 
 # Initialize Qt resources from file resources.py
 from PyQt5.uic.properties import QtWidgets
 
 from .resources import *
 # Import the code for the dialog
-from .kwg_geoenrichment_dialog import kwg_geoenrichmentDialog
-from .kwg_property_geoenrichment_dialog import kwg_property_geoenrichmentDialog
-from .kwg_property_merge_dialog import kwg_property_mergeDialog
-from .kwg_linkedData_relationship_finder_dialog import kwg_linkedDataDialog
-from .kwg_property_enrichment import kwg_property_enrichment
-from .kwg_property_merge import kwg_property_merge
-from .kwg_explore import kwg_explore
-from .kwg_linkedData_relationship_finder import kwg_linkedData_relationship_finder
-from .kwg_explore_dialog import kwg_exploreDialog
+
+from .kwg_plugin_dialog import kwg_pluginDialog
+from .kwg_plugin_enrichment_dialog import kwg_pluginEnrichmentDialog
+from .kwg_plugin import kwg_plugin
 from .kwg_sparqlquery import kwg_sparqlquery
 from .kwg_util import kwg_util as UTIL
 from .kwg_json2field import kwg_json2field as Json2Field
@@ -60,11 +54,6 @@ import json
 import os.path
 import logging
 import geojson
-# import geopandas as gpd
-# from osgeo import gdal
-
-# import gdal
-import subprocess
 
 class kwg_geoenrichment:
     """QGIS Plugin Implementation."""
@@ -237,111 +226,6 @@ class kwg_geoenrichment:
                 callback=self.run,
                 parent=self.iface.mainWindow())
 
-            self.add_action(
-                QIcon(':/plugins/kwg_geoenrichment/resources/enrich_Data.png'),
-                text=self.tr(u'Property Enrichment Query'),
-                callback=self.runPropertyEnrichment,
-                parent=self.iface.mainWindow())
-
-            self.add_action(
-                QIcon(':/plugins/kwg_geoenrichment/resources/merge_Data.png'),
-                text=self.tr(u'Property Merge Tool'),
-                callback=self.runPropertyMerge,
-                parent=self.iface.mainWindow())
-
-            self.add_action(
-                QIcon(':/plugins/kwg_geoenrichment/resources/merge_Data.png'),
-                text=self.tr(u'Link Data Relationship Finder Tool'),
-                callback=self.runRelationshipFinder,
-                parent=self.iface.mainWindow())
-
-
-            self.add_action(
-                QIcon(':/plugins/kwg_geoenrichment/resources/graph_Query.png'),
-                text=self.tr(u'KWG Explore Tool'),
-                callback=self.runKWGExplore,
-                parent=self.iface.mainWindow())
-
-            # Adding menu to toolbar
-            pointMenu = QMenu()
-            pointMenu.addAction(
-                QIcon(':/plugins/kwg_geoenrichment/resources/icon_DrawPtXY.png'),
-                self.tr('XY Point drawing tool'), self.drawXYPoint)
-            pointMenu.addAction(
-                QIcon(':/plugins/kwg_geoenrichment/resources/icon_DrawPtDMS.png'),
-                self.tr('DMS Point drawing tool'), self.drawDMSPoint)
-            icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawPt.png'
-            self.add_action(
-                icon_path,
-                text=self.tr('Point drawing tool'),
-                checkable=True,
-                menu=pointMenu,
-                add_to_toolbar=True,
-                callback=self.drawPoint,
-                parent=self.iface.mainWindow()
-            )
-            icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawL.png'
-            self.add_action(
-                icon_path,
-                text=self.tr('Line drawing tool'),
-                checkable=True,
-                add_to_toolbar=True,
-                callback=self.drawLine,
-                parent=self.iface.mainWindow()
-            )
-            # icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawR.png'
-            # self.add_action(
-            #     icon_path,
-            #     text=self.tr('Rectangle drawing tool'),
-            #     checkable=True,
-            #     add_to_toolbar=True,
-            #     callback=self.drawRect,
-            #     parent=self.iface.mainWindow()
-            # )
-            # icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawC.png'
-            # self.add_action(
-            #     icon_path,
-            #     text=self.tr('Circle drawing tool'),
-            #     checkable=True,
-            #     add_to_toolbar=True,
-            #     callback=self.drawCircle,
-            #     parent=self.iface.mainWindow()
-            # )
-            icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawP.png'
-            self.add_action(
-                icon_path,
-                text=self.tr('Polygon drawing tool'),
-                checkable=True,
-                add_to_toolbar=True,
-                callback=self.drawPolygon,
-                parent=self.iface.mainWindow()
-            )
-            bufferMenu = QMenu()
-            polygonBufferAction = QAction(
-                QIcon(':/plugins/kwg_geoenrichment/resources/icon_DrawTP.png'),
-                self.tr('Polygon buffer drawing tool on the selected layer'),
-                bufferMenu)
-            polygonBufferAction.triggered.connect(self.drawPolygonBuffer)
-            bufferMenu.addAction(polygonBufferAction)
-            icon_path = ':/plugins/kwg_geoenrichment/resources/icon_DrawT.png'
-            self.add_action(
-                icon_path,
-                text=self.tr('Buffer drawing tool on the selected layer'),
-                checkable=True,
-                add_to_toolbar=True,
-                menu=bufferMenu,
-                callback=self.drawBuffer,
-                parent=self.iface.mainWindow()
-            )
-            icon_path = ':/plugins/kwg_geoenrichment/resources/icon_Settings.png'
-            self.add_action(
-                icon_path,
-                text=self.tr('Settings'),
-                add_to_toolbar=True,
-                callback=self.showSettingsWindow,
-                parent=self.iface.mainWindow()
-            )
-
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -359,365 +243,21 @@ class kwg_geoenrichment:
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
-        self.dlg = kwg_geoenrichmentDialog()
+        self.dlg = kwg_pluginDialog()
 
         # show the dialog
         self.dlg.show()
+
+        # self.dlg.
+
         # Run the dialog event loop
         result = self.dlg.exec_()
         # See if OK was pressed
         if result:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
-            pass
+            QgsMessageLog.logMessage("Run button clicked!", "kwg_geoenrichment", level=Qgis.Info)
 
-
-    def runPropertyEnrichment(self):
-        """Run method that performs all the real work"""
-
-        # Create the dialog with elements (after translation) and keep reference
-        # Only create GUI ONCE in callback, so that it will only load when the plugin is started
-        if self.first_start == True:
-            self.first_start = False
-        self.dlgPropertyEnrichment = kwg_property_geoenrichmentDialog()
-
-        QgsMessageLog.logMessage("Retrieving common properties based on geometry selection", "kwg_geoenrichment",
-                                 level=Qgis.Info)
-        # show the dialog
-        self.dlgPropertyEnrichment.show()
-
-        kwgpropeenrichment = kwg_property_enrichment()
-
-        # get common properties
-        results = kwgpropeenrichment.getCommonProperties()
-        self.updateParamsPropertyEnrichment(results)
-
-        # get sosa obs properties
-        results = kwgpropeenrichment.getsosaObsPropNameList()
-        self.updateParamsPropertyEnrichment(results)
-
-        QgsMessageLog.logMessage("Common properties retrieved successfully", "kwg_geoenrichment", level=Qgis.Info)
-
-        # Run the dialog event loop
-        result = self.dlgPropertyEnrichment.exec_()
-        # See if OK was pressed
-        if result:
-            params = {}
-
-            params["sparql_endpoint"] = self.dlgPropertyEnrichment.lineEdit.text()
-
-
-            items = self.dlgPropertyEnrichment.listWidget.selectedItems()
-
-            propertySelectList = []
-            for item, val in enumerate(items):
-                QgsMessageLog.logMessage( "selected: " + val.text(), "kwg_geoenrichment",
-                                         level=Qgis.Info)
-                propertySelectList.append(val.text())
-            params["propertySelect"] = propertySelectList
-
-
-            kwgpropeenrichment.execute(parameters=params, ifaceObj=self.iface)
-
-
-    def runPropertyMerge(self):
-        """KWG Property Merge tool"""
-
-        # Create the dialog with elements (after translation) and keep reference
-        # Only create GUI ONCE in callback, so that it will only load when the plugin is started
-        if self.first_start == True:
-            self.first_start = False
-        self.dlgPropertyMerge = kwg_property_mergeDialog()
-
-        QgsMessageLog.logMessage("KWG Property Merge tool", "kwg_geoenrichment",
-                                 level=Qgis.Info)
-
-        names = [layer.name() for layer in QgsProject.instance().mapLayers().values()]
-
-        # show the dialog
-        self.dlgPropertyMerge.show()
-
-        # Run the dialog event loop
-        result = self.dlgPropertyMerge.exec_()
-        # See if OK was pressed
-        if result:
-            params = self.getPropertyMergeparams()
-
-            kwgpropmerge = kwg_property_merge()
-            kwgpropmerge.execute(parameters=params)
-
-        return
-
-
-    def runRelationshipFinder(self):
-        """Run method that performs all the real work"""
-
-        # Create the dialog with elements (after translation) and keep reference
-        # Only create GUI ONCE in callback, so that it will only load when the plugin is started
-        if self.first_start == True:
-            self.first_start = False
-        self.dlgRelFinder = kwg_linkedDataDialog()
-
-        # show the dialog
-        self.dlgRelFinder.show()
-        # Run the dialog event loop
-        self.dlgRelFinder.pushButton.clicked.connect(self.getParamsRelFinder)
-
-
-    def getParamsRelFinder(self):
-        params = {}
-        # QgsMessageLog.logMessage("Run pressed")
-        self.dlgRelFinder.close()
-        # Do something useful here - delete the line containing pass and
-        # substitute with your code.
-
-        firstPropLabelDict, secondPropLabelDict, thirdPropLabelDict, fourthPropLabelDict = self.dlgRelFinder.getPropertyLabelURLDict()
-        relFinder = kwg_linkedData_relationship_finder(firstPropLabelDict, secondPropLabelDict, thirdPropLabelDict,
-                                                       fourthPropLabelDict)
-
-        firstPropLabel, secondPropLabel, thirdPropLabel, fourthPropLabel = self.dlgRelFinder.getPropertyLabels()
-        params["sparql_endpoint"] = self.dlgRelFinder.lineEdit.text()
-        params["feat_class"] = self.dlgRelFinder.lineEdit_2.text()
-        params["degree_val"] = self.dlgRelFinder.getDegreeVal()
-
-        # get First Degree Property
-        params["first_degree_property"] = firstPropLabel
-        params["first_degree_property_direction"] = "BOTH"
-
-        # get Second Degree Property
-        params["second_degree_property"] = secondPropLabel
-        params["second_degree_property_direction"] = "BOTH"
-
-        # get Third Degree Property
-        params["third_degree_property"] = thirdPropLabel
-        params["third_degree_property_direction"] = "BOTH"
-
-        # get Third Degree Property
-        params["fourth_degree_property"] = fourthPropLabel
-        params["fourth_degree_property_direction"] = "BOTH"
-
-        relFinder.execute(params, ifaceObj=self.iface)
-        return
-
-
-    def runKWGExplore(self):
-        """Run method that performs all the real work"""
-
-        # Create the dialog with elements (after translation) and keep reference
-        # Only create GUI ONCE in callback, so that it will only load when the plugin is started
-        if self.first_start == True:
-            self.first_start = False
-
-        self.kwg_explore = kwg_explore(ifaceObj = self.iface)
-        self.exploreParams = dict()
-        eventPlaceTypeDict = self.kwg_explore.getEventPlaceTypes()
-
-        self.exploreDlg = kwg_exploreDialog(eventPlaceTypeDict, [],[],[],[],[],[])
-
-        # show the dialog
-        self.exploreDlg.show()
-        self.exploreDlg.comboBox.currentIndexChanged.connect(lambda: self.exploreComboboxHandler())
-
-        self.exploreDlg.toolButton.released.connect(self.pointExploreButtonClicked)
-        self.exploreDlg.toolButton_1.released.connect(self.lineExploreButtonClicked)
-        self.exploreDlg.toolButton_2.released.connect(self.polygonExploreButtonClicked)
-
-        # Run the dialog event loop
-        result = self.exploreDlg.exec_()
-        # See if OK was pressed
-        if result:
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
-            self.getExploreParams()
-
-        return
-
-
-    def exploreComboboxHandler(self):
-        self.exploreParams["feature"] = self.exploreDlg.comboBox.currentText()
-
-        commonPropertyNameList, commonPropertyURLList, sosaPropertyNameList, \
-        sosaPropertyURLList, inversePropertyNameList, inversePropertyURLList = self.kwg_explore.getPropertyLists()
-
-        self.exploreDlg.setPropertyLists(commonPropertyNameList, commonPropertyURLList, sosaPropertyNameList, \
-        sosaPropertyURLList, inversePropertyNameList, inversePropertyURLList)
-        return
-
-
-    def getExploreParams(self):
-
-        self.exploreParams["sparql_endpoint"] = self.exploreDlg.lineEdit.text()
-        self.exploreParams["feature"] = self.exploreDlg.comboBox.currentText()
-        self.exploreParams["output_location"] = "/var/local/QGIS/kwg_results.gpkg"
-
-        selectedProp = {}
-
-        for item_count in range(self.exploreDlg.tableWidget.rowCount()):
-            if self.exploreDlg.tableWidget.item(item_count, 0).checkState() == QtCore.Qt.Checked:
-                prop_name = self.exploreDlg.tableWidget.item(item_count, 0).text()
-                widget = self.exploreDlg.tableWidget.cellWidget(item_count, 1)
-                if isinstance(widget, QComboBox):
-                    property_merge_rule = widget.currentText()
-
-                property_uri = self.exploreDlg.tableWidget.item(item_count, 2).text()
-                selectedProp[prop_name] = {}
-                selectedProp[prop_name]["merge_rule"] = \
-                    property_merge_rule
-                selectedProp[prop_name]["property_uri"] = \
-                    property_uri
-
-        self.exploreParams["selectedProp"] = selectedProp
-
-        self.exploreParams["spatial_rel"] = self.exploreDlg.comboBox_2.currentText()
-        self.exploreParams["feature_class"] = self.exploreDlg.lineEdit_2.text()
-
-        self.logger.info(json.dumps(self.exploreParams, indent=2))
-        return
-
-
-    def pointExploreButtonClicked(self):
-        self.getExploreParams()
-        self.drawPoint(sender="explore")
-        self.exploreDlg.close()
-
-
-    def lineExploreButtonClicked(self):
-        self.getExploreParams()
-        self.drawLine(sender="explore")
-        self.exploreDlg.close()
-
-
-    def polygonExploreButtonClicked(self):
-        self.getExploreParams()
-        self.drawPolygon(sender="explore")
-        self.exploreDlg.close()
-
-
-    def updateParamsPropertyEnrichment(self, propertiesDict):
-        listWidget = self.dlgPropertyEnrichment.listWidget
-        itemsTextList = [str(listWidget.item(i).text()) for i in range(listWidget.count())]
-
-        for key in propertiesDict:
-            if key not in itemsTextList:
-                listWidget.addItem(key)
-        listWidget.setSelectionMode(QAbstractItemView.ExtendedSelection)
-
-        return
-
-
-    def getPropertyMergeparams(self):
-        params = {}
-
-        params["feature_class"] = self.dlgPropertyMerge.lineEdit.text()
-        params["non_functional_property"] = self.dlgPropertyMerge.lineEdit_2.text()
-
-        # TODO: set up displaying related tables logic
-        # params["related_tables"] = self.dlgPropertyMerge.comboBox_2.currentText()
-
-        params["merge_rule"] = self.dlgPropertyMerge.comboBox.currentText()
-
-        # TODO: set up signal for listening inputs and handle the delim values
-        params["concat_delimiter"] = ","
-
-        return params
-
-
-    def drawPoint(self, sender=None):
-        if self.tool:
-            self.tool.reset()
-        self.tool = DrawPoint(self.iface, self.settings.getColor())
-        self.tool.setAction(self.actions[0])
-        if sender == "explore":
-            self.tool.selectionDone.connect(lambda: self.drawExplore())
-        else:
-            self.tool.selectionDone.connect(lambda: self.draw())
-        self.iface.mapCanvas().setMapTool(self.tool)
-        self.drawShape = 'point'
-        self.toolname = 'drawPoint'
-        self.resetSB()
-
-
-    def drawXYPoint(self):
-        tuple, ok = XYDialog().getPoint(
-            self.iface.mapCanvas().mapSettings().destinationCrs())
-        point = tuple[0]
-        self.XYcrs = tuple[1]
-        if ok:
-            if point.x() == 0 and point.y() == 0:
-                QMessageBox.critical(
-                    self.iface.mainWindow(),
-                    self.tr('Error'), self.tr('Invalid input !'))
-            else:
-                self.drawPoint()
-                self.tool.rb = QgsRubberBand(
-                    self.iface.mapCanvas(), QgsWkbTypes.PointGeometry)
-                self.tool.rb.setColor(self.settings.getColor())
-                self.tool.rb.setWidth(3)
-                self.tool.rb.addPoint(point)
-                self.drawShape = 'XYpoint'
-                self.draw()
-
-
-    def drawDMSPoint(self):
-        point, ok = DMSDialog().getPoint()
-        self.XYcrs = QgsCoordinateReferenceSystem(4326)
-        if ok:
-            if point.x() == 0 and point.y() == 0:
-                QMessageBox.critical(
-                    self.iface.mainWindow(),
-                    self.tr('Error'), self.tr('Invalid input !'))
-            else:
-                self.drawPoint()
-                self.tool.rb = QgsRubberBand(
-                    self.iface.mapCanvas(), QgsWkbTypes.PointGeometry)
-                self.tool.rb.setColor(self.settings.getColor())
-                self.tool.rb.setWidth(3)
-                self.tool.rb.addPoint(point)
-                self.drawShape = 'XYpoint'
-                self.draw()
-
-
-    def drawLine(self, sender=None):
-        if self.tool:
-            self.tool.reset()
-        self.tool = DrawLine(self.iface, self.settings.getColor())
-        self.tool.setAction(self.actions[1])
-        if sender == "explore":
-            self.tool.selectionDone.connect(lambda: self.drawExplore())
-        else:
-            self.tool.selectionDone.connect(lambda: self.draw())
-        self.tool.move.connect(self.updateSB)
-        self.iface.mapCanvas().setMapTool(self.tool)
-        self.drawShape = 'line'
-        self.toolname = 'drawLine'
-        self.resetSB()
-
-    # rectangle drawing procedure
-    # def drawRect(self):
-    #     if self.tool:
-    #         self.tool.reset()
-    #     self.tool = DrawRect(self.iface, self.settings.getColor())
-    #     self.tool.setAction(self.actions[2])
-    #     self.tool.selectionDone.connect(self.draw)
-    #     self.tool.move.connect(self.updateSB)
-    #     self.iface.mapCanvas().setMapTool(self.tool)
-    #     self.drawShape = 'polygon'
-    #     self.toolname = 'drawRect'
-    #     self.resetSB()
-    #
-
-    # circle drawing procedure
-    # def drawCircle(self):
-    #     if self.tool:
-    #         self.tool.reset()
-    #     self.tool = DrawCircle(self.iface, self.settings.getColor(), 40)
-    #     self.tool.setAction(self.actions[3])
-    #     self.tool.selectionDone.connect(self.draw)
-    #     self.tool.move.connect(self.updateSB)
-    #     self.iface.mapCanvas().setMapTool(self.tool)
-    #     self.drawShape = 'polygon'
-    #     self.toolname = 'drawCircle'
-    #     self.resetSB()
 
     def drawPolygon(self, sender=None):
         if self.tool:
@@ -961,7 +501,7 @@ then select an entity on the map.'
             QgsMessageLog.logMessage("Your polygon has been saved to a layer", "kwg_geoenrichment", level=Qgis.Info)
 
 
-            self.dlg = kwg_geoenrichmentDialog()
+            # self.dlg = kwg_geoenrichmentDialog()
 
             self.populateEventPlaceTypes()
 
