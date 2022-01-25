@@ -606,15 +606,27 @@ then select an entity on the map.'
     def saveContent(self):
         S0 = self.dlgEnrichment.comboBox_S0.currentText()
         S1 = self.dlgEnrichment.comboBox_S1.currentText()
+        S2 = self.dlgEnrichment.comboBox_S2.currentText()
         P0 = self.dlgEnrichment.comboBox_P0.currentText()
         P1 = self.dlgEnrichment.comboBox_P1.currentText()
+        P2 = self.dlgEnrichment.comboBox_P2.currentText()
         O0 = self.dlgEnrichment.comboBox_O0.currentText()
         O1 = self.dlgEnrichment.comboBox_O1.currentText()
+        O2 = self.dlgEnrichment.comboBox_O2.currentText()
 
         stringVal = """
         %s - %s - %s
-            %s - %s - %s 
-        """ % (S0, P0, O0, S1, P1, O1)
+        """ % (S0, P0, O0)
+
+        if S1 or P1 or O1 is not None:
+            stringVal += """
+            %s - %s - %s    
+            """ % (S1, P1, O1)
+
+        if S2 or P2 or O2 is not None:
+            stringVal += """
+                %s - %s - %s    
+            """ % (S2, P2, O2)
 
         self.dlgEnrichment.close()
 

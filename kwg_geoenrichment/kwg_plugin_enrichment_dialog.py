@@ -112,7 +112,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.comboBox_O0.clear()
         self.comboBox_O0.addItem("--- SELECT ---")
         firstObjectList = []
-        firstObjectList.extend(self.firstPredicateObjectDict[self.pred0]["objectList"])
+        firstObjectList.extend(self.firstPredicateObjectDict[self.pred0]["objectTypeList"])
         self.comboBox_O0.addItems(list(set(firstObjectList)))
         QgsMessageLog.logMessage(str(firstObjectList), "kwg_geoenrichment", level=Qgis.Info)
         QgsMessageLog.logMessage(self.pred0, "kwg_geoenrichment", level=Qgis.Info)
@@ -123,7 +123,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.comboBox_S1.clear()
         self.comboBox_S1.addItem("--- SELECT ---")
         firstObjectList = []
-        firstObjectList.extend(self.firstPredicateObjectDict[self.pred0]["objectList"])
+        firstObjectList.extend(self.firstPredicateObjectDict[self.pred0]["objectTypeList"])
         self.comboBox_S1.addItems(list(set(firstObjectList)))
         index = self.comboBox_O0.findText(self.comboBox_O0.currentText(), QtCore.Qt.MatchFixedString)
         if index >= 0:
@@ -146,11 +146,27 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.comboBox_O1.clear()
         self.comboBox_O1.addItem("--- SELECT ---")
         secondObjectList = []
-        secondObjectList.extend(self.secondPredicateObjectDict[self.pred1]["objectList"])
+        secondObjectList.extend(self.secondPredicateObjectDict[self.pred1]["objectTypeList"])
         self.comboBox_O1.addItems(list(set(secondObjectList)))
         QgsMessageLog.logMessage(str(secondObjectList), "kwg_geoenrichment", level=Qgis.Info)
         QgsMessageLog.logMessage(self.pred1, "kwg_geoenrichment", level=Qgis.Info)
-        # self.comboBox_O1.currentIndexChanged.connect(self.populateSecondDegreeSubject)
+        self.comboBox_O1.currentIndexChanged.connect(self.populateThirdDegreeSubject)
+
+
+    def populateThirdDegreeSubject(self):
+        self.comboBox_S2.clear()
+        self.comboBox_S2.addItem("--- SELECT ---")
+        secondObjectList = []
+        secondObjectList.extend(self.secondPredicateObjectDict[self.pred1]["objectTypeList"])
+        self.comboBox_S2.addItems(list(set(secondObjectList)))
+        index = self.comboBox_O1.findText(self.comboBox_O1.currentText(), QtCore.Qt.MatchFixedString)
+        if index >= 0:
+            self.comboBox_S2.setCurrentIndex(index)
+        self.populateThirdDegreePredicate()
+
+
+    def populateThirdDegreePredicate(self):
+        pass
 
 
 
@@ -323,10 +339,10 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
                     firstPredicateObjectDict[propertyPrefixedIRI]["objectTypeList"].append(self.sparql_util.make_prefixed_iri(jsonItem["o1type"]["value"]))
             else:
                 firstPredicateObjectDict[propertyPrefixedIRI] = {}
-                firstPredicateObjectDict[propertyPrefixedIRI]["objectList"] = ["--- SELECT ---"]
+                firstPredicateObjectDict[propertyPrefixedIRI]["objectList"] = []
                 firstPredicateObjectDict[propertyPrefixedIRI]["objectList"].append(self.sparql_util.make_prefixed_iri(jsonItem["o1"]["value"]))
                 if "o1type" in jsonItem and jsonItem["o1type"]["value"] is not None and not jsonItem["o1type"]["value"].startswith("_:node"):
-                    firstPredicateObjectDict[propertyPrefixedIRI]["objectTypeList"] = ["--- SELECT ---"]
+                    firstPredicateObjectDict[propertyPrefixedIRI]["objectTypeList"] = []
                     firstPredicateObjectDict[propertyPrefixedIRI]["objectTypeList"].append(self.sparql_util.make_prefixed_iri(jsonItem["o1type"]["value"]))
 
         if self.params["end_point"] == self.sparql_util._WIKIDATA_SPARQL_ENDPOINT:
@@ -380,12 +396,12 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
                         self.sparql_util.make_prefixed_iri(jsonItem["o2type"]["value"]))
             else:
                 secondPredicateObjectDict[propertyPrefixedIRI] = {}
-                secondPredicateObjectDict[propertyPrefixedIRI]["objectList"] = ["--- SELECT ---"]
+                secondPredicateObjectDict[propertyPrefixedIRI]["objectList"] = []
                 secondPredicateObjectDict[propertyPrefixedIRI]["objectList"].append(
                     self.sparql_util.make_prefixed_iri(jsonItem["o2"]["value"]))
                 if "o2type" in jsonItem and jsonItem["o2type"]["value"] is not None and not jsonItem["o2type"][
                     "value"].startswith("_:node"):
-                    secondPredicateObjectDict[propertyPrefixedIRI]["objectTypeList"] = ["--- SELECT ---"]
+                    secondPredicateObjectDict[propertyPrefixedIRI]["objectTypeList"] = []
                     secondPredicateObjectDict[propertyPrefixedIRI]["objectTypeList"].append(
                         self.sparql_util.make_prefixed_iri(jsonItem["o2type"]["value"]))
 
