@@ -57,7 +57,7 @@ import geojson
 
 _SPARQL_ENDPOINT_DICT = {
     "prod": {
-        "kwg-v2": "http://stko-kwg.geog.ucsb.edu:7200/repositories/kwg-v2"
+        "kwg-v2": "http://stko-kwg.geog.ucsb.edu:7200/repositories/KWG-V2"
     },
     "test": {
         "plume_soil_wildfire": "http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire",
@@ -93,7 +93,7 @@ class kwg_geoenrichment:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr(u'&KWG Geoenrichment')
+        self.menu = self.tr(u'&KnowWhereGraph')
 
         # Check if plugin was started the first time in current QGIS session
         # Must be set in initGui() to survive plugin reloads
@@ -231,7 +231,7 @@ class kwg_geoenrichment:
 
             self.add_action(
                 QIcon(':/plugins/kwg_geoenrichment/resources/graph_Query.png'),
-                text=self.tr(u'GeoSPARQL Query'),
+                text=self.tr(u'Geoenrichment'),
                 callback=self.run,
                 parent=self.iface.mainWindow())
 
@@ -240,9 +240,10 @@ class kwg_geoenrichment:
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
             self.iface.removePluginMenu(
-                self.tr(u'&KWG Geoenrichment'),
+                self.tr(u'&KnowWhereGraph'),
                 action)
             self.iface.removeToolBarIcon(action)
+            del self.toolbar
 
 
     def run(self):

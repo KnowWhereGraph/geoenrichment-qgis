@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>KWG Geoenrichment</string>
+   <string>KnowWhereGraph Geoenrichment</string>
   </property>
   <widget class="QLabel" name="label_endPoint">
    <property name="geometry">

@@ -79,10 +79,10 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
 
 
     def execute(self):
+        # manage first degree
         self.populateFirstDegreeSubject()
         self.comboBox_S0.currentIndexChanged.connect(lambda: self.firstDegreeSubjectHandler())
-
-        pass
+        return
 
 
     def populateFirstDegreeSubject(self):
@@ -90,11 +90,35 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
                                                wkt_literal=self.params["wkt_literal"],
                                                geosparql_func=self.params["geosparql_func"])
 
-        QgsMessageLog.logMessage("entityType: " + json.dumps(entityType), "kwg_geoenrichment", level=Qgis.Info)
-
+        self.comboBox_S0.clear()
+        self.comboBox_S0.addItem("--- SELECT ---")
         for entityTypeObject in entityType:
             val = self.sparql_util.make_prefixed_iri(entityTypeObject["entityType"]["value"])
             self.comboBox_S0.addItem(val)
+
+
+    def populateFirstDegreePredicate(self):
+        self.comboBox_P0.clear()
+        self.comboBox_P0.addItem("--- SELECT ---")
+        firstPropertyURLList = []
+        firstPropertyURLList.extend(self.getFirstDegreeProperty())
+        self.comboBox_P0.addItems(list(set(firstPropertyURLList)))
+        self.comboBox_P0.currentIndexChanged.connect(self.populateFirstDegreeObject)
+        return
+
+
+    def populateFirstDegreeObject(self):
+        self.pred0 = self.comboBox_P0.currentText()
+        self.comboBox_O0.clear()
+        self.comboBox_O0.addItem("--- SELECT ---")
+        firstObjectList = []
+        # QgsMessageLog.logMessage(json.dumps(self.firstPredicateObjectDict), "kwg_geoenrichment", level=Qgis.Info)
+        # QgsMessageLog.logMessage(str(self.firstPredicateObjectDict[self.pred0]["objectList"]),"kwg_geoenrichment", level=Qgis.Info)
+        firstObjectList.extend(self.firstPredicateObjectDict[self.pred0]["objectList"])
+        # QgsMessageLog.logMessage(str(firstObjectList), "kwg_geoenrichment", level=Qgis.Info)
+        self.comboBox_O0.addItems(list(set(firstObjectList)))
+        QgsMessageLog.logMessage(str(firstObjectList), "kwg_geoenrichment", level=Qgis.Info)
+        QgsMessageLog.logMessage(self.pred0, "kwg_geoenrichment", level=Qgis.Info)
 
 
     def firstDegreeSubjectHandler(self):
@@ -111,6 +135,10 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         QgsMessageLog.logMessage("GeoJSON response received from the server", "kwg_geoenrichment",
                                  level=Qgis.Info)
         self.handleGeoJSONObject(geoResult=geoSPARQLResponse)
+
+        # handle predicate retrieval
+        self.loadIRIList()
+        self.populateFirstDegreePredicate()
 
 
     def handleGeoJSONObject(self, geoResult):
@@ -163,7 +191,8 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
             if idx == 0:
                 geom_type = util_obj.get_geometry_type_from_wkt(wkt_literal)
             else:
-                assert geom_type == util_obj.get_geometry_type_from_wkt(wkt_literal)
+                if geom_type != util_obj.get_geometry_type_from_wkt(wkt_literal):
+                    QgsMessageLog.logMessage("%s is not equal to %s"%(geom_type, util_obj.get_geometry_type_from_wkt(wkt_literal)), "kwg_geoenrichment", level=Qgis.Info)
 
             if isDirectInstance == False:
                 placeType = item["placeFlatType"]["value"]
@@ -177,7 +206,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
                     [item["place"]["value"], item["placeLabel"]["value"], placeType, wkt_literal])
 
         if geom_type is None:
-            raise Exception("geometry type not find")
+            raise Exception("geometry type not found")
 
         vl = QgsVectorLayer(geom_type + "?crs=epsg:4326", "geo_results", "memory")
         pr = vl.dataProvider()
@@ -218,7 +247,74 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         return error[0] == QgsVectorFileWriter.NoError
 
 
+    def loadIRIList(self, path_to_gpkg='/var/local/QGIS/kwg_results.gpkg', layerName="geo_results"):
+        # get the path to a geopackage e.g. /home/project/data/data.gpkg
+        iriList = []
+
+        gpkg_places_layer = path_to_gpkg + "|layername=%s" % (layerName)
+
+        vlayer = QgsVectorLayer(gpkg_places_layer, layerName, "ogr")
+
+        if not vlayer.isValid():
+            return iriList
+        else:
+            for feature in vlayer.getFeatures():
+                attrs = feature.attributes()
+                iriList.append(attrs[1])
+
+        self.inplaceIRIList = iriList
+
+        return
 
 
+    def getFirstDegreeProperty(self):
+        # decided to work in both directions
+        self.firstDirection = "BOTH"
+        # get the first property URL list
+        firstPropertyURLListJsonBindingObject = self.sparql_query.relFinderCommonPropertyQuery(self.inplaceIRIList,
+                                                                                              relationDegree=1,
+                                                                                              propertyDirectionList=[
+                                                                                                  self.firstDirection],
+                                                                                              selectPropertyURLList=["",
+                                                                                                                     "",
+                                                                                                                     ""],
+                                                                                              sparql_endpoint=self.params["end_point"])
+        firstPropertyURLList = []
+        firstPredicateObjectDict = {}
+        for jsonItem in firstPropertyURLListJsonBindingObject:
+            propertyURL = jsonItem["p1"]["value"]
+            firstPropertyURLList.append(propertyURL)
+            propertyPrefixedIRI = self.sparql_util.make_prefixed_iri(propertyURL)
+            if propertyPrefixedIRI in firstPredicateObjectDict:
+                firstPredicateObjectDict[propertyPrefixedIRI]["objectList"].append(jsonItem["o1"]["value"])
+                if "o1type" in jsonItem and jsonItem["o1type"]["value"] is not None and not jsonItem["o1type"]["value"].startswith("_:node"):
+                    firstPredicateObjectDict[propertyPrefixedIRI]["objectTypeList"].append(jsonItem["o1type"]["value"])
+            else:
+                firstPredicateObjectDict[propertyPrefixedIRI] = {}
+                firstPredicateObjectDict[propertyPrefixedIRI]["objectList"] = ["--- SELECT ---"]
+                firstPredicateObjectDict[propertyPrefixedIRI]["objectList"].append(jsonItem["o1"]["value"])
+                if "o1type" in jsonItem and jsonItem["o1type"]["value"] is not None and not jsonItem["o1type"]["value"].startswith("_:node"):
+                    firstPredicateObjectDict[propertyPrefixedIRI]["objectTypeList"] = ["--- SELECT ---"]
+                    firstPredicateObjectDict[propertyPrefixedIRI]["objectTypeList"].append(jsonItem["o1type"]["value"])
 
+        if self.params["end_point"] == self.sparql_util._WIKIDATA_SPARQL_ENDPOINT:
+            firstPropertyLabelJSON = self.sparql_query.locationCommonPropertyLabelQuery(firstPropertyURLList,
+                                                                                       sparql_endpoint=self.params["end_point"])
+            # firstPropertyLabelJSON = firstPropertyLabelJSONObj["results"]["bindings"]
+
+            # get the first property label list
+            firstPropertyURLList = []
+            firstPropertyLabelList = []
+            for jsonItem in firstPropertyLabelJSON:
+                propertyURL = jsonItem["p"]["value"]
+                firstPropertyURLList.append(propertyURL)
+                propertyName = jsonItem["propertyLabel"]["value"]
+                firstPropertyLabelList.append(propertyName)
+        else:
+            firstPropertyLabelList = self.sparql_util.make_prefixed_iri_batch(firstPropertyURLList)
+
+        self.firstPropertyLabelURLDict = dict(zip(firstPropertyLabelList, firstPropertyURLList))
+        self.firstPredicateObjectDict = firstPredicateObjectDict
+
+        return firstPropertyLabelList
 

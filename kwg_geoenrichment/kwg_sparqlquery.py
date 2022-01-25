@@ -798,13 +798,13 @@ class kwg_sparqlquery:
         # selectPropertyURLList: the selected peoperty URL list, it always has three elements, "" if no property has been selected
 
         if len(propertyDirectionList) == 1:
-            selectParam = "?p1"
+            selectParam = "?p1 ?o1 ?o1type"
         elif len(propertyDirectionList) == 2:
-            selectParam = "?p2"
+            selectParam = "?p2 ?o2 ?o2type"
         elif len(propertyDirectionList) == 3:
-            selectParam = "?p3"
+            selectParam = "?p3 ?o3 ?o3type"
         elif len(propertyDirectionList) == 4:
-            selectParam = "?p4"
+            selectParam = "?p4 ?o4 ?o4type"
 
         jsonBindingObject = []
         i = 0
@@ -824,70 +824,43 @@ class kwg_sparqlquery:
             if len(propertyDirectionList) > 0:
                 if selectPropertyURLList[0] == "":
                     if propertyDirectionList[0] == "BOTH":
-                        relFinderPropertyQuery += """{?place ?p1 ?o1.} UNION {?o1 ?p1 ?place.}\n"""
-                    elif propertyDirectionList[0] == "ORIGIN":
-                        relFinderPropertyQuery += """?place ?p1 ?o1.\n"""
-                    elif propertyDirectionList[0] == "DESTINATION":
-                        relFinderPropertyQuery += """?o1 ?p1 ?place.\n"""
+                        relFinderPropertyQuery += """{?place ?p1 ?o1. ?o1 rdf:type ?o1type} UNION {?o1 ?p1 ?place.}\n"""
 
                     if relationDegree > 1:
                         relFinderPropertyQuery += """OPTIONAL {?p1 a owl:ObjectProperty.}\n"""
                 else:
                     if propertyDirectionList[0] == "BOTH":
                         relFinderPropertyQuery += """{?place <""" + selectPropertyURLList[
-                            0] + """> ?o1.} UNION {?o1 <""" + selectPropertyURLList[0] + """> ?place.}\n"""
-                    elif propertyDirectionList[0] == "ORIGIN":
-                        relFinderPropertyQuery += """?place <""" + selectPropertyURLList[0] + """> ?o1.\n"""
-                    elif propertyDirectionList[0] == "DESTINATION":
-                        relFinderPropertyQuery += """?o1 <""" + selectPropertyURLList[0] + """> ?place.\n"""
+                            0] + """> ?o1. ?o1 rdf:type ?o1type} UNION {?o1 <""" + selectPropertyURLList[0] + """> ?place.}\n"""
 
             if len(propertyDirectionList) > 1:
                 if selectPropertyURLList[1] == "":
                     if propertyDirectionList[1] == "BOTH":
-                        relFinderPropertyQuery += """{?o1 ?p2 ?o2.} UNION {?o2 ?p2 ?o1.}\n"""
-                    elif propertyDirectionList[1] == "ORIGIN":
-                        relFinderPropertyQuery += """?o1 ?p2 ?o2.\n"""
-                    elif propertyDirectionList[1] == "DESTINATION":
-                        relFinderPropertyQuery += """?o2 ?p2 ?o1.\n"""
+                        relFinderPropertyQuery += """{?o1 ?p2 ?o2. ?o2 rdf:type ?o2type} UNION {?o2 ?p2 ?o1.}\n"""
 
                     if relationDegree > 2:
                         relFinderPropertyQuery += """OPTIONAL {?p2 a owl:ObjectProperty.}\n"""
                 else:
                     if propertyDirectionList[1] == "BOTH":
-                        relFinderPropertyQuery += """{?o1 <""" + selectPropertyURLList[1] + """> ?o2.} UNION {?o2 <""" + \
+                        relFinderPropertyQuery += """{?o1 <""" + selectPropertyURLList[1] + """> ?o2. ?o2 rdf:type ?o2type} UNION {?o2 <""" + \
                                                   selectPropertyURLList[1] + """> ?o1.}\n"""
-                    elif propertyDirectionList[1] == "ORIGIN":
-                        relFinderPropertyQuery += """?o1 <""" + selectPropertyURLList[1] + """> ?o2.\n"""
-                    elif propertyDirectionList[1] == "DESTINATION":
-                        relFinderPropertyQuery += """?o2 <""" + selectPropertyURLList[1] + """> ?o1.\n"""
 
             if len(propertyDirectionList) > 2:
                 if selectPropertyURLList[2] == "":
                     if propertyDirectionList[2] == "BOTH":
-                        relFinderPropertyQuery += """{?o2 ?p3 ?o3.} UNION {?o3 ?p3 ?o2.}\n"""
-                    elif propertyDirectionList[2] == "ORIGIN":
-                        relFinderPropertyQuery += """?o2 ?p3 ?o3.\n"""
-                    elif propertyDirectionList[2] == "DESTINATION":
-                        relFinderPropertyQuery += """?o3 ?p3 ?o2.\n"""
+                        relFinderPropertyQuery += """{?o2 ?p3 ?o3. ?o3 rdf:type ?o3type} UNION {?o3 ?p3 ?o2.}\n"""
 
                     if relationDegree > 3:
                         relFinderPropertyQuery += """OPTIONAL {?p3 a owl:ObjectProperty.}\n"""
                 else:
                     if propertyDirectionList[2] == "BOTH":
-                        relFinderPropertyQuery += """{?o2 <""" + selectPropertyURLList[2] + """> ?o3.} UNION {?o3 <""" + \
+                        relFinderPropertyQuery += """{?o2 <""" + selectPropertyURLList[2] + """> ?o3. ?o3 rdf:type ?o3type} UNION {?o3 <""" + \
                                                   selectPropertyURLList[2] + """> ?o2.}\n"""
-                    elif propertyDirectionList[2] == "ORIGIN":
-                        relFinderPropertyQuery += """?o2 <""" + selectPropertyURLList[2] + """> ?o3.\n"""
-                    elif propertyDirectionList[2] == "DESTINATION":
-                        relFinderPropertyQuery += """?o3 <""" + selectPropertyURLList[2] + """> ?o2.\n"""
 
             if len(propertyDirectionList) > 3:
                 if propertyDirectionList[3] == "BOTH":
-                    relFinderPropertyQuery += """{?o3 ?p4 ?o4.} UNION {?o4 ?p4 ?o3.}\n"""
-                elif propertyDirectionList[3] == "ORIGIN":
-                    relFinderPropertyQuery += """?o3 ?p4 ?o4.\n"""
-                elif propertyDirectionList[3] == "DESTINATION":
-                    relFinderPropertyQuery += """?o4 ?p4 ?o3.\n"""
+                    relFinderPropertyQuery += """{?o3 ?p4 ?o4. ?o4 rdf:type ?o4type} UNION {?o4 ?p4 ?o3.}\n"""
+
 
             relFinderPropertyQuery += """
                             VALUES ?place
