@@ -32,7 +32,7 @@ from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
     QgsCoordinateReferenceSystem, QgsWkbTypes, QgsMessageLog, Qgis, QgsFields, QgsField, QgsVectorFileWriter
 
 # Initialize Qt resources from file resources.py
-from PyQt5.uic.properties import QtWidgets
+from PyQt5.uic.properties import QtWidgets, QtGui
 
 from .resources import *
 # Import the code for the dialog
@@ -598,8 +598,27 @@ then select an entity on the map.'
         self.dlgEnrichment.show()
         self.dlgEnrichment.setParams(params)
         self.dlgEnrichment.execute()
+        self.dlgEnrichment.pushButton_save.clicked.connect(self.saveContent)
 
         return contentItems
+
+
+    def saveContent(self):
+        S0 = self.dlgEnrichment.comboBox_S0.currentText()
+        S1 = self.dlgEnrichment.comboBox_S1.currentText()
+        P0 = self.dlgEnrichment.comboBox_P0.currentText()
+        P1 = self.dlgEnrichment.comboBox_P1.currentText()
+        O0 = self.dlgEnrichment.comboBox_O0.currentText()
+        O1 = self.dlgEnrichment.comboBox_O1.currentText()
+
+        stringVal = """
+        %s - %s - %s
+            %s - %s - %s 
+        """ % (S0, P0, O0, S1, P1, O1)
+
+        self.dlgEnrichment.close()
+
+        self.dlg.listWidget.addItem(stringVal)
 
 
     def performWKTConversion(self):

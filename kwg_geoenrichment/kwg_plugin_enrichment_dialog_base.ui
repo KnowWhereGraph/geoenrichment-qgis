@@ -108,7 +108,7 @@
     <string>O</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButton_run_2">
+  <widget class="QPushButton" name="pushButton_save">
    <property name="geometry">
     <rect>
      <x>490</x>

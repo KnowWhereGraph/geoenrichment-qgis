@@ -69,7 +69,7 @@
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>250</y>
+     <y>290</y>
      <width>161</width>
      <height>16</height>
     </rect>
@@ -167,13 +167,13 @@
     <string>Select Content</string>
    </property>
   </widget>
-  <widget class="QTreeView" name="treeView">
+  <widget class="QListWidget" name="listWidget">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>80</y>
-     <width>591</width>
-     <height>192</height>
+     <x>50</x>
+     <y>90</y>
+     <width>561</width>
+     <height>171</height>
     </rect>
    </property>
   </widget>
