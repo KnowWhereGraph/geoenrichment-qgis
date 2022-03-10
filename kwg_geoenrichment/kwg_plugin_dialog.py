@@ -21,22 +21,12 @@
  *                                                                         *
  ***************************************************************************/
 """
-import json
 import logging
 import os
-
-from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
+from qgis.PyQt import uic
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QTableWidgetItem, QHeaderView, QComboBox
-from qgis._core import QgsMessageLog, Qgis
-
-from PyQt5.QtGui import QIcon
-
-from .kwg_sparqlquery import kwg_sparqlquery
-from .kwg_sparqlutil import kwg_sparqlutil
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'kwg_plugin_dialog_base.ui'))
@@ -95,4 +85,3 @@ class kwg_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         }
         """
         self.setStyleSheet(stylesheet)
-

@@ -21,22 +21,17 @@
  *                                                                         *
  ***************************************************************************/
 """
-import json
 import logging
 import os
-
-from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
+from qgis.PyQt import uic
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 import geojson
 from PyQt5 import QtCore
 from PyQt5.QtCore import QVariant
-from PyQt5.QtWidgets import QTableWidgetItem, QHeaderView, QComboBox
 from qgis._core import QgsMessageLog, Qgis, QgsFields, QgsField, QgsVectorLayer, QgsFeature, QgsGeometry, \
     QgsVectorFileWriter, QgsProject
-
-from PyQt5.QtGui import QIcon
 
 from .kwg_sparqlquery import kwg_sparqlquery
 from .kwg_sparqlutil import kwg_sparqlutil
@@ -100,11 +95,9 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         """
         self.setStyleSheet(stylesheet)
 
-
     def setParams(self, params):
         self.params.update(params)
         self.ifaceObj = self.params["ifaceObj"]
-
 
     def execute(self):
         # manage first degree
@@ -113,22 +106,19 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.comboBox_S0.currentIndexChanged.connect(lambda: self.firstDegreeSubjectHandler())
         return
 
-
     def get_results(self):
         return self.results
 
-
     def populateFirstDegreeSubject(self):
         entityType = self.sparql_query.EventTypeSPARQLQuery(sparql_endpoint=self.params["end_point"],
-                                               wkt_literal=self.params["wkt_literal"],
-                                               geosparql_func=self.params["geosparql_func"])
+                                                            wkt_literal=self.params["wkt_literal"],
+                                                            geosparql_func=self.params["geosparql_func"])
 
         self.comboBox_S0.clear()
         self.comboBox_S0.addItem("--- SELECT ---")
         for entityTypeObject in entityType:
             val = self.sparql_util.make_prefixed_iri(entityTypeObject["entityType"]["value"])
             self.comboBox_S0.addItem(val)
-
 
     def populateFirstDegreePredicate(self):
         self.comboBox_P0.clear()
@@ -138,7 +128,6 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.comboBox_P0.addItems(list(set(firstPropertyURLList)))
         self.comboBox_P0.currentIndexChanged.connect(self.populateFirstDegreeObject)
         return
-
 
     def populateFirstDegreeObject(self):
         self.pred0 = self.comboBox_P0.currentText()
@@ -154,7 +143,6 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         # QgsMessageLog.logMessage(self.pred0, "kwg_geoenrichment", level=Qgis.Info)
         self.comboBox_O0.currentIndexChanged.connect(self.populateSecondDegreeSubject)
 
-
     def populateSecondDegreeSubject(self):
         self.comboBox_S1.clear()
         self.comboBox_S1.addItem("--- SELECT ---")
@@ -166,7 +154,6 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
             self.comboBox_S1.setCurrentIndex(index)
         self.populateSecondDegreePredicate()
 
-
     def populateSecondDegreePredicate(self):
         self.comboBox_P1.clear()
         self.comboBox_P1.addItem("--- SELECT ---")
@@ -175,7 +162,6 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.comboBox_P1.addItems(list(set(secondPropertyURLList)))
         self.comboBox_P1.currentIndexChanged.connect(self.populateSecondDegreeObject)
         return
-
 
     def populateSecondDegreeObject(self):
         self.pred1 = self.comboBox_P1.currentText()
@@ -191,7 +177,6 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         # QgsMessageLog.logMessage(self.pred1, "kwg_geoenrichment", level=Qgis.Info)
         self.comboBox_O1.currentIndexChanged.connect(self.populateThirdDegreeSubject)
 
-
     def populateThirdDegreeSubject(self):
         self.comboBox_S2.clear()
         self.comboBox_S2.addItem("--- SELECT ---")
@@ -203,7 +188,6 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
             self.comboBox_S2.setCurrentIndex(index)
         self.populateThirdDegreePredicate()
 
-
     def populateThirdDegreePredicate(self):
         self.comboBox_P2.clear()
         self.comboBox_P2.addItem("--- SELECT ---")
@@ -212,7 +196,6 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.comboBox_P2.addItems(thirdPropertyURLList)
         self.comboBox_P2.currentIndexChanged.connect(self.populateThirdDegreeObject)
         return
-
 
     def populateThirdDegreeObject(self):
         self.pred2 = self.comboBox_P2.currentText()
@@ -234,16 +217,15 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         # QgsMessageLog.logMessage(self.pred1, "kwg_geoenrichment", level=Qgis.Info)
         # self.comboBox_O2.currentIndexChanged.connect(self.populateThirdDegreeSubject)
 
-
     def firstDegreeSubjectHandler(self):
         self.sub0 = self.comboBox_S0.currentText()
         self.results["contentType"] = self.sub0
         self.sub0_url = self.sparql_util.remake_prefixed_iri(self.sub0)
 
         geoSPARQLResponse = self.sparql_query.TypeAndGeoSPARQLQuery(sparql_endpoint=self.params["end_point"],
-                                                selectedURL=self.sub0_url,
-                                                query_geo_wkt=self.params["wkt_literal"],
-                                                geosparql_func=self.params["geosparql_func"])
+                                                                    selectedURL=self.sub0_url,
+                                                                    query_geo_wkt=self.params["wkt_literal"],
+                                                                    geosparql_func=self.params["geosparql_func"])
 
         # QgsMessageLog.logMessage("GeoJSON response received from the server", "kwg_geoenrichment",
         #                          level=Qgis.Info)
@@ -252,7 +234,6 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         # handle predicate retrieval
         self.loadIRIList()
         self.populateFirstDegreePredicate()
-
 
     def handleGeoJSONObject(self, geoResult):
         # QgsMessageLog.logMessage("handleGeoJSONObject", "kwg_geoenrichment", level=Qgis.Info)
@@ -269,7 +250,6 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
             QgsMessageLog.logMessage("Error while writing geopackage", "kwg_geoenrichment", level=Qgis.Error)
 
         pass
-
 
     def createGeoPackageFromSPARQLResult(self, GeoQueryResult, out_path="/var/local/QGIS/kwg_results.gpkg",
                                          inPlaceType="", selectedURL="",
@@ -360,7 +340,6 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
 
         return error[0] == QgsVectorFileWriter.NoError
 
-
     def loadIRIList(self, path_to_gpkg='/var/local/QGIS/kwg_results.gpkg', layerName="geo_results"):
         # get the path to a geopackage e.g. /home/project/data/data.gpkg
         iriList = []
@@ -381,19 +360,20 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
 
         return
 
-
     def getFirstDegreeProperty(self):
         # decided to work in both directions
         self.firstDirection = "BOTH"
         # get the first property URL list
         firstPropertyURLListJsonBindingObject = self.sparql_query.relFinderCommonPropertyQuery(self.inplaceIRIList,
-                                                                                              relationDegree=1,
-                                                                                              propertyDirectionList=[
-                                                                                                  self.firstDirection],
-                                                                                              selectPropertyURLList=["",
-                                                                                                                     "",
-                                                                                                                     ""],
-                                                                                              sparql_endpoint=self.params["end_point"])
+                                                                                               relationDegree=1,
+                                                                                               propertyDirectionList=[
+                                                                                                   self.firstDirection],
+                                                                                               selectPropertyURLList=[
+                                                                                                   "",
+                                                                                                   "",
+                                                                                                   ""],
+                                                                                               sparql_endpoint=
+                                                                                               self.params["end_point"])
         self.results["firstPropertyURLListJsonBindingObject"] = firstPropertyURLListJsonBindingObject
         firstPropertyURLList = []
         firstPredicateObjectDict = {}
@@ -407,19 +387,25 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
                 else:
                     firstPredicateObjectDict[propertyPrefixedIRI]["objectList"].append(
                         self.sparql_util.make_prefixed_iri(jsonItem["o1"]["value"]))
-                if "o1type" in jsonItem and jsonItem["o1type"]["value"] is not None and not jsonItem["o1type"]["value"].startswith("_:node"):
-                    firstPredicateObjectDict[propertyPrefixedIRI]["objectTypeList"].append(self.sparql_util.make_prefixed_iri(jsonItem["o1type"]["value"]))
+                if "o1type" in jsonItem and jsonItem["o1type"]["value"] is not None and not jsonItem["o1type"][
+                    "value"].startswith("_:node"):
+                    firstPredicateObjectDict[propertyPrefixedIRI]["objectTypeList"].append(
+                        self.sparql_util.make_prefixed_iri(jsonItem["o1type"]["value"]))
             else:
                 firstPredicateObjectDict[propertyPrefixedIRI] = {}
                 firstPredicateObjectDict[propertyPrefixedIRI]["objectList"] = []
-                firstPredicateObjectDict[propertyPrefixedIRI]["objectList"].append(self.sparql_util.make_prefixed_iri(jsonItem["o1"]["value"]))
-                if "o1type" in jsonItem and jsonItem["o1type"]["value"] is not None and not jsonItem["o1type"]["value"].startswith("_:node"):
+                firstPredicateObjectDict[propertyPrefixedIRI]["objectList"].append(
+                    self.sparql_util.make_prefixed_iri(jsonItem["o1"]["value"]))
+                if "o1type" in jsonItem and jsonItem["o1type"]["value"] is not None and not jsonItem["o1type"][
+                    "value"].startswith("_:node"):
                     firstPredicateObjectDict[propertyPrefixedIRI]["objectTypeList"] = []
-                    firstPredicateObjectDict[propertyPrefixedIRI]["objectTypeList"].append(self.sparql_util.make_prefixed_iri(jsonItem["o1type"]["value"]))
+                    firstPredicateObjectDict[propertyPrefixedIRI]["objectTypeList"].append(
+                        self.sparql_util.make_prefixed_iri(jsonItem["o1type"]["value"]))
 
         if self.params["end_point"] == self.sparql_util._WIKIDATA_SPARQL_ENDPOINT:
             firstPropertyLabelJSON = self.sparql_query.locationCommonPropertyLabelQuery(firstPropertyURLList,
-                                                                                       sparql_endpoint=self.params["end_point"])
+                                                                                        sparql_endpoint=self.params[
+                                                                                            "end_point"])
             # firstPropertyLabelJSON = firstPropertyLabelJSONObj["results"]["bindings"]
 
             # get the first property label list
@@ -438,20 +424,22 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
 
         return firstPropertyLabelList
 
-
     def getSecondDegreeProperty(self):
         self.secondDirection = "BOTH"
 
         # get the second property URL list
         secondPropertyURLListJsonBindingObject = self.sparql_query.relFinderCommonPropertyQuery(self.inplaceIRIList,
-                                                                                               relationDegree=2,
-                                                                                               propertyDirectionList=[
-                                                                                                   self.firstDirection,
-                                                                                                   self.secondDirection],
-                                                                                               selectPropertyURLList=[
-                                                                                                   self.firstPropertyLabelURLDict[self.pred0],
-                                                                                                   "", ""],
-                                                                                               sparql_endpoint=self.params["end_point"])
+                                                                                                relationDegree=2,
+                                                                                                propertyDirectionList=[
+                                                                                                    self.firstDirection,
+                                                                                                    self.secondDirection],
+                                                                                                selectPropertyURLList=[
+                                                                                                    self.firstPropertyLabelURLDict[
+                                                                                                        self.pred0],
+                                                                                                    "", ""],
+                                                                                                sparql_endpoint=
+                                                                                                self.params[
+                                                                                                    "end_point"])
         self.results["secondPropertyURLListJsonBindingObject"] = secondPropertyURLListJsonBindingObject
         secondPropertyURLList = []
         secondPredicateObjectDict = {}
@@ -505,23 +493,25 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
 
         return list(set(secondPropertyLabelList))
 
-
     def getThirdDegreeProperty(self):
 
         self.thirdDirection = "BOTH"
 
         # get the third property URL list
         thirdPropertyURLListJsonBindingObject = self.sparql_query.relFinderCommonPropertyQuery(self.inplaceIRIList,
-                                                                                              relationDegree=3,
-                                                                                              propertyDirectionList=[
-                                                                                                  self.firstDirection,
-                                                                                                  self.secondDirection,
-                                                                                                  self.thirdDirection],
-                                                                                              selectPropertyURLList=[
-                                                                                                  self.firstPropertyLabelURLDict[self.pred0],
-                                                                                                  self.secondPropertyLabelURLDict[self.pred1],
-                                                                                                  ""],
-                                                                                              sparql_endpoint=self.params["end_point"])
+                                                                                               relationDegree=3,
+                                                                                               propertyDirectionList=[
+                                                                                                   self.firstDirection,
+                                                                                                   self.secondDirection,
+                                                                                                   self.thirdDirection],
+                                                                                               selectPropertyURLList=[
+                                                                                                   self.firstPropertyLabelURLDict[
+                                                                                                       self.pred0],
+                                                                                                   self.secondPropertyLabelURLDict[
+                                                                                                       self.pred1],
+                                                                                                   ""],
+                                                                                               sparql_endpoint=
+                                                                                               self.params["end_point"])
         thirdPropertyURLList = []
         thirdPredicateObjectDict = {}
         self.results["thirdPropertyURLListJsonBindingObject"] = thirdPropertyURLListJsonBindingObject
@@ -530,7 +520,8 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
             thirdPropertyURLList.append(propertyURL)
             propertyPrefixedIRI = self.sparql_util.make_prefixed_iri(propertyURL)
             if propertyPrefixedIRI in thirdPredicateObjectDict:
-                if type(jsonItem["o3"]["value"]) is str or jsonItem["o3"]["value"].isnumeric() or jsonItem["o3"]["type"] == "literal":
+                if type(jsonItem["o3"]["value"]) is str or jsonItem["o3"]["value"].isnumeric() or jsonItem["o3"][
+                    "type"] == "literal":
                     thirdPredicateObjectDict[propertyPrefixedIRI]["objectList"].append("Literal")
                 else:
                     if jsonItem["o3"]["value"] == 40.2 or jsonItem["o3"]["value"] == "40.2":
@@ -550,8 +541,9 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
                 if "o3type" in jsonItem and jsonItem["o3type"]["value"] is not None and not jsonItem["o3type"][
                     "value"].startswith("_:node"):
                     thirdPredicateObjectDict[propertyPrefixedIRI]["objectTypeList"] = []
-                    if type(jsonItem["o3type"]["value"]) is str or jsonItem["o3type"]["value"].isnumeric() or jsonItem["o3type"][
-                        "type"] == "literal":
+                    if type(jsonItem["o3type"]["value"]) is str or jsonItem["o3type"]["value"].isnumeric() or \
+                            jsonItem["o3type"][
+                                "type"] == "literal":
                         thirdPredicateObjectDict[propertyPrefixedIRI]["objectList"].append("Literal")
                     else:
                         if jsonItem["o3type"]["value"] == 40.2 or jsonItem["o3type"]["value"] == "40.2":
@@ -560,16 +552,15 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
                             thirdPredicateObjectDict[propertyPrefixedIRI]["objectTypeList"].append(
                                 self.sparql_util.make_prefixed_iri(jsonItem["o3type"]["value"]))
 
-
         if self.params["end_point"] == self.sparql_util._WIKIDATA_SPARQL_ENDPOINT:
             thirdPropertyLabelJSON = self.sparql_query.locationCommonPropertyLabelQuery(thirdPropertyURLList,
-                                                                                       sparql_endpoint=self.params["end_point"])
+                                                                                        sparql_endpoint=self.params[
+                                                                                            "end_point"])
 
             # get the third property label list
             thirdPropertyURLList = []
             thirdPropertyLabelList = []
             for jsonItem in thirdPropertyLabelJSON:
-
                 propertyURL = jsonItem["p"]["value"]
                 thirdPropertyURLList.append(propertyURL)
                 propertyName = jsonItem["propertyLabel"]["value"]
@@ -581,4 +572,3 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.thirdPredicateObjectDict = thirdPredicateObjectDict
 
         return list(set(thirdPropertyLabelList))
-

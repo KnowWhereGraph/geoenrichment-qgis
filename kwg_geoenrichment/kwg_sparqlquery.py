@@ -1,10 +1,9 @@
-import json
 import logging
 from collections import namedtuple
+from qgis.core import QgsMessageLog, Qgis
 
 from .kwg_sparqlutil import kwg_sparqlutil
 
-from qgis.core import QgsMessageLog, Qgis
 
 class kwg_sparqlquery:
 
@@ -20,7 +19,9 @@ class kwg_sparqlquery:
         handler.setFormatter(formatter)  # Pass handler as a parameter, not assign
         self.logger.addHandler(handler)
 
-    def EventTypeSPARQLQuery( self, sparql_endpoint="http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire", wkt_literal="", geosparql_func=[]):
+    def EventTypeSPARQLQuery(self,
+                             sparql_endpoint="http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire",
+                             wkt_literal="", geosparql_func=[]):
         """
         Performs a HTTP request to retrieve all the event / place
         type as defined by the GEOSPARQL quer
@@ -65,7 +66,6 @@ class kwg_sparqlquery:
 
         return GeoQueryResult
 
-
     def TypeAndGeoSPARQLQuery(self, query_geo_wkt, selectedURL="",
                               isDirectInstance=False,
                               geosparql_func=["geo:sfIntersects"],
@@ -82,7 +82,6 @@ class kwg_sparqlquery:
         '''
         SPARQLUtil = kwg_sparqlutil()
         queryPrefix = SPARQLUtil.make_sparql_prefix()
-
 
         query = queryPrefix + """
                 select distinct ?place ?placeLabel ?placeFlatType ?wkt
@@ -126,9 +125,9 @@ class kwg_sparqlquery:
         GeoQueryResult = GeoQueryResult["results"]["bindings"]
         return GeoQueryResult
 
-
-    def commonPropertyQuery(self, inplaceIRIList, sparql_endpoint="http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire", doSameAs=True):
-
+    def commonPropertyQuery(self, inplaceIRIList,
+                            sparql_endpoint="http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire",
+                            doSameAs=True):
 
         queryPrefix = self.sparqlUTIL.make_sparql_prefix()
 
@@ -191,10 +190,9 @@ class kwg_sparqlquery:
 
         # QgsMessageLog.logMessage(commonPropertyQuery, "kwg_geoenrichment", level=Qgis.Info)
         res_json = self.sparqlUTIL.sparql_requests(query=commonPropertyQuery,
-                                              sparql_endpoint=sparql_endpoint,
-                                              doInference=False)
+                                                   sparql_endpoint=sparql_endpoint,
+                                                   doInference=False)
         return res_json
-
 
     def commonSosaObsPropertyQuery(self, inplaceIRIList, sparql_endpoint='https://dbpedia.org/sparql', doSameAs=False):
         queryPrefix = self.sparqlUTIL.make_sparql_prefix()
@@ -219,10 +217,9 @@ class kwg_sparqlquery:
                                         """
 
         res_json = self.sparqlUTIL.sparql_requests(query=commonPropertyQuery,
-                                              sparql_endpoint=sparql_endpoint,
-                                              doInference=False)
+                                                   sparql_endpoint=sparql_endpoint,
+                                                   doInference=False)
         return res_json
-
 
     def inverseCommonPropertyQuery(self, inplaceIRIList, sparql_endpoint='https://dbpedia.org/sparql', doSameAs=True):
         queryPrefix = self.sparqlUTIL.make_sparql_prefix()
@@ -252,10 +249,9 @@ class kwg_sparqlquery:
                                         """
 
         res_json = self.sparqlUTIL.sparql_requests(query=commonPropertyQuery,
-                                              sparql_endpoint=sparql_endpoint,
-                                              doInference=False)
+                                                   sparql_endpoint=sparql_endpoint,
+                                                   doInference=False)
         return res_json
-
 
     def functionalPropertyQuery(self, propertyURLList, sparql_endpoint='https://dbpedia.org/sparql'):
         # give a list of property, get a sublist which are functional property
@@ -285,16 +281,16 @@ class kwg_sparqlquery:
                             """
 
             res_json = self.sparqlUTIL.sparql_requests(query=isFuncnalPropertyQuery,
-                                                  sparql_endpoint=sparql_endpoint,
-                                                  doInference=False)
+                                                       sparql_endpoint=sparql_endpoint,
+                                                       doInference=False)
             jsonBindingObject.extend(res_json["results"]["bindings"])
 
             i = i + 50
             self.logger.info(str(jsonBindingObject))
         return jsonBindingObject
 
-
-    def propertyValueQuery(self, inplaceIRIList, propertyURL, sparql_endpoint='https://dbpedia.org/sparql', doSameAs=True):
+    def propertyValueQuery(self, inplaceIRIList, propertyURL, sparql_endpoint='https://dbpedia.org/sparql',
+                           doSameAs=True):
         # according to a list of wikidata IRI (inplaceIRIList), get the value for a specific property (propertyURL) from DBpedia
         jsonBindingObject = []
         i = 0
@@ -330,8 +326,8 @@ class kwg_sparqlquery:
                             """
 
             res_json = self.sparqlUTIL.sparql_requests(query=PropertyValueQuery,
-                                                  sparql_endpoint=sparql_endpoint,
-                                                  doInference=False)
+                                                       sparql_endpoint=sparql_endpoint,
+                                                       doInference=False)
             jsonBindingObject.extend(res_json["results"]["bindings"])
 
             i = i + 50
@@ -339,8 +335,8 @@ class kwg_sparqlquery:
         return jsonBindingObject
         # return PropertyValueSparqlRequest.json()
 
-
-    def checkGeoPropertyquery(self, inplaceIRIList, propertyURL, sparql_endpoint='https://dbpedia.org/sparql', doSameAs=True):
+    def checkGeoPropertyquery(self, inplaceIRIList, propertyURL, sparql_endpoint='https://dbpedia.org/sparql',
+                              doSameAs=True):
         # according to a list of wikidata IRI (inplaceIRIList), get the value for a specific property (propertyURL) from DBpedia
         jsonBindingObject = []
         i = 0
@@ -378,15 +374,14 @@ class kwg_sparqlquery:
                             """
 
             res_json = self.sparqlUTIL.sparql_requests(query=PropertyValueQuery,
-                                                  sparql_endpoint=sparql_endpoint,
-                                                  doInference=False)
+                                                       sparql_endpoint=sparql_endpoint,
+                                                       doInference=False)
 
             jsonBindingObject.extend(res_json["results"]["bindings"])
 
             i = i + 50
 
         return jsonBindingObject
-
 
     def twoDegreePropertyValueWKTquery(self, inplaceIRIList, propertyURL, sparql_endpoint='https://dbpedia.org/sparql',
                                        doSameAs=True):
@@ -430,14 +425,13 @@ class kwg_sparqlquery:
                             """
 
             res_json = self.sparqlUTIL.sparql_requests(query=PropertyValueQuery,
-                                                  sparql_endpoint=sparql_endpoint,
-                                                  doInference=False)
+                                                       sparql_endpoint=sparql_endpoint,
+                                                       doInference=False)
             jsonBindingObject.extend(res_json["results"]["bindings"])
 
             i = i + 50
 
         return jsonBindingObject
-
 
     def sosaObsPropertyValueQuery(self, inplaceIRIList, propertyURL,
                                   sparql_endpoint='https://dbpedia.org/sparql', doSameAs=False):
@@ -470,14 +464,13 @@ class kwg_sparqlquery:
                             """
 
             res_json = self.sparqlUTIL.sparql_requests(query=PropertyValueQuery,
-                                                  sparql_endpoint=sparql_endpoint,
-                                                  doInference=False)
+                                                       sparql_endpoint=sparql_endpoint,
+                                                       doInference=False)
             jsonBindingObject.extend(res_json["results"]["bindings"])
 
             i = i + 50
 
         return jsonBindingObject
-
 
     def extractCommonPropertyJSON(self, commonPropertyJSON,
                                   p_url_list=[], p_name_list=[], url_dict={},
@@ -501,8 +494,7 @@ class kwg_sparqlquery:
 
         return url_dict
 
-
-    def relFinderTripleQuery(self,inplaceIRIList, propertyDirectionList, selectPropertyURLList,
+    def relFinderTripleQuery(self, inplaceIRIList, propertyDirectionList, selectPropertyURLList,
                              sparql_endpoint=None):
 
         if sparql_endpoint is None:
@@ -546,7 +538,7 @@ class kwg_sparqlquery:
             if i + 50 > len(inplaceIRIList):
                 inplaceIRISubList = inplaceIRIList[i:]
             else:
-                inplaceIRISubList = inplaceIRIList[i:(i+50)]
+                inplaceIRISubList = inplaceIRIList[i:(i + 50)]
 
             queryPrefix = self.sparqlUTIL.make_sparql_prefix()
 
@@ -565,9 +557,9 @@ class kwg_sparqlquery:
                     # if propertyDirectionList[0] == "BOTH":
                     #     relFinderPropertyQuery += """{?place <"""+ selectPropertyURLList[0] + """> ?o1.} UNION {?o1 <"""+ selectPropertyURLList[0] + """> ?place.}\n"""
                     if propertyDirectionList[0] == "ORIGIN":
-                        relFinderPropertyQuery += """?place <"""+ selectPropertyURLList[0] + """> ?o1.\n"""
+                        relFinderPropertyQuery += """?place <""" + selectPropertyURLList[0] + """> ?o1.\n"""
                     elif propertyDirectionList[0] == "DESTINATION":
-                        relFinderPropertyQuery += """?o1 <"""+ selectPropertyURLList[0] + """> ?place.\n"""
+                        relFinderPropertyQuery += """?o1 <""" + selectPropertyURLList[0] + """> ?place.\n"""
 
             if len(propertyDirectionList) > 1:
                 if selectPropertyURLList[1] == "":
@@ -581,9 +573,9 @@ class kwg_sparqlquery:
                     # if propertyDirectionList[1] == "BOTH":
                     #     relFinderPropertyQuery += """{?o1 <"""+ selectPropertyURLList[1] + """> ?o2.} UNION {?o2 <"""+ selectPropertyURLList[1] + """> ?o1.}\n"""
                     if propertyDirectionList[1] == "ORIGIN":
-                        relFinderPropertyQuery += """?o1 <"""+ selectPropertyURLList[1] + """> ?o2.\n"""
+                        relFinderPropertyQuery += """?o1 <""" + selectPropertyURLList[1] + """> ?o2.\n"""
                     elif propertyDirectionList[1] == "DESTINATION":
-                        relFinderPropertyQuery += """?o2 <"""+ selectPropertyURLList[1] + """> ?o1.\n"""
+                        relFinderPropertyQuery += """?o2 <""" + selectPropertyURLList[1] + """> ?o1.\n"""
 
             if len(propertyDirectionList) > 2:
                 if selectPropertyURLList[2] == "":
@@ -597,9 +589,9 @@ class kwg_sparqlquery:
                     # if propertyDirectionList[2] == "BOTH":
                     #     relFinderPropertyQuery += """{?o2 <"""+ selectPropertyURLList[2] + """> ?o3.} UNION {?o3 <"""+ selectPropertyURLList[2] + """> ?o2.}\n"""
                     if propertyDirectionList[2] == "ORIGIN":
-                        relFinderPropertyQuery += """?o2 <"""+ selectPropertyURLList[2] + """> ?o3.\n"""
+                        relFinderPropertyQuery += """?o2 <""" + selectPropertyURLList[2] + """> ?o3.\n"""
                     elif propertyDirectionList[2] == "DESTINATION":
-                        relFinderPropertyQuery += """?o3 <"""+ selectPropertyURLList[2] + """> ?o2.\n"""
+                        relFinderPropertyQuery += """?o3 <""" + selectPropertyURLList[2] + """> ?o2.\n"""
 
             if len(propertyDirectionList) > 3:
                 if selectPropertyURLList[3] == "":
@@ -613,9 +605,9 @@ class kwg_sparqlquery:
                     # if propertyDirectionList[3] == "BOTH":
                     #     relFinderPropertyQuery += """{?o3 <"""+ selectPropertyURLList[3] + """> ?o4.} UNION {?o4 <"""+ selectPropertyURLList[3] + """> ?o3.}\n"""
                     if propertyDirectionList[3] == "ORIGIN":
-                        relFinderPropertyQuery += """?o3 <"""+ selectPropertyURLList[3] + """> ?o4.\n"""
+                        relFinderPropertyQuery += """?o3 <""" + selectPropertyURLList[3] + """> ?o4.\n"""
                     elif propertyDirectionList[3] == "DESTINATION":
-                        relFinderPropertyQuery += """?o4 <"""+ selectPropertyURLList[3] + """> ?o3.\n"""
+                        relFinderPropertyQuery += """?o4 <""" + selectPropertyURLList[3] + """> ?o3.\n"""
 
             relFinderPropertyQuery += """
                             VALUES ?place
@@ -628,9 +620,9 @@ class kwg_sparqlquery:
                             }
                             """
 
-            res_json = self.sparqlUTIL.sparql_requests(query = relFinderPropertyQuery,
-                                               sparql_endpoint = sparql_endpoint,
-                                               doInference = False)
+            res_json = self.sparqlUTIL.sparql_requests(query=relFinderPropertyQuery,
+                                                       sparql_endpoint=sparql_endpoint,
+                                                       doInference=False)
             jsonBindingObject.extend(res_json["results"]["bindings"])
 
             i = i + 50
@@ -643,19 +635,23 @@ class kwg_sparqlquery:
                 if selectPropertyURLList[0] == "":
                     if propertyDirectionList[0] == "ORIGIN":
                         # relFinderPropertyQuery += """?place ?p1 ?o1.\n"""
-                        currentTriple = Triple(s = jsonItem["place"]["value"], p = jsonItem["p1"]["value"], o = jsonItem["o1"]["value"])
+                        currentTriple = Triple(s=jsonItem["place"]["value"], p=jsonItem["p1"]["value"],
+                                               o=jsonItem["o1"]["value"])
                     elif propertyDirectionList[0] == "DESTINATION":
                         # relFinderPropertyQuery += """?o1 ?p1 ?place.\n"""
-                        currentTriple = Triple(s = jsonItem["o1"]["value"], p = jsonItem["p1"]["value"], o = jsonItem["place"]["value"])
+                        currentTriple = Triple(s=jsonItem["o1"]["value"], p=jsonItem["p1"]["value"],
+                                               o=jsonItem["place"]["value"])
                         # triple = [jsonItem["o1"]["value"], jsonItem["p1"]["value"], jsonItem["place"]["value"]]
                 else:
                     if propertyDirectionList[0] == "ORIGIN":
                         # relFinderPropertyQuery += """?place <"""+ selectPropertyURLList[0] + """> ?o1.\n"""
-                        currentTriple = Triple(s = jsonItem["place"]["value"], p = selectPropertyURLList[0], o = jsonItem["o1"]["value"])
+                        currentTriple = Triple(s=jsonItem["place"]["value"], p=selectPropertyURLList[0],
+                                               o=jsonItem["o1"]["value"])
                         # triple = [jsonItem["place"]["value"], selectPropertyURLList[0], jsonItem["o1"]["value"]]
                     elif propertyDirectionList[0] == "DESTINATION":
                         # relFinderPropertyQuery += """?o1 <"""+ selectPropertyURLList[0] + """> ?place.\n"""
-                        currentTriple = Triple(s = jsonItem["o1"]["value"], p = selectPropertyURLList[0], o = jsonItem["place"]["value"])
+                        currentTriple = Triple(s=jsonItem["o1"]["value"], p=selectPropertyURLList[0],
+                                               o=jsonItem["place"]["value"])
                         # triple = [jsonItem["o1"]["value"], selectPropertyURLList[0], jsonItem["place"]["value"]]
 
                 if currentTriple not in tripleStore:
@@ -664,26 +660,29 @@ class kwg_sparqlquery:
                     if tripleStore[currentTriple] > 1:
                         tripleStore[currentTriple] = 1
 
-
             if len(propertyDirectionList) > 1:
                 # triple = []
                 if selectPropertyURLList[1] == "":
                     if propertyDirectionList[1] == "ORIGIN":
                         # relFinderPropertyQuery += """?o1 ?p2 ?o2.\n"""
-                        currentTriple = Triple(s = jsonItem["o1"]["value"], p = jsonItem["p2"]["value"], o = jsonItem["o2"]["value"])
+                        currentTriple = Triple(s=jsonItem["o1"]["value"], p=jsonItem["p2"]["value"],
+                                               o=jsonItem["o2"]["value"])
                         # triple = [jsonItem["o1"]["value"], jsonItem["p2"]["value"], jsonItem["o2"]["value"]]
                     elif propertyDirectionList[1] == "DESTINATION":
                         # relFinderPropertyQuery += """?o2 ?p2 ?o1.\n"""
-                        currentTriple = Triple(s = jsonItem["o2"]["value"], p = jsonItem["p2"]["value"], o = jsonItem["o1"]["value"])
+                        currentTriple = Triple(s=jsonItem["o2"]["value"], p=jsonItem["p2"]["value"],
+                                               o=jsonItem["o1"]["value"])
                         # triple = [jsonItem["o2"]["value"], jsonItem["p2"]["value"], jsonItem["o1"]["value"]]
                 else:
                     if propertyDirectionList[1] == "ORIGIN":
                         # relFinderPropertyQuery += """?o1 <"""+ selectPropertyURLList[1] + """> ?o2.\n"""
-                        currentTriple = Triple(s = jsonItem["o1"]["value"], p = selectPropertyURLList[1], o = jsonItem["o2"]["value"])
+                        currentTriple = Triple(s=jsonItem["o1"]["value"], p=selectPropertyURLList[1],
+                                               o=jsonItem["o2"]["value"])
                         # triple = [jsonItem["o1"]["value"], selectPropertyURLList[1], jsonItem["o2"]["value"]]
                     elif propertyDirectionList[1] == "DESTINATION":
                         # relFinderPropertyQuery += """?o2 <"""+ selectPropertyURLList[1] + """> ?o1.\n"""
-                        currentTriple = Triple(s = jsonItem["o2"]["value"], p = selectPropertyURLList[1], o = jsonItem["o1"]["value"])
+                        currentTriple = Triple(s=jsonItem["o2"]["value"], p=selectPropertyURLList[1],
+                                               o=jsonItem["o1"]["value"])
                         # triple = [jsonItem["o2"]["value"], selectPropertyURLList[1], jsonItem["o1"]["value"]]
 
                 if currentTriple not in tripleStore:
@@ -697,20 +696,24 @@ class kwg_sparqlquery:
                 if selectPropertyURLList[2] == "":
                     if propertyDirectionList[2] == "ORIGIN":
                         # relFinderPropertyQuery += """?o2 ?p3 ?o3.\n"""
-                        currentTriple = Triple(s = jsonItem["o2"]["value"], p = jsonItem["p3"]["value"], o = jsonItem["o3"]["value"])
+                        currentTriple = Triple(s=jsonItem["o2"]["value"], p=jsonItem["p3"]["value"],
+                                               o=jsonItem["o3"]["value"])
                         # triple = [jsonItem["o2"]["value"], jsonItem["p3"]["value"], jsonItem["o3"]["value"]]
                     elif propertyDirectionList[2] == "DESTINATION":
                         # relFinderPropertyQuery += """?o3 ?p3 ?o2.\n"""
-                        currentTriple = Triple(s = jsonItem["o3"]["value"], p = jsonItem["p3"]["value"], o = jsonItem["o2"]["value"])
+                        currentTriple = Triple(s=jsonItem["o3"]["value"], p=jsonItem["p3"]["value"],
+                                               o=jsonItem["o2"]["value"])
                         # triple = [jsonItem["o3"]["value"], jsonItem["p3"]["value"], jsonItem["o2"]["value"]]
                 else:
                     if propertyDirectionList[2] == "ORIGIN":
                         # relFinderPropertyQuery += """?o2 <"""+ selectPropertyURLList[2] + """> ?o3.\n"""
-                        currentTriple = Triple(s = jsonItem["o2"]["value"], p = selectPropertyURLList[2], o = jsonItem["o3"]["value"])
+                        currentTriple = Triple(s=jsonItem["o2"]["value"], p=selectPropertyURLList[2],
+                                               o=jsonItem["o3"]["value"])
                         # triple = [jsonItem["o2"]["value"], selectPropertyURLList[2], jsonItem["o3"]["value"]]
                     elif propertyDirectionList[2] == "DESTINATION":
                         # relFinderPropertyQuery += """?o3 <"""+ selectPropertyURLList[2] + """> ?o2.\n"""
-                        currentTriple = Triple(s = jsonItem["o3"]["value"], p = selectPropertyURLList[2], o = jsonItem["o2"]["value"])
+                        currentTriple = Triple(s=jsonItem["o3"]["value"], p=selectPropertyURLList[2],
+                                               o=jsonItem["o2"]["value"])
                         # triple = [jsonItem["o3"]["value"], selectPropertyURLList[2], jsonItem["o2"]["value"]]
 
                 if currentTriple not in tripleStore:
@@ -724,20 +727,24 @@ class kwg_sparqlquery:
                 if selectPropertyURLList[3] == "":
                     if propertyDirectionList[3] == "ORIGIN":
                         # relFinderPropertyQuery += """?o3 ?p4 ?o4.\n"""
-                        currentTriple = Triple(s = jsonItem["o3"]["value"], p = jsonItem["p4"]["value"], o = jsonItem["o4"]["value"])
+                        currentTriple = Triple(s=jsonItem["o3"]["value"], p=jsonItem["p4"]["value"],
+                                               o=jsonItem["o4"]["value"])
                         # triple = [jsonItem["o3"]["value"], jsonItem["p4"]["value"], jsonItem["o4"]["value"]]
                     elif propertyDirectionList[3] == "DESTINATION":
                         # relFinderPropertyQuery += """?o4 ?p4 ?o3.\n"""
-                        currentTriple = Triple(s = jsonItem["o4"]["value"], p = jsonItem["p4"]["value"], o = jsonItem["o3"]["value"])
+                        currentTriple = Triple(s=jsonItem["o4"]["value"], p=jsonItem["p4"]["value"],
+                                               o=jsonItem["o3"]["value"])
                         # triple = [jsonItem["o4"]["value"], jsonItem["p4"]["value"], jsonItem["o3"]["value"]]
                 else:
                     if propertyDirectionList[3] == "ORIGIN":
                         # relFinderPropertyQuery += """?o3 <"""+ selectPropertyURLList[3] + """> ?o4.\n"""
-                        currentTriple = Triple(s = jsonItem["o3"]["value"], p = selectPropertyURLList[3], o = jsonItem["o4"]["value"])
+                        currentTriple = Triple(s=jsonItem["o3"]["value"], p=selectPropertyURLList[3],
+                                               o=jsonItem["o4"]["value"])
                         # triple = [jsonItem["o3"]["value"], selectPropertyURLList[3], jsonItem["o4"]["value"]]
                     elif propertyDirectionList[3] == "DESTINATION":
                         # relFinderPropertyQuery += """?o4 <"""+ selectPropertyURLList[3] + """> ?o3.\n"""
-                        currentTriple = Triple(s = jsonItem["o4"]["value"], p = selectPropertyURLList[3], o = jsonItem["o3"]["value"])
+                        currentTriple = Triple(s=jsonItem["o4"]["value"], p=selectPropertyURLList[3],
+                                               o=jsonItem["o3"]["value"])
                         # triple = [jsonItem["o4"]["value"], selectPropertyURLList[3], jsonItem["o3"]["value"]]
 
                 if currentTriple not in tripleStore:
@@ -745,8 +752,7 @@ class kwg_sparqlquery:
 
         return tripleStore
 
-
-    def locationCommonPropertyLabelQuery(self, locationCommonPropertyURLList, sparql_endpoint = None):
+    def locationCommonPropertyLabelQuery(self, locationCommonPropertyURLList, sparql_endpoint=None):
         if sparql_endpoint is None:
             sparql_endpoint = self.sparqlUTIL._WIKIDATA_SPARQL_ENDPOINT
 
@@ -756,7 +762,7 @@ class kwg_sparqlquery:
             if i + 50 > len(locationCommonPropertyURLList):
                 propertyIRISubList = locationCommonPropertyURLList[i:]
             else:
-                propertyIRISubList = locationCommonPropertyURLList[i:(i+50)]
+                propertyIRISubList = locationCommonPropertyURLList[i:(i + 50)]
 
             queryPrefix = self.sparqlUTIL.make_sparql_prefix()
 
@@ -774,16 +780,14 @@ class kwg_sparqlquery:
                             }
                             }
                             """
-            res_json = self.sparqlUTIL.sparql_requests(query = commonPropertyLabelQuery,
-                                       sparql_endpoint = sparql_endpoint,
-                                       doInference = False)
+            res_json = self.sparqlUTIL.sparql_requests(query=commonPropertyLabelQuery,
+                                                       sparql_endpoint=sparql_endpoint,
+                                                       doInference=False)
 
             jsonBindingObject.extend(res_json["results"]["bindings"])
 
-
             i = i + 50
         return jsonBindingObject
-
 
     def relFinderCommonPropertyQuery(self, inplaceIRIList, relationDegree, propertyDirectionList, selectPropertyURLList,
                                      sparql_endpoint=None):
@@ -831,7 +835,8 @@ class kwg_sparqlquery:
                 else:
                     if propertyDirectionList[0] == "BOTH":
                         relFinderPropertyQuery += """{?place <""" + selectPropertyURLList[
-                            0] + """> ?o1. ?o1 rdf:type ?o1type} UNION {?o1 <""" + selectPropertyURLList[0] + """> ?place.}\n"""
+                            0] + """> ?o1. ?o1 rdf:type ?o1type} UNION {?o1 <""" + selectPropertyURLList[
+                                                      0] + """> ?place.}\n"""
 
             if len(propertyDirectionList) > 1:
                 if selectPropertyURLList[1] == "":
@@ -842,7 +847,8 @@ class kwg_sparqlquery:
                         relFinderPropertyQuery += """OPTIONAL {?p2 a owl:ObjectProperty.}\n"""
                 else:
                     if propertyDirectionList[1] == "BOTH":
-                        relFinderPropertyQuery += """{?o1 <""" + selectPropertyURLList[1] + """> ?o2. ?o2 rdf:type ?o2type} UNION {?o2 <""" + \
+                        relFinderPropertyQuery += """{?o1 <""" + selectPropertyURLList[
+                            1] + """> ?o2. ?o2 rdf:type ?o2type} UNION {?o2 <""" + \
                                                   selectPropertyURLList[1] + """> ?o1.}\n"""
 
             if len(propertyDirectionList) > 2:
@@ -854,13 +860,13 @@ class kwg_sparqlquery:
                         relFinderPropertyQuery += """OPTIONAL {?p3 a owl:ObjectProperty.}\n"""
                 else:
                     if propertyDirectionList[2] == "BOTH":
-                        relFinderPropertyQuery += """{?o2 <""" + selectPropertyURLList[2] + """> ?o3. ?o3 rdf:type ?o3type} UNION {?o3 <""" + \
+                        relFinderPropertyQuery += """{?o2 <""" + selectPropertyURLList[
+                            2] + """> ?o3. ?o3 rdf:type ?o3type} UNION {?o3 <""" + \
                                                   selectPropertyURLList[2] + """> ?o2.}\n"""
 
             if len(propertyDirectionList) > 3:
                 if propertyDirectionList[3] == "BOTH":
                     relFinderPropertyQuery += """{?o3 ?p4 ?o4.} UNION {?o4 ?p4 ?o3.}\n"""
-
 
             relFinderPropertyQuery += """
                             VALUES ?place
@@ -874,14 +880,13 @@ class kwg_sparqlquery:
                             """
 
             res_json = self.sparqlUTIL.sparql_requests(query=relFinderPropertyQuery,
-                                                  sparql_endpoint=sparql_endpoint,
-                                                  doInference=False)
+                                                       sparql_endpoint=sparql_endpoint,
+                                                       doInference=False)
             jsonBindingObject.extend(res_json["results"]["bindings"])
 
             i = i + 50
 
         return jsonBindingObject
-
 
     def endPlaceInformationQuery(self, endPlaceIRIList, sparql_endpoint=None):
 
@@ -927,8 +932,8 @@ class kwg_sparqlquery:
                             """
 
             res_json = self.sparqlUTIL.sparql_requests(query=endPlaceQuery,
-                                                  sparql_endpoint=sparql_endpoint,
-                                                  doInference=False)
+                                                       sparql_endpoint=sparql_endpoint,
+                                                       doInference=False)
             res_json = res_json["results"]["bindings"]
             jsonBindingObject.extend(res_json)
 
@@ -936,19 +941,20 @@ class kwg_sparqlquery:
 
         return jsonBindingObject
 
-
     ##########
     ##
     ## Explore Plug in queries
     ##
     ##########
 
-    def commonPropertyExploreQuery(self, feature=None, sparql_endpoint="http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire", doSameAs=True):
+    def commonPropertyExploreQuery(self, feature=None,
+                                   sparql_endpoint="http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire",
+                                   doSameAs=True):
 
         queryPrefix = self.sparqlUTIL.make_sparql_prefix()
 
         if feature is None:
-            feature="kwg-ont:SoilPolygon"
+            feature = "kwg-ont:SoilPolygon"
 
         commonPropertyQuery = queryPrefix + """
         select distinct ?p ?plabel
@@ -963,16 +969,16 @@ class kwg_sparqlquery:
 
         # QgsMessageLog.logMessage("commonQuery: " + commonPropertyQuery, "kwg_explore_geoenrichment", level=Qgis.Info)
         res_json = self.sparqlUTIL.sparql_requests(query=commonPropertyQuery,
-                                              sparql_endpoint=sparql_endpoint,
-                                              doInference=False)
+                                                   sparql_endpoint=sparql_endpoint,
+                                                   doInference=False)
         return res_json
 
-
-    def commonSosaObsPropertyExploreQuery(self, feature=None, sparql_endpoint='https://dbpedia.org/sparql', doSameAs=False):
+    def commonSosaObsPropertyExploreQuery(self, feature=None, sparql_endpoint='https://dbpedia.org/sparql',
+                                          doSameAs=False):
         queryPrefix = self.sparqlUTIL.make_sparql_prefix()
 
         if feature is None:
-            feature="kwg-ont:SoilPolygon"
+            feature = "kwg-ont:SoilPolygon"
 
         commonPropertyQuery = queryPrefix + """
         select distinct ?p ?plabel
@@ -988,15 +994,15 @@ class kwg_sparqlquery:
         """ % (feature)
 
         res_json = self.sparqlUTIL.sparql_requests(query=commonPropertyQuery,
-                                              sparql_endpoint=sparql_endpoint,
-                                              doInference=False)
+                                                   sparql_endpoint=sparql_endpoint,
+                                                   doInference=False)
         return res_json
 
-
-    def inverseCommonPropertyExploreQuery(self, feature=None, sparql_endpoint='https://dbpedia.org/sparql', doSameAs=True):
+    def inverseCommonPropertyExploreQuery(self, feature=None, sparql_endpoint='https://dbpedia.org/sparql',
+                                          doSameAs=True):
 
         if feature is None:
-            feature="kwg-ont:SoilPolygon"
+            feature = "kwg-ont:SoilPolygon"
 
         queryPrefix = self.sparqlUTIL.make_sparql_prefix()
 
@@ -1013,14 +1019,13 @@ class kwg_sparqlquery:
                 ?inverse_p rdfs:label ?plabel.
             }
         }
-        """ %(feature)
-
+        """ % (feature)
 
         # select distinct ?inverse_p ?plabel where { ?s ?p ?o . ?o ?inverse_p ?s. ?o rdf:type " + feature + ". OPTIONAL {?inverse_p rdfs:label ?plabel .} }
 
         res_json = self.sparqlUTIL.sparql_requests(query=inversePropertyQuery,
-                                              sparql_endpoint=sparql_endpoint,
-                                              doInference=False)
+                                                   sparql_endpoint=sparql_endpoint,
+                                                   doInference=False)
         return res_json
 
 

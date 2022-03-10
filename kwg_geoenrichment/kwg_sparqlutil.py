@@ -16,8 +16,6 @@ class kwg_sparqlutil:
         handler.setFormatter(formatter)  # Pass handler as a parameter, not assign
         self.logger.addHandler(handler)
 
-
-
     # NAME_SPACE = "http://stko-roy.geog.ucsb.edu"
     NAME_SPACE = "http://stko-kwg.geog.ucsb.edu"
 
@@ -26,8 +24,8 @@ class kwg_sparqlutil:
     _WIKIDATA_SPARQL_ENDPOINT = "https://query.wikidata.org/sparql"
 
     _PREFIX = {
-        "kwgr": "%s/lod/resource/" %  (NAME_SPACE),
-        "kwg-ont": "%s/lod/ontology/" %  (NAME_SPACE),
+        "kwgr": "%s/lod/resource/" % (NAME_SPACE),
+        "kwg-ont": "%s/lod/ontology/" % (NAME_SPACE),
         "geo": "http://www.opengis.net/ont/geosparql#",
         "geof": "http://www.opengis.net/def/function/geosparql/",
         "wd": "http://www.wikidata.org/entity/",
@@ -54,15 +52,14 @@ class kwg_sparqlutil:
     }
 
     _SPARQL_ENDPOINT_DICT = {
-        "prod" : {
-            "kwg-v2" : "http://stko-kwg.geog.ucsb.edu:7200/repositories/kwg-v2"
+        "prod": {
+            "kwg-v2": "http://stko-kwg.geog.ucsb.edu:7200/repositories/kwg-v2"
         },
-        "test" : {
-            "plume_soil_wildfire" : "http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire",
+        "test": {
+            "plume_soil_wildfire": "http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire",
 
         }
     }
-
 
     def make_sparql_prefix(self):
         """
@@ -72,7 +69,6 @@ class kwg_sparqlutil:
         for prefix in self._PREFIX:
             query_prefix += f"PREFIX {prefix}: <{self._PREFIX[prefix]}>\n"
         return query_prefix
-
 
     def make_prefixed_iri(self, iri):
         """
@@ -88,7 +84,6 @@ class kwg_sparqlutil:
         else:
             return prefixed_iri
 
-
     def remake_prefixed_iri(self, prefixed_iri):
         """
 
@@ -103,7 +98,6 @@ class kwg_sparqlutil:
 
         return iri
 
-
     def make_prefixed_iri_batch(self, iri_list):
         """
 
@@ -113,7 +107,6 @@ class kwg_sparqlutil:
             prefixed_iri = self.make_prefixed_iri(iri)
             prefixed_iri_list.append(prefixed_iri)
         return prefixed_iri_list
-
 
     def sparql_requests(self, query, sparql_endpoint, doInference=False, request_method='post'):
         """
@@ -126,7 +119,6 @@ class kwg_sparqlutil:
                 "bindings": {}
             }
         }
-
 
         self.logger.debug("query: ")
         self.logger.debug(query)
@@ -163,11 +155,9 @@ class kwg_sparqlutil:
         except Exception as e:
             self.logger.exception(e)
 
-
         return entityTypeJson
 
 
 if __name__ == '__main__':
-
     SU = kwg_sparqlutil()
     print(SU.make_sparql_prefix())

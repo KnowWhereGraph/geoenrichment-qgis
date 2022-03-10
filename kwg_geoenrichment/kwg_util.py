@@ -1,5 +1,5 @@
-from collections import defaultdict
 import statistics
+from collections import defaultdict
 
 from PyQt5.QtCore import QVariant
 from qgis._core import QgsMessageLog, Qgis, QgsVectorLayer, QgsField
@@ -9,10 +9,8 @@ from .kwg_sparqlutil import kwg_sparqlutil
 
 class kwg_util:
 
-
     def __init__(self):
         pass
-
 
     def get_geometry_type_from_wkt(self, wkt):
         if "POINT".lower() in wkt.lower():
@@ -29,7 +27,6 @@ class kwg_util:
             return "POLYGON"
         else:
             raise Exception("Unrecognized geometry type: {}".format(wkt))
-
 
     def extractCommonPropertyJSON(self, commonPropertyJSON,
                                   p_url_list=[], p_name_list=[], url_dict={},
@@ -51,7 +48,6 @@ class kwg_util:
 
         return url_dict
 
-
     def getPropertyName(self, propertyURL):
         # give a URL of property, get the property name (without prefix)
         if "#" in propertyURL:
@@ -62,7 +58,6 @@ class kwg_util:
             propertyName = propertyURL[(lastIndex + 1):]
 
         return propertyName
-
 
     def getFieldNameWithTable(self, propertyName, featureClassName, gpkgLocation='/var/local/QGIS/kwg_results.gpkg'):
         # give a property Name which have been sliced by getPropertyName(propertyURL)
@@ -77,7 +72,6 @@ class kwg_util:
             return propertyName
         else:
             return self.changeFieldNameWithTable(propertyName, featureClassName, gpkgLocation)
-
 
     def isFieldNameInTable(self, fieldName, featureClassName, gpkgLocation='/var/local/QGIS/kwg_results.gpkg'):
 
@@ -95,7 +89,6 @@ class kwg_util:
 
         return isfieldNameinFieldList
 
-
     def changeFieldNameWithTable(self, propertyName, featureClassName, gpkgLocation):
         for i in range(1, 10):
             propertyName = propertyName[:(len(propertyName) - 1)] + str(i)
@@ -104,7 +97,6 @@ class kwg_util:
                 return propertyName
 
         return -1
-
 
     def getFieldDataTypeInTable(self, fieldName, featureClassName, gpkgLocation='/var/local/QGIS/kwg_results.gpkg'):
 
@@ -120,8 +112,9 @@ class kwg_util:
 
         return -1
 
-
-    def buildMultiValueDictFromNoFunctionalProperty(self, fieldName, tableName, URLFieldName='wikiURL', featureClassName="geo_results", gpkgLocation="/var/local/QGIS/kwg_results.gpkg"):
+    def buildMultiValueDictFromNoFunctionalProperty(self, fieldName, tableName, URLFieldName='wikiURL',
+                                                    featureClassName="geo_results",
+                                                    gpkgLocation="/var/local/QGIS/kwg_results.gpkg"):
         # build a collections.defaultdict object to store the multivalue for each no-functional property's subject.
         # The subject "wikiURL" is the key, the corespnding property value in "fieldName" is the value
         if self.isFieldNameInTable(fieldName, tableName):
@@ -132,7 +125,7 @@ class kwg_util:
             vlayer = QgsVectorLayer(gpkg_places_layer, tableName, "ogr")
 
             if not vlayer.isValid():
-                srows  = None
+                srows = None
             else:
                 for feature in vlayer.getFeatures():
                     row = feature.attributes()
@@ -146,9 +139,9 @@ class kwg_util:
         else:
             return -1
 
-
     def appendFieldInFeatureClassByMergeRule(self, inputFeatureClassName, noFunctionalPropertyDict, appendFieldName,
-                                             relatedTableName, mergeRule, delimiter, gpkgLocation="/var/local/QGIS/kwg_results.gpkg"):
+                                             relatedTableName, mergeRule, delimiter,
+                                             gpkgLocation="/var/local/QGIS/kwg_results.gpkg"):
         # append a new field in inputFeatureClassName which will install the merged no-functional property value
         # noFunctionalPropertyDict: the collections.defaultdict object which stores the no-functional property value for each URL
         # appendFieldName: the field name of no-functional property in the relatedTableName
@@ -232,9 +225,11 @@ class kwg_util:
                                 elif mergeRule == 'MAX':
                                     rowValue = max(noFunctionalPropertyValueList)
                             else:
-                                QgsMessageLog.logMessage("The {0} data type of Field {1} does not support {2} merge rule".format(appendFieldType,
-                                                                                                        appendFieldName,
-                                                                                                        mergeRule), "kwg_geoenrichment", level=Qgis.Warning)
+                                QgsMessageLog.logMessage(
+                                    "The {0} data type of Field {1} does not support {2} merge rule".format(
+                                        appendFieldType,
+                                        appendFieldName,
+                                        mergeRule), "kwg_geoenrichment", level=Qgis.Warning)
                         elif mergeRule in ['COUNT', 'FIRST', 'LAST']:
                             if mergeRule == 'COUNT':
                                 rowValue = len(noFunctionalPropertyValueList)

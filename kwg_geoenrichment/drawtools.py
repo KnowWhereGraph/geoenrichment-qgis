@@ -23,20 +23,18 @@
 # authored by Jérémy Kalsron
 
 from __future__ import print_function
-from builtins import str
+
 from builtins import range
-
-from qgis.gui import QgsMapTool, QgsRubberBand, QgsMapToolEmitPoint, \
-    QgsProjectionSelectionDialog
-from qgis.core import QgsWkbTypes, QgsPointXY
-
+from builtins import str
+from math import sqrt, pi, cos, sin
 from qgis.PyQt.QtCore import Qt, QCoreApplication, pyqtSignal, QPoint
+from qgis.PyQt.QtGui import QDoubleValidator, QIntValidator, QKeySequence
 from qgis.PyQt.QtWidgets import QDialog, QLineEdit, QDialogButtonBox, \
     QGridLayout, QLabel, QGroupBox, QVBoxLayout, QComboBox, QPushButton, \
     QInputDialog
-from qgis.PyQt.QtGui import QDoubleValidator, QIntValidator, QKeySequence
-
-from math import sqrt, pi, cos, sin
+from qgis.core import QgsWkbTypes, QgsPointXY
+from qgis.gui import QgsMapTool, QgsRubberBand, QgsMapToolEmitPoint, \
+    QgsProjectionSelectionDialog
 
 
 class DrawRect(QgsMapTool):
@@ -57,7 +55,7 @@ class DrawRect(QgsMapTool):
     def reset(self):
         self.startPoint = self.endPoint = None
         self.isEmittingPoint = False
-        self.rb.reset(True)	 # true, its a polygon
+        self.rb.reset(True)  # true, its a polygon
 
     def canvasPressEvent(self, e):
         if not e.button() == Qt.LeftButton:
@@ -508,13 +506,13 @@ class DMSDialog(QDialog):
                 and dialog.lon_M.text().strip() \
                 and dialog.lon_S.text().strip():
             latitude = int(dialog.lat_D.text()) \
-                + float(dialog.lat_M.text()) / 60 \
-                + float(dialog.lat_S.text()) / 3600
+                       + float(dialog.lat_M.text()) / 60 \
+                       + float(dialog.lat_S.text()) / 3600
             if dialog.lat_NS.currentIndex() == 1:
                 latitude *= -1
             longitude = int(dialog.lon_D.text()) \
-                + float(dialog.lon_M.text()) / 60 \
-                + float(dialog.lon_S.text()) / 3600
+                        + float(dialog.lon_M.text()) / 60 \
+                        + float(dialog.lon_S.text()) / 3600
             if dialog.lon_EW.currentIndex() == 1:
                 longitude *= -1
         return (QgsPointXY(longitude, latitude), result == QDialog.Accepted)

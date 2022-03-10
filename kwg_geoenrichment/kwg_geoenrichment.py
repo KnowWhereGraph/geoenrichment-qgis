@@ -21,40 +21,30 @@
  *                                                                         *
  ***************************************************************************/
 """
-from pprint import pprint
-from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, qVersion, QVariant
-from qgis.PyQt.QtWidgets import QAction, QMessageBox, QMenu, QInputDialog, QAbstractItemView, QLineEdit, QComboBox
+import json
+import logging
+import os.path
+from configparser import ConfigParser
+from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, QVariant
 from qgis.PyQt.QtGui import QIcon
-
+from qgis.PyQt.QtWidgets import QAction, QInputDialog
 from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
     QgsCoordinateTransform, QgsCoordinateTransformContext, QgsMapLayer, \
     QgsFeatureRequest, QgsVectorLayer, QgsLayerTreeGroup, QgsRenderContext, \
     QgsCoordinateReferenceSystem, QgsWkbTypes, QgsMessageLog, Qgis, QgsFields, QgsField, QgsVectorFileWriter
 
-# Initialize Qt resources from file resources.py
-from PyQt5.uic.properties import QtWidgets, QtGui
-
-from .resources import *
-# Import the code for the dialog
-
+# Import QDraw settings
+from .drawtools import DrawPolygon, \
+    SelectPoint
 from .kwg_plugin_dialog import kwg_pluginDialog
 from .kwg_plugin_enrichment_dialog import kwg_pluginEnrichmentDialog
 from .kwg_sparqlquery import kwg_sparqlquery
 from .kwg_sparqlutil import kwg_sparqlutil
 from .kwg_util import kwg_util as UTIL
-from .kwg_json2field import kwg_json2field as Json2Field
-
-# Import QDraw settings
-from .drawtools import DrawPoint, DrawRect, DrawLine, DrawCircle, DrawPolygon,\
-    SelectPoint, XYDialog, DMSDialog
 from .qdrawsettings import QdrawSettings
 
-from configparser import ConfigParser
-
-import json
-import os.path
-import logging
-import geojson
+# Initialize Qt resources from file resources.py
+# Import the code for the dialog
 
 _SPARQL_ENDPOINT_DICT = {
     "prod": {
@@ -64,6 +54,7 @@ _SPARQL_ENDPOINT_DICT = {
         "plume_soil_wildfire": "http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire",
     }
 }
+
 
 class kwg_geoenrichment:
     """QGIS Plugin Implementation."""
@@ -115,7 +106,8 @@ class kwg_geoenrichment:
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.DEBUG)  # or whatever
         handler = logging.FileHandler('/var/local/QGIS/kwg_geoenrichment.log', 'w', 'utf-8')  # or whatever
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')  # or whatever
+        formatter = logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')  # or whatever
         handler.setFormatter(formatter)  # Pass handler as a parameter, not assign
         self.logger.addHandler(handler)
 
@@ -123,7 +115,6 @@ class kwg_geoenrichment:
         self.sparqlUtil = kwg_sparqlutil()
         self.eventPlaceTypeDict = dict()
         self.kwg_endpoint_dict = _SPARQL_ENDPOINT_DICT
-
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -140,20 +131,19 @@ class kwg_geoenrichment:
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('kwg_geoenrichment', message)
 
-
     def add_action(
-        self,
-        icon_path,
-        text,
-        callback,
-        enabled_flag=True,
-        checkable=False,
-        add_to_menu=True,
-        add_to_toolbar=True,
-        status_tip=None,
-        whats_this=None,
-        menu=None,
-        parent=None):
+            self,
+            icon_path,
+            text,
+            callback,
+            enabled_flag=True,
+            checkable=False,
+            add_to_menu=True,
+            add_to_toolbar=True,
+            status_tip=None,
+            whats_this=None,
+            menu=None,
+            parent=None):
         """Add a toolbar icon to the toolbar.
 
         :param icon_path: Path to the icon for this action. Can be a resource
@@ -222,7 +212,6 @@ class kwg_geoenrichment:
 
         return action
 
-
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
@@ -232,13 +221,11 @@ class kwg_geoenrichment:
         self.first_start = True
 
         if self.first_start:
-
             self.add_action(
                 QIcon(':/plugins/kwg_geoenrichment/resources/graph_Query.png'),
                 text=self.tr(u'Geoenrichment'),
                 callback=self.run,
                 parent=self.iface.mainWindow())
-
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -248,7 +235,6 @@ class kwg_geoenrichment:
                 action)
             self.iface.removeToolBarIcon(action)
             del self.toolbar
-
 
     def run(self):
         """Run method that performs all the real work"""
@@ -293,7 +279,6 @@ class kwg_geoenrichment:
             # substitute with your code.
             QgsMessageLog.logMessage("Run button clicked!", "kwg_geoenrichment", level=Qgis.Info)
 
-
     def drawPolygon(self, sender=None):
         if self.tool:
             self.tool.reset()
@@ -308,7 +293,6 @@ class kwg_geoenrichment:
         self.drawShape = 'polygon'
         self.toolname = 'drawPolygon'
         self.resetSB()
-
 
     def drawBuffer(self):
         self.bGeom = None
@@ -336,7 +320,6 @@ class kwg_geoenrichment:
         self.toolname = 'drawBuffer'
         self.resetSB()
 
-
     def drawPolygonBuffer(self):
         self.bGeom = None
         if self.tool:
@@ -361,17 +344,14 @@ class kwg_geoenrichment:
         self.toolname = 'drawBuffer'
         self.resetSB()
 
-
     def showSettingsWindow(self):
         self.settings.settingsChanged.connect(self.settingsChangedSlot)
         self.settings.show()
-
 
     # triggered when a setting is changed
     def settingsChangedSlot(self):
         if self.tool:
             self.tool.rb.setColor(self.settings.getColor())
-
 
     def resetSB(self):
         message = {
@@ -387,7 +367,6 @@ then select an entity on the map.'
         }
         self.sb.showMessage(self.tr(message[self.toolname]))
 
-
     def updateSB(self):
         g = self.geomTransform(
             self.tool.rb.asGeometry(),
@@ -398,15 +377,14 @@ then select an entity on the map.'
                 self.sb.showMessage(
                     self.tr('Length') + ': ' + str("%.2f" % g.length()) + " m")
             else:
-                self.sb.showMessage(self.tr('Length')+': '+"0 m")
+                self.sb.showMessage(self.tr('Length') + ': ' + "0 m")
         else:
             if g.area() >= 0:
                 self.sb.showMessage(
-                    self.tr('Area')+': '+str("%.2f" % g.area())+" m"+u'²')
+                    self.tr('Area') + ': ' + str("%.2f" % g.area()) + " m" + u'²')
             else:
-                self.sb.showMessage(self.tr('Area')+': '+"0 m"+u'²')
+                self.sb.showMessage(self.tr('Area') + ': ' + "0 m" + u'²')
         self.iface.mapCanvas().mapSettings().destinationCrs().authid()
-
 
     def geomTransform(self, geom, crs_orig, crs_dest):
         g = QgsGeometry(geom)
@@ -414,7 +392,6 @@ then select an entity on the map.'
             crs_orig, crs_dest, QgsCoordinateTransformContext())  # which context ?
         g.transform(crsTransform)
         return g
-
 
     def selectBuffer(self):
         rb = self.tool.rb
@@ -440,7 +417,7 @@ then select an entity on the map.'
                 except:
                     # there's an error but it intersects
                     # fix_print_with_import
-                    print('error with '+layer.name()+' on '+str(feature.id()))
+                    print('error with ' + layer.name() + ' on ' + str(feature.id()))
                     rbGeom.append(feature.geometry())
             if len(rbGeom) > 0:
                 for geometry in rbGeom:
@@ -452,7 +429,6 @@ then select an entity on the map.'
                 rb.setToGeometry(self.bGeom, layer)
         if isinstance(self.tool, DrawPolygon):
             self.draw()
-
 
     def draw(self):
         rb = self.tool.rb
@@ -472,11 +448,11 @@ then select an entity on the map.'
                 perim, ok = QInputDialog.getDouble(
                     self.iface.mainWindow(), self.tr('Perimeter'),
                     self.tr('Give a perimeter in m:')
-                    + '\n'+self.tr('(works only with metric crs)'),
+                    + '\n' + self.tr('(works only with metric crs)'),
                     min=0)
                 g = self.bGeom.buffer(perim, 40)
                 rb.setToGeometry(g, QgsVectorLayer(
-                    "Polygon?crs="+layer.crs().authid(), "", "memory"))
+                    "Polygon?crs=" + layer.crs().authid(), "", "memory"))
                 if g.length() == 0 and ok:
                     warning = True
                     errBuffer_Vertices = True
@@ -535,7 +511,6 @@ then select an entity on the map.'
             self.iface.mapCanvas().refresh()
             QgsMessageLog.logMessage("Your polygon has been saved to a layer", "kwg_geoenrichment", level=Qgis.Info)
 
-
             # # self.dlg = kwg_geoenrichmentDialog()
             #
             # self.populateEventPlaceTypes()
@@ -565,14 +540,15 @@ then select an entity on the map.'
         self.resetSB()
         self.bGeom = None
 
-
     def populateEventPlaceTypes(self):
         sparqlResultJSON = self.sparqlQuery.EventTypeSPARQLQuery()
         QgsMessageLog.logMessage(json.dumps(sparqlResultJSON), "kwg_geoenrichment",
                                  level=Qgis.Info)
         for obj in sparqlResultJSON:
-            if((obj["entityType"] is not None and obj["entityType"]["type"] is not None and obj["entityType"]["type"] == "uri" ) and
-                    (obj["entityTypeLabel"] is not None and obj["entityTypeLabel"]["type"] is not None and obj["entityTypeLabel"]["type"] == "literal" )):
+            if ((obj["entityType"] is not None and obj["entityType"]["type"] is not None and obj["entityType"][
+                "type"] == "uri") and
+                    (obj["entityTypeLabel"] is not None and obj["entityTypeLabel"]["type"] is not None and
+                     obj["entityTypeLabel"]["type"] == "literal")):
                 self.eventPlaceTypeDict[obj["entityTypeLabel"]["value"]] = obj["entityType"]["value"]
 
         for key in self.eventPlaceTypeDict:
@@ -580,10 +556,9 @@ then select an entity on the map.'
 
         return
 
-
     def getInputs(self):
         params = {}
-        endPointKey,endPointVal = self.dlg.comboBox_endPoint.currentText().split(" - ")
+        endPointKey, endPointVal = self.dlg.comboBox_endPoint.currentText().split(" - ")
         params["end_point"] = self.kwg_endpoint_dict[endPointVal[1:-1]][endPointKey]
         # params["place_type"] = self.eventPlaceTypeDict[self.dlg.comboBox.currentText()]  if (self.dlg.comboBox.currentText() in self.eventPlaceTypeDict) else self.dlg.comboBox.currentText()
         params["relation_type"] = self.dlg.comboBox_spatialRelationshipFilter.currentText()
@@ -609,7 +584,6 @@ then select an entity on the map.'
 
         return params
 
-
     def addContent(self):
         params = self.getInputs()
         params["ifaceObj"] = self.iface
@@ -621,7 +595,6 @@ then select an entity on the map.'
         self.dlgEnrichment.pushButton_save.clicked.connect(self.saveContent)
 
         return contentItems
-
 
     def saveContent(self):
         S0 = self.dlgEnrichment.comboBox_S0.currentText()
@@ -652,7 +625,6 @@ then select an entity on the map.'
 
         self.dlg.listWidget.addItem(stringVal)
 
-
     def handleRun(self):
         # QgsMessageLog.logMessage("Run clicked!", "kwg_geoenrichment",level=Qgis.Info)
 
@@ -664,7 +636,8 @@ then select an entity on the map.'
 
         eventType = (self.dlgEnrichment.comboBox_S0.currentText().split(":"))[1]
         predType = (self.dlgEnrichment.comboBox_P2.currentText().split(":"))[1]
-        results = self.updateTable(jsonBindingObject=thirdDegreeJSONBinding, filterPred=filterPred, currentFieldName=eventType + "_" + predType + "_mag")
+        results = self.updateTable(jsonBindingObject=thirdDegreeJSONBinding, filterPred=filterPred,
+                                   currentFieldName=eventType + "_" + predType + "_mag")
         # QgsMessageLog.logMessage(filterPred, "kwg_geoenrichment", level=Qgis.Info)
         if results:
             self.iface.mapCanvas().refresh()
@@ -672,8 +645,8 @@ then select an entity on the map.'
                                      "kwg_geoenrichment", level=Qgis.Info)
             self.dlg.close()
 
-
-    def updateTable(self, jsonBindingObject, filterPred = None, currentFieldName="", keyPropertyFieldName="place_iri", featureClassName="geo_results", gpkgLocation="/var/local/QGIS/kwg_results.gpkg"):
+    def updateTable(self, jsonBindingObject, filterPred=None, currentFieldName="", keyPropertyFieldName="place_iri",
+                    featureClassName="geo_results", gpkgLocation="/var/local/QGIS/kwg_results.gpkg"):
 
         gpkg_places_layer = gpkgLocation + "|layername=%s" % (featureClassName)
 
@@ -698,13 +671,13 @@ then select an entity on the map.'
             currentKeyPropertyValue = feature["place_iri"]
             for obj in jsonBindingObject:
                 if currentKeyPropertyValue == obj["place"]["value"] and obj["place"]["type"] == "uri":
-                    if obj["p3"]["value"] == filterPred and obj["o2"]["value"].startswith("http://stko-kwg.geog.ucsb.edu/lod/resource/earthquakeObservation.mag."):
+                    if obj["p3"]["value"] == filterPred and obj["o2"]["value"].startswith(
+                            "http://stko-kwg.geog.ucsb.edu/lod/resource/earthquakeObservation.mag."):
                         feature[currentFieldName] = obj["o3"]["value"]
             vlayer.updateFeature(feature)
         vlayer.commitChanges()
 
         return 1
-
 
     def performWKTConversion(self):
         layers = QgsProject.instance().mapLayers().values()
@@ -714,7 +687,8 @@ then select an entity on the map.'
         for layer in layers:
             # self.logger.debug(layer.name())
             if layer.name() == "geo_enrichment_polygon":
-                QgsMessageLog.logMessage("Update: Retrieving features from the geoenrichment layer", "kwg_geoenrichment", level=Qgis.Info)
+                QgsMessageLog.logMessage("Update: Retrieving features from the geoenrichment layer",
+                                         "kwg_geoenrichment", level=Qgis.Info)
                 feat = layer.getFeatures()
                 for f in feat:
                     geom = f.geometry()
@@ -734,9 +708,9 @@ then select an entity on the map.'
 
         return wkt_rep
 
-
-    def createShapeFileFromSPARQLResult(self, GeoQueryResult, out_path="/var/local/QGIS/kwg_results.shp", inPlaceType="", selectedURL="",
-                                           isDirectInstance=False):
+    def createShapeFileFromSPARQLResult(self, GeoQueryResult, out_path="/var/local/QGIS/kwg_results.shp",
+                                        inPlaceType="", selectedURL="",
+                                        isDirectInstance=False):
         '''
         GeoQueryResult: a sparql query result json obj serialized as a list of dict()
                     SPARQL query like this:
@@ -785,13 +759,13 @@ then select an entity on the map.'
             raise Exception("geometry type not find")
 
         if len(placeList) == 0:
-            QgsMessageLog.logMessage("No {0} within the provided polygon can be finded!".format(inPlaceType), level=Qgis.Info)
+            QgsMessageLog.logMessage("No {0} within the provided polygon can be finded!".format(inPlaceType),
+                                     level=Qgis.Info)
         else:
 
             if out_path == None:
                 QgsMessageLog.logMessage("No data will be added to the map document.", level=Qgis.Info)
             else:
-
 
                 # labelFieldLength = Json2Field.fieldLengthDecide(GeoQueryResult, "placeLabel")
                 #
@@ -814,14 +788,13 @@ then select an entity on the map.'
 
                 self.iface.addVectorLayer(out_path, 'kwg_results', 'ogr')
 
-        del(writer)
+        del (writer)
 
         return
 
-
-
-    def createGeoPackageFromSPARQLResult(self, GeoQueryResult, out_path="/var/local/QGIS/kwg_results.gpkg", inPlaceType="", selectedURL="",
-                                           isDirectInstance=False):
+    def createGeoPackageFromSPARQLResult(self, GeoQueryResult, out_path="/var/local/QGIS/kwg_results.gpkg",
+                                         inPlaceType="", selectedURL="",
+                                         isDirectInstance=False):
         '''
         GeoQueryResult: a sparql query result json obj serialized as a list of dict()
                     SPARQL query like this:
@@ -868,13 +841,14 @@ then select an entity on the map.'
         if geom_type is None:
             raise Exception("geometry type not find")
 
-        vl = QgsVectorLayer(geom_type+"?crs=epsg:4326", "geo_results", "memory")
+        vl = QgsVectorLayer(geom_type + "?crs=epsg:4326", "geo_results", "memory")
         pr = vl.dataProvider()
         pr.addAttributes(layerFields)
         vl.updateFields()
 
         if len(placeList) == 0:
-            QgsMessageLog.logMessage("No {0} within the provided polygon can be finded!".format(inPlaceType), level=Qgis.Info)
+            QgsMessageLog.logMessage("No {0} within the provided polygon can be finded!".format(inPlaceType),
+                                     level=Qgis.Info)
         else:
 
             if out_path == None:
@@ -904,7 +878,6 @@ then select an entity on the map.'
                 self.iface.addVectorLayer(out_path, 'geo_results', 'ogr')
 
         return error[0] == QgsVectorFileWriter.NoError
-
 
     def transformSourceCRStoDestinationCRS(self, geom, src=3857, dest=4326):
         src_crs = QgsCoordinateReferenceSystem(src)
