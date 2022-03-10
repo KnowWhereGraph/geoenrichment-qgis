@@ -64,3 +64,35 @@ class kwg_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         handler.setFormatter(formatter)  # Pass handler as a parameter, not assign
         self.logger.addHandler(handler)
 
+        stylesheet = """
+        QWidget {
+            background-image: url("/Users/nenuji/Documents/Github/kwg-qgis-geoenrichment/kwg_geoenrichment/resources/background-landing.png"); 
+            opacity: 1.0;
+        }
+        
+        QPushButton{
+                background-color: #216FB3;
+                color: #ffffff;
+                height: 70px;
+                width: 255px;
+            }
+            
+        QComboBox{
+                background-color: #216FB3;
+                color: #ffffff;
+                height: 70px;
+            }
+            
+        QListWidget{
+                background-color: #216FB3;
+                color: #ffffff;
+                height: 70px;
+            }
+        QLineEdit {
+                height: 70px;
+                width: 255px;
+                background: linear-gradient(308.55deg, rgba(0,2,31,0) 0%, #00011F 100%), linear-gradient(359.14deg, rgba(0,2,31,0) 0%, #00011F 100%);
+        }
+        """
+        self.setStyleSheet(stylesheet)
+
