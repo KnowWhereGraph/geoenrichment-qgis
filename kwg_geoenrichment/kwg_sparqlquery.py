@@ -802,7 +802,7 @@ class kwg_sparqlquery:
         elif len(propertyDirectionList) == 2:
             selectParam = "?p2 ?o2 ?o2type"
         elif len(propertyDirectionList) == 3:
-            selectParam = "?p3 ?o3 ?o3type"
+            selectParam = "?place ?o2 ?p3 ?o3 ?o3type"
         elif len(propertyDirectionList) == 4:
             selectParam = "?p4 ?o4 ?o4type"
 
@@ -848,7 +848,7 @@ class kwg_sparqlquery:
             if len(propertyDirectionList) > 2:
                 if selectPropertyURLList[2] == "":
                     if propertyDirectionList[2] == "BOTH":
-                        relFinderPropertyQuery += """{?o2 ?p3 ?o3. ?o3 rdf:type ?o3type} UNION {?o3 ?p3 ?o2.}\n"""
+                        relFinderPropertyQuery += """{?o2 ?p3 ?o3.} UNION {?o3 ?p3 ?o2.}\n"""
 
                     if relationDegree > 3:
                         relFinderPropertyQuery += """OPTIONAL {?p3 a owl:ObjectProperty.}\n"""
@@ -859,7 +859,7 @@ class kwg_sparqlquery:
 
             if len(propertyDirectionList) > 3:
                 if propertyDirectionList[3] == "BOTH":
-                    relFinderPropertyQuery += """{?o3 ?p4 ?o4. ?o4 rdf:type ?o4type} UNION {?o4 ?p4 ?o3.}\n"""
+                    relFinderPropertyQuery += """{?o3 ?p4 ?o4.} UNION {?o4 ?p4 ?o3.}\n"""
 
 
             relFinderPropertyQuery += """

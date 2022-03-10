@@ -40,6 +40,7 @@ from .resources import *
 from .kwg_plugin_dialog import kwg_pluginDialog
 from .kwg_plugin_enrichment_dialog import kwg_pluginEnrichmentDialog
 from .kwg_sparqlquery import kwg_sparqlquery
+from .kwg_sparqlutil import kwg_sparqlutil
 from .kwg_util import kwg_util as UTIL
 from .kwg_json2field import kwg_json2field as Json2Field
 
@@ -119,6 +120,7 @@ class kwg_geoenrichment:
         self.logger.addHandler(handler)
 
         self.sparqlQuery = kwg_sparqlquery()
+        self.sparqlUtil = kwg_sparqlutil()
         self.eventPlaceTypeDict = dict()
         self.kwg_endpoint_dict = _SPARQL_ENDPOINT_DICT
 
@@ -224,6 +226,8 @@ class kwg_geoenrichment:
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
+        # self.app.setStylesheet(open("style.qss", "r").read())
+
         # will be set False in run()
         self.first_start = True
 
@@ -254,6 +258,20 @@ class kwg_geoenrichment:
         if self.first_start == True:
             self.first_start = False
         self.dlg = kwg_pluginDialog()
+        # self.dlg.setStyleSheet("""
+        # QPushButton{
+        #         background-color: #216FB3;
+        #         color: #ffffff;
+        #         height: 70px;
+        #         width: 255px;
+        #     }
+        #
+        # MainWindow {
+        #     background-image: url("/Users/nenuji/Documents/Github/kwg-qgis-geoenrichment/kwg_geoenrichment/resources/background-landing.png");
+        #     background-repeat: no-repeat;
+        #     background-position: center;
+        # }
+        # """)
         self.dlgEnrichment = kwg_pluginEnrichmentDialog()
 
         # show the dialog
@@ -264,6 +282,8 @@ class kwg_geoenrichment:
 
         # get contents (open another dialog box)
         self.dlg.pushButton_content.clicked.connect(self.addContent)
+
+        self.dlg.pushButton_run.clicked.connect(self.handleRun)
 
         # Run the dialog event loop
         result = self.dlg.exec_()
@@ -631,6 +651,59 @@ then select an entity on the map.'
         self.dlgEnrichment.close()
 
         self.dlg.listWidget.addItem(stringVal)
+
+
+    def handleRun(self):
+        # QgsMessageLog.logMessage("Run clicked!", "kwg_geoenrichment",level=Qgis.Info)
+
+        results = self.dlgEnrichment.get_results()
+        thirdDegreeJSONBinding = results["thirdPropertyURLListJsonBindingObject"]
+        # QgsMessageLog.logMessage(json.dumps(thirdDegreeJSONBinding),"kwg_geoenrichment",level=Qgis.Info)
+
+        filterPred = self.sparqlUtil.remake_prefixed_iri(self.dlgEnrichment.comboBox_P2.currentText())
+
+        eventType = (self.dlgEnrichment.comboBox_S0.currentText().split(":"))[1]
+        predType = (self.dlgEnrichment.comboBox_P2.currentText().split(":"))[1]
+        results = self.updateTable(jsonBindingObject=thirdDegreeJSONBinding, filterPred=filterPred, currentFieldName=eventType + "_" + predType + "_mag")
+        # QgsMessageLog.logMessage(filterPred, "kwg_geoenrichment", level=Qgis.Info)
+        if results:
+            self.iface.mapCanvas().refresh()
+            QgsMessageLog.logMessage("property saved successfully!",
+                                     "kwg_geoenrichment", level=Qgis.Info)
+            self.dlg.close()
+
+
+    def updateTable(self, jsonBindingObject, filterPred = None, currentFieldName="", keyPropertyFieldName="place_iri", featureClassName="geo_results", gpkgLocation="/var/local/QGIS/kwg_results.gpkg"):
+
+        gpkg_places_layer = gpkgLocation + "|layername=%s" % (featureClassName)
+
+        vlayer = QgsVectorLayer(gpkg_places_layer, "geo_results", "ogr")
+
+        if not vlayer.isValid():
+            QgsMessageLog.logMessage("Error reading the table",
+                                     "kwg_geoenrichment", level=Qgis.Warning)
+            return 0
+
+        fieldType = None
+        # arcpy.AddMessage("fieldType: {0}".format(fieldType))
+        pr = vlayer.dataProvider()
+        pr.addAttributes([QgsField(currentFieldName, QVariant.String)])
+        vlayer.updateFields()
+
+        selected_feature = vlayer.getFeatures()
+
+        vlayer.startEditing()
+
+        for feature in selected_feature:
+            currentKeyPropertyValue = feature["place_iri"]
+            for obj in jsonBindingObject:
+                if currentKeyPropertyValue == obj["place"]["value"] and obj["place"]["type"] == "uri":
+                    if obj["p3"]["value"] == filterPred and obj["o2"]["value"].startswith("http://stko-kwg.geog.ucsb.edu/lod/resource/earthquakeObservation.mag."):
+                        feature[currentFieldName] = obj["o3"]["value"]
+            vlayer.updateFeature(feature)
+        vlayer.commitChanges()
+
+        return 1
 
 
     def performWKTConversion(self):
