@@ -21,6 +21,7 @@
  *                                                                         *
  ***************************************************************************/
 """
+import json
 import logging
 import os
 from qgis.PyQt import QtWidgets
@@ -113,6 +114,11 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         entityType = self.sparql_query.EventTypeSPARQLQuery(sparql_endpoint=self.params["end_point"],
                                                             wkt_literal=self.params["wkt_literal"],
                                                             geosparql_func=self.params["geosparql_func"])
+
+        # s2Cells = self.sparql_query.getS2CellsFromGeometry(sparql_endpoint=self.params["end_point"],
+        #                                                     wkt_literal=self.params["wkt_literal"])
+        #
+        # QgsMessageLog.logMessage(json.dumps(s2Cells), "kwg_geo", level=Qgis.Info)
 
         self.comboBox_S0.clear()
         self.comboBox_S0.addItem("--- SELECT ---")

@@ -48,7 +48,8 @@ from .qdrawsettings import QdrawSettings
 
 _SPARQL_ENDPOINT_DICT = {
     "prod": {
-        "kwg-v2": "http://stko-kwg.geog.ucsb.edu:7200/repositories/KWG-V2"
+        "KWG-V2": "http://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V2",
+        "KWG-V3": "http://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V3"
     },
     "test": {
         "plume_soil_wildfire": "http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire",

@@ -94,7 +94,12 @@
    </item>
    <item>
     <property name="text">
-     <string>kwg-v2 - (prod)</string>
+     <string>KWG-V2 - (prod)</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>KWG-V3 - (prod)</string>
     </property>
    </item>
   </widget>

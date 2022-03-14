@@ -1028,8 +1028,70 @@ class kwg_sparqlquery:
                                                    doInference=False)
         return res_json
 
+    def getS2CellsFromGeometry(self,
+                               sparql_endpoint="http://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V3",
+                               wkt_literal="Polygon((-119.73822343857 34.4749685817967, -119.571162553598 34.4767458252538, -119.670688187198 34.3754429481962, -119.73822343857 34.4749685817967))"):
+        """
+            Retrieves S2 cells based on the selected wkt literal
+            Arguments:
+                sparql_endpoint: the sparql end point for the graph database
+                wkt_literal: the wkt literal for the user selected polygon
+            Returns:
+                The raw JSON response containing S2 cells retrieved from the specified graph end point
+        """
+
+        SPARQLUtil = kwg_sparqlutil()
+        queryPrefix = SPARQLUtil.make_sparql_prefix()
+
+        queryString = """
+        select ?s2Cell where {
+            ?adminRegion2 a kwg-ont:AdministrativeRegion_3.
+            ?adminRegion2 geo:hasGeometry ?arGeo.
+            ?arGeo geo:asWKT ?arWKT.
+            FILTER(geof:sfIntersects("%s"^^geo:wktLiteral, ?arWKT)).
+        
+            ?adminRegion2 geo:sfContains ?s2Cell.
+            ?s2Cell a kwg-ont:KWGCellLevel13.
+            ?s2Cell geo:hasGeometry ?s2Geo.
+            ?s2Geo geo:asWKT ?s2WKT.
+            FILTER(geof:sfIntersects("%s"^^geo:wktLiteral, ?s2WKT)).
+        }
+        """ % (wkt_literal, wkt_literal)
+
+        query = queryPrefix + queryString
+
+        QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
+
+        GeoQueryResult = SPARQLUtil.sparql_requests(query=query,
+                                                    sparql_endpoint=sparql_endpoint,
+                                                    doInference=False,
+                                                    request_method="get")
+        GeoQueryResult = GeoQueryResult["results"]["bindings"]
+
+        # QgsMessageLog.logMessage(json.dumps(GeoQueryResult), "kwg_ldrf", level=Qgis.Info)
+
+        return GeoQueryResult
+
+
+    def getEntityValuesFromS2Cells(self,
+                                   sparql_endpoint="http://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V3",
+                                   s2Cells=[]):
+        """
+            Retrieves Entity values that are associated with the passed S2 cells
+            Arguments:
+                sparql_endpoint: the sparql end point for the graph database
+                s2Cells: list object of the S2 cells that belong to the user selected polygon
+            Returns:
+                The raw JSON response containing Entity values
+
+        """
+
+
+
+        pass
 
 if __name__ == "__main__":
     SQ = kwg_sparqlquery()
     # SQ.EventTypeSPARQLQuery()
     # print(SQ.sparqlUTIL.make_sparql_prefix())
+    print(SQ.getS2CellsFromGeometry())
