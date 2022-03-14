@@ -1062,16 +1062,13 @@ class kwg_sparqlquery:
 
         QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
 
-        GeoQueryResult = SPARQLUtil.sparql_requests(query=query,
+        s2CellsQueryResult = SPARQLUtil.sparql_requests(query=query,
                                                     sparql_endpoint=sparql_endpoint,
                                                     doInference=False,
                                                     request_method="get")
-        GeoQueryResult = GeoQueryResult["results"]["bindings"]
+        s2CellsQueryResultBindings = s2CellsQueryResult["results"]["bindings"]
 
-        # QgsMessageLog.logMessage(json.dumps(GeoQueryResult), "kwg_ldrf", level=Qgis.Info)
-
-        return GeoQueryResult
-
+        return s2CellsQueryResultBindings
 
     def getEntityValuesFromS2Cells(self,
                                    sparql_endpoint="http://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V3",
@@ -1083,12 +1080,31 @@ class kwg_sparqlquery:
                 s2Cells: list object of the S2 cells that belong to the user selected polygon
             Returns:
                 The raw JSON response containing Entity values
-
         """
 
+        SPARQLUtil = kwg_sparqlutil()
+        queryPrefix = SPARQLUtil.make_sparql_prefix()
 
+        queryString = """
+        select distinct ?entity where { 
+            {?entity ?p ?s2Cell.} union {?s2Cell ?p ?entity.} 
+            ?entity a geo:Feature. 
+            values ?s2Cell {%s}
+        }
+        """ % (" ".join(s2Cells))
 
-        pass
+        query = queryPrefix + queryString
+
+        QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
+
+        EntityQueryResult = SPARQLUtil.sparql_requests(query=query,
+                                                       sparql_endpoint=sparql_endpoint,
+                                                       doInference=False,
+                                                       request_method="get")
+        EntityQueryResultBindings = EntityQueryResult["results"]["bindings"]
+
+        return EntityQueryResultBindings
+
 
 if __name__ == "__main__":
     SQ = kwg_sparqlquery()
