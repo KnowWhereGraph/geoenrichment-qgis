@@ -1105,6 +1105,121 @@ class kwg_sparqlquery:
 
         return EntityQueryResultBindings
 
+    def getFirstDegreeClass(self,
+                            sparql_endpoint="http://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V3",
+                            entityList=[]
+                            ):
+        """
+            Retrieves first degree class given the entity list
+            Arguments:
+                sparql_endpoint: the sparql end point for the graph database
+                entityList: list object of entities associated with the S2Cells
+            Returns:
+                The raw JSON response containing first degree class
+        """
+
+        SPARQLUtil = kwg_sparqlutil()
+        queryPrefix = SPARQLUtil.make_sparql_prefix()
+
+        queryString = """
+                select distinct ?type ?label where { 
+                    ?entity a ?type. 
+                    ?type rdfs:label ?label. 
+                    values ?entity {%s}
+                }
+                """ % (" ".join(entityList))
+
+        query = queryPrefix + queryString
+
+        QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
+
+        FirstDegreeClassQueryResult = SPARQLUtil.sparql_requests(query=query,
+                                                                 sparql_endpoint=sparql_endpoint,
+                                                                 doInference=False,
+                                                                 request_method="get")
+        FirstDegreeClassQueryResultBindings = FirstDegreeClassQueryResult["results"]["bindings"]
+
+        return FirstDegreeClassQueryResultBindings
+
+    def getFirstDegreePredicate(self,
+                                sparql_endpoint="http://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V3",
+                                entityList=[],
+                                firstDegreeClass=""
+                                ):
+        """
+            Retrieves first degree predicate given first degree class and entity list
+            Arguments:
+                sparql_endpoint: the sparql end point for the graph database
+                entityList: list object of entities associated with the S2Cells
+                firstDegreeClass: the name of the user selected first degree class
+            Returns:
+                The raw JSON response containing first degree predicate
+        """
+
+        SPARQLUtil = kwg_sparqlutil()
+        queryPrefix = SPARQLUtil.make_sparql_prefix()
+
+        queryString = """
+                select distinct ?p ?label where { 
+                    ?entity a %s; 
+                        ?p ?o.
+                    optional {?p rdfs:label ?label}
+                    values ?entity {%s}
+                }
+                """ % (firstDegreeClass, " ".join(entityList))
+
+        query = queryPrefix + queryString
+
+        QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
+
+        FirstDegreePredicateQueryResult = SPARQLUtil.sparql_requests(query=query,
+                                                                     sparql_endpoint=sparql_endpoint,
+                                                                     doInference=False,
+                                                                     request_method="get")
+        FirstDegreePredicateQueryResultBindings = FirstDegreePredicateQueryResult["results"]["bindings"]
+
+        return FirstDegreePredicateQueryResultBindings
+
+    def getFirstDegreeObject(self,
+                             sparql_endpoint="http://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V3",
+                             entityList=[],
+                             firstDegreeClass="",
+                             firstDegreePredicate=""
+                             ):
+        """
+            Retrieves first degree object given first degree class, first degree predicate and entity list
+            Arguments:
+                sparql_endpoint: the sparql end point for the graph database
+                entityList: list object of entities associated with the S2Cells
+                firstDegreeClass: the name of the user selected first degree class
+                firstDegreePredicate: the name of the user selected first degree predicate
+            Returns:
+                The raw JSON response containing first degree object
+        """
+
+        SPARQLUtil = kwg_sparqlutil()
+        queryPrefix = SPARQLUtil.make_sparql_prefix()
+
+        queryString = """
+                select distinct ?type ?label ?o where {  
+                    ?entity a %s; %s ?o. 
+                    ?o a ?type. ?type rdfs:label ?label. 
+                    values ?entity {%s}
+                }
+                """ % (firstDegreeClass, firstDegreePredicate, " ".join(entityList))
+
+        query = queryPrefix + queryString
+
+        QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
+
+        FirstDegreeObjectQueryResult = SPARQLUtil.sparql_requests(query=query,
+                                                                  sparql_endpoint=sparql_endpoint,
+                                                                  doInference=False,
+                                                                  request_method="get")
+        FirstDegreeObjectQueryResultBindings = FirstDegreeObjectQueryResult["results"]["bindings"]
+
+        return FirstDegreeObjectQueryResultBindings
+
 
 if __name__ == "__main__":
     SQ = kwg_sparqlquery()
