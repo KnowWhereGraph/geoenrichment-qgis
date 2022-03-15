@@ -1,3 +1,4 @@
+import json
 import logging
 from collections import namedtuple
 from qgis.core import QgsMessageLog, Qgis
@@ -1085,23 +1086,33 @@ class kwg_sparqlquery:
         SPARQLUtil = kwg_sparqlutil()
         queryPrefix = SPARQLUtil.make_sparql_prefix()
 
-        queryString = """
-        select distinct ?entity where { 
-            {?entity ?p ?s2Cell.} union {?s2Cell ?p ?entity.} 
-            ?entity a geo:Feature. 
-            values ?s2Cell {%s}
-        }
-        """ % (" ".join(s2Cells))
+        EntityQueryResultBindings = []
+        s2CellsCurrentCounter = 0
 
-        query = queryPrefix + queryString
+        while s2CellsCurrentCounter < len(s2Cells):
 
-        QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
+            s2CellsPrefixed = ""
+            for s2Cell in s2Cells[s2CellsCurrentCounter:s2CellsCurrentCounter+100]:
+                s2CellsPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(s2Cell)
 
-        EntityQueryResult = SPARQLUtil.sparql_requests(query=query,
-                                                       sparql_endpoint=sparql_endpoint,
-                                                       doInference=False,
-                                                       request_method="get")
-        EntityQueryResultBindings = EntityQueryResult["results"]["bindings"]
+            queryString = """
+            select distinct ?entity where { 
+                {?entity ?p ?s2Cell.} union {?s2Cell ?p ?entity.} 
+                ?entity a geo:Feature. 
+                values ?s2Cell {%s}
+            }
+            """ % (s2CellsPrefixed)
+
+            query = queryPrefix + queryString
+
+            QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
+
+            EntityQueryResult = SPARQLUtil.sparql_requests(query=query,
+                                                           sparql_endpoint=sparql_endpoint,
+                                                           doInference=False,
+                                                           request_method="get")
+            EntityQueryResultBindings.extend(EntityQueryResult["results"]["bindings"])
+            s2CellsCurrentCounter += 100
 
         return EntityQueryResultBindings
 
@@ -1121,23 +1132,35 @@ class kwg_sparqlquery:
         SPARQLUtil = kwg_sparqlutil()
         queryPrefix = SPARQLUtil.make_sparql_prefix()
 
-        queryString = """
-                select distinct ?type ?label where { 
-                    ?entity a ?type. 
-                    ?type rdfs:label ?label. 
-                    values ?entity {%s}
-                }
-                """ % (" ".join(entityList))
+        FirstDegreeClassQueryResultBindings = []
+        entityListCurrentCounter = 0
 
-        query = queryPrefix + queryString
+        while entityListCurrentCounter < len(entityList):
 
-        QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
+            entityPrefixed = ""
+            for entity in entityList[entityListCurrentCounter:entityListCurrentCounter+100]:
+                entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
 
-        FirstDegreeClassQueryResult = SPARQLUtil.sparql_requests(query=query,
-                                                                 sparql_endpoint=sparql_endpoint,
-                                                                 doInference=False,
-                                                                 request_method="get")
-        FirstDegreeClassQueryResultBindings = FirstDegreeClassQueryResult["results"]["bindings"]
+            queryString = """
+                    select distinct ?type ?label where { 
+                        ?entity a ?type. 
+                        ?type rdfs:label ?label. 
+                        values ?entity {%s}
+                    }
+                    """ % (entityPrefixed)
+            # self.logger.debug("Class0Debug: " + queryString)
+
+            query = queryPrefix + queryString
+
+            QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
+
+            FirstDegreeClassQueryResult = SPARQLUtil.sparql_requests(query=query,
+                                                                     sparql_endpoint=sparql_endpoint,
+                                                                     doInference=False,
+                                                                     request_method="get")
+            FirstDegreeClassQueryResultBindings.extend(FirstDegreeClassQueryResult["results"]["bindings"])
+            entityListCurrentCounter += 100
+            self.logger.debug("FirstDegreeClassQueryResultBindings : " + str(entityListCurrentCounter) + " - "+ json.dumps(FirstDegreeClassQueryResultBindings))
 
         return FirstDegreeClassQueryResultBindings
 
@@ -1159,24 +1182,34 @@ class kwg_sparqlquery:
         SPARQLUtil = kwg_sparqlutil()
         queryPrefix = SPARQLUtil.make_sparql_prefix()
 
-        queryString = """
-                select distinct ?p ?label where { 
-                    ?entity a %s; 
-                        ?p ?o.
-                    optional {?p rdfs:label ?label}
-                    values ?entity {%s}
-                }
-                """ % (firstDegreeClass, " ".join(entityList))
+        FirstDegreePredicateQueryResultBindings = []
+        entityListCurrentCounter = 0
 
-        query = queryPrefix + queryString
+        while entityListCurrentCounter < len(entityList):
 
-        QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
+            entityPrefixed = ""
+            for entity in entityList[entityListCurrentCounter:entityListCurrentCounter + 100]:
+                entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
 
-        FirstDegreePredicateQueryResult = SPARQLUtil.sparql_requests(query=query,
-                                                                     sparql_endpoint=sparql_endpoint,
-                                                                     doInference=False,
-                                                                     request_method="get")
-        FirstDegreePredicateQueryResultBindings = FirstDegreePredicateQueryResult["results"]["bindings"]
+            queryString = """
+                    select distinct ?p ?label where { 
+                        ?entity a %s; 
+                            ?p ?o.
+                        optional {?p rdfs:label ?label}
+                        values ?entity {%s}
+                    }
+                    """ % (firstDegreeClass, entityPrefixed)
+
+            query = queryPrefix + queryString
+
+            QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
+
+            FirstDegreePredicateQueryResult = SPARQLUtil.sparql_requests(query=query,
+                                                                         sparql_endpoint=sparql_endpoint,
+                                                                         doInference=False,
+                                                                         request_method="get")
+            FirstDegreePredicateQueryResultBindings.extend(FirstDegreePredicateQueryResult["results"]["bindings"])
+            entityListCurrentCounter += 100
 
         return FirstDegreePredicateQueryResultBindings
 
@@ -1200,23 +1233,33 @@ class kwg_sparqlquery:
         SPARQLUtil = kwg_sparqlutil()
         queryPrefix = SPARQLUtil.make_sparql_prefix()
 
-        queryString = """
-                select distinct ?type ?label ?o where {  
-                    ?entity a %s; %s ?o. 
-                    ?o a ?type. ?type rdfs:label ?label. 
-                    values ?entity {%s}
-                }
-                """ % (firstDegreeClass, firstDegreePredicate, " ".join(entityList))
+        FirstDegreeObjectQueryResultBindings = []
+        entityListCurrentCounter = 0
 
-        query = queryPrefix + queryString
+        while entityListCurrentCounter < len(entityList):
 
-        QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
+            entityPrefixed = ""
+            for entity in entityList[entityListCurrentCounter:entityListCurrentCounter + 100]:
+                entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
 
-        FirstDegreeObjectQueryResult = SPARQLUtil.sparql_requests(query=query,
-                                                                  sparql_endpoint=sparql_endpoint,
-                                                                  doInference=False,
-                                                                  request_method="get")
-        FirstDegreeObjectQueryResultBindings = FirstDegreeObjectQueryResult["results"]["bindings"]
+            queryString = """
+                    select distinct ?type ?label ?o where {  
+                        ?entity a %s; %s ?o. 
+                        ?o a ?type. ?type rdfs:label ?label. 
+                        values ?entity {%s}
+                    }
+                    """ % (firstDegreeClass, firstDegreePredicate, entityPrefixed)
+
+            query = queryPrefix + queryString
+
+            QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
+
+            FirstDegreeObjectQueryResult = SPARQLUtil.sparql_requests(query=query,
+                                                                      sparql_endpoint=sparql_endpoint,
+                                                                      doInference=False,
+                                                                      request_method="get")
+            FirstDegreeObjectQueryResultBindings.extend(FirstDegreeObjectQueryResult["results"]["bindings"])
+            entityListCurrentCounter += 100
 
         return FirstDegreeObjectQueryResultBindings
 
