@@ -1263,6 +1263,116 @@ class kwg_sparqlquery:
 
         return FirstDegreeObjectQueryResultBindings
 
+    def getNDegreePredicate(self,
+                                sparql_endpoint="http://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V3",
+                                entityList=[],
+                                selectedVals=[],
+                                degree=0
+                                ):
+        """
+            Retrieves first degree predicate given first degree class and entity list
+            Arguments:
+                sparql_endpoint: the sparql end point for the graph database
+                entityList: list object of entities associated with the S2Cells
+                firstDegreeClass: the name of the user selected first degree class
+            Returns:
+                The raw JSON response containing first degree predicate
+        """
+
+        SPARQLUtil = kwg_sparqlutil()
+        queryPrefix = SPARQLUtil.make_sparql_prefix()
+
+        FirstNPredicateQueryResultBindings = []
+        entityListCurrentCounter = 0
+
+        while entityListCurrentCounter < len(entityList):
+
+            entityPrefixed = ""
+            for entity in entityList[entityListCurrentCounter:entityListCurrentCounter + 100]:
+                entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
+
+            propQuery = "select distinct ?p ?label where { \n";
+
+            for i in range(1, degree+1):
+                subjectStr = "?entity" if (i == 1)  else "?o" + str(i - 1)
+                classStr = selectedVals[2 * (i-1)]
+                predicateStr = "?p" if (i == degree) else selectedVals[2 * (i-1) + 1]
+                objectStr = "?o" + str(i)
+
+                propQuery += subjectStr + " a " + classStr + "; " + predicateStr + " " + objectStr + ". "
+
+            propQuery += "optional {?p rdfs:label ?label} values ?entity { %s } }" % (entityPrefixed)
+
+            query = queryPrefix + propQuery
+            self.logger.debug(query)
+
+            QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
+
+            FirstDegreePredicateQueryResult = SPARQLUtil.sparql_requests(query=query,
+                                                                         sparql_endpoint=sparql_endpoint,
+                                                                         doInference=False,
+                                                                         request_method="get")
+            FirstNPredicateQueryResultBindings.extend(FirstDegreePredicateQueryResult["results"]["bindings"])
+            entityListCurrentCounter += 100
+
+        return FirstNPredicateQueryResultBindings
+
+    def getNDegreeObject(self,
+                             sparql_endpoint="http://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V3",
+                             entityList=[],
+                             selectedVals=[],
+                             degree=0
+                             ):
+        """
+            Retrieves first degree object given first degree class, first degree predicate and entity list
+            Arguments:
+                sparql_endpoint: the sparql end point for the graph database
+                entityList: list object of entities associated with the S2Cells
+                firstDegreeClass: the name of the user selected first degree class
+                firstDegreePredicate: the name of the user selected first degree predicate
+            Returns:
+                The raw JSON response containing first degree object
+        """
+
+        SPARQLUtil = kwg_sparqlutil()
+        queryPrefix = SPARQLUtil.make_sparql_prefix()
+
+        NDegreeObjectQueryResultBindings = []
+        entityListCurrentCounter = 0
+
+        while entityListCurrentCounter < len(entityList):
+
+            entityPrefixed = ""
+            for entity in entityList[entityListCurrentCounter:entityListCurrentCounter + 100]:
+                entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
+
+            objQuery = "select distinct ?type ?label where {  \n";
+
+            for i in range(1, degree + 1):
+                subjectStr = "?entity" if (i == 1) else "?o" + str(i - 1)
+                classStr = selectedVals[2 * (i - 1)]
+                predicateStr = selectedVals[2 * (i - 1) + 1]
+                objectStr = "?o. ?o a ?type" if (i == degree) else "?o" + str(i)
+
+                objQuery += subjectStr + " a " + classStr + "; " + predicateStr + " " + objectStr + ". "
+
+            objQuery += "?type rdfs:label ?label. values ?entity { %s } }" % (entityPrefixed)
+
+            query = queryPrefix + objQuery
+
+            QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
+
+            self.logger.debug(query)
+
+            NDegreeObjectQueryResult = SPARQLUtil.sparql_requests(query=query,
+                                                                      sparql_endpoint=sparql_endpoint,
+                                                                      doInference=False,
+                                                                      request_method="get")
+            NDegreeObjectQueryResultBindings.extend(NDegreeObjectQueryResult["results"]["bindings"])
+            entityListCurrentCounter += 100
+
+        return NDegreeObjectQueryResultBindings
+
 
 if __name__ == "__main__":
     SQ = kwg_sparqlquery()
