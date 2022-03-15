@@ -1373,6 +1373,55 @@ class kwg_sparqlquery:
 
         return NDegreeObjectQueryResultBindings
 
+    def getNDegreeResults(self,
+                          sparql_endpoint="http://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V3",
+                          entityList=[],
+                          selectedVals=[],
+                          degree=0
+                          ):
+        """
+
+        """
+        SPARQLUtil = kwg_sparqlutil()
+        queryPrefix = SPARQLUtil.make_sparql_prefix()
+
+        NDegreeResultBindings = []
+        entityListCurrentCounter = 0
+
+        while entityListCurrentCounter < len(entityList):
+            entityPrefixed = ""
+            for entity in entityList[entityListCurrentCounter:entityListCurrentCounter + 100]:
+                entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
+
+            query = """
+    
+            select distinct ?entity ?entityLabel ?o ?oLabel where {  
+                ?entity a %s; 
+                    rdfs:label ?entityLabel;
+                    %s ?o1. 
+                ?o1 a %s; %s ?o2. 
+                ?o2 a %s; %s ?o3. 
+                ?o3 a %s; rdfs:label ?o.
+                optional {?o rdfs:label ?oLabel.}
+                values ?entity {%s}
+            }
+            """ % (selectedVals[0], selectedVals[1], selectedVals[2], selectedVals[3], selectedVals[4], selectedVals[5], selectedVals[6], entityPrefixed)
+
+            query = queryPrefix + query
+
+            QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
+
+            self.logger.debug(query)
+
+            NDegreeObjectQueryResult = SPARQLUtil.sparql_requests(query=query,
+                                                                  sparql_endpoint=sparql_endpoint,
+                                                                  doInference=False,
+                                                                  request_method="get")
+            for obj in NDegreeObjectQueryResult["results"]["bindings"]:
+                NDegreeResultBindings.add(obj)
+            entityListCurrentCounter += 100
+
+        return NDegreeResultBindings
 
 if __name__ == "__main__":
     SQ = kwg_sparqlquery()

@@ -48,8 +48,8 @@ from .qdrawsettings import QdrawSettings
 
 _SPARQL_ENDPOINT_DICT = {
     "prod": {
-        "KWG-V2": "http://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V2",
-        "KWG-V3": "http://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V3"
+        "KWG-V2": "https://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V2",
+        "KWG-V3": "https://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V3"
     },
     "test": {
         "plume_soil_wildfire": "http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire",
@@ -629,22 +629,26 @@ then select an entity on the map.'
     def handleRun(self):
         # QgsMessageLog.logMessage("Run clicked!", "kwg_geoenrichment",level=Qgis.Info)
 
-        results = self.dlgEnrichment.get_results()
-        thirdDegreeJSONBinding = results["thirdPropertyURLListJsonBindingObject"]
-        # QgsMessageLog.logMessage(json.dumps(thirdDegreeJSONBinding),"kwg_geoenrichment",level=Qgis.Info)
+        # results = self.dlgEnrichment.get_results()
 
-        filterPred = self.sparqlUtil.remake_prefixed_iri(self.dlgEnrichment.comboBox_P2.currentText())
-
-        eventType = (self.dlgEnrichment.comboBox_S0.currentText().split(":"))[1]
-        predType = (self.dlgEnrichment.comboBox_P2.currentText().split(":"))[1]
-        results = self.updateTable(jsonBindingObject=thirdDegreeJSONBinding, filterPred=filterPred,
-                                   currentFieldName=eventType + "_" + predType + "_mag")
-        # QgsMessageLog.logMessage(filterPred, "kwg_geoenrichment", level=Qgis.Info)
-        if results:
-            self.iface.mapCanvas().refresh()
-            QgsMessageLog.logMessage("property saved successfully!",
-                                     "kwg_geoenrichment", level=Qgis.Info)
-            self.dlg.close()
+        # thirdDegreeJSONBinding = results["thirdPropertyURLListJsonBindingObject"]
+        # # QgsMessageLog.logMessage(json.dumps(thirdDegreeJSONBinding),"kwg_geoenrichment",level=Qgis.Info)
+        #
+        # filterPred = self.sparqlUtil.remake_prefixed_iri(self.dlgEnrichment.comboBox_P2.currentText())
+        #
+        # eventType = (self.dlgEnrichment.comboBox_S0.currentText().split(":"))[1]
+        # predType = (self.dlgEnrichment.comboBox_P2.currentText().split(":"))[1]
+        # results = self.updateTable(jsonBindingObject=thirdDegreeJSONBinding, filterPred=filterPred,
+        #                            currentFieldName=eventType + "_" + predType + "_mag")
+        # # QgsMessageLog.logMessage(filterPred, "kwg_geoenrichment", level=Qgis.Info)
+        # if results:
+        #     self.iface.mapCanvas().refresh()
+        #     QgsMessageLog.logMessage("property saved successfully!",
+        #                              "kwg_geoenrichment", level=Qgis.Info)
+        #     self.dlg.close()
+        self.dlgEnrichment.getResults()
+        QgsMessageLog.logMessage("Run clicked successfully!",
+                                 "kwg_geoenrichment", level=Qgis.Info)
 
     def updateTable(self, jsonBindingObject, filterPred=None, currentFieldName="", keyPropertyFieldName="place_iri",
                     featureClassName="geo_results", gpkgLocation="/var/local/QGIS/kwg_results.gpkg"):

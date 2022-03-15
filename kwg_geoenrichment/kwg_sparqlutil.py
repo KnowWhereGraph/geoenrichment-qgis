@@ -20,8 +20,8 @@ class kwg_sparqlutil:
     # NAME_SPACE = "http://stko-roy.geog.ucsb.edu"
     NAME_SPACE = "http://stko-kwg.geog.ucsb.edu"
 
-    # _SPARQL_ENDPOINT = "http://stko-roy.geog.ucsb.edu:7200/repositories/kwg-seed-graph-v2"
-    _SPARQL_ENDPOINT = "http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire"
+    # _SPARQL_ENDPOINT = "https://stko-roy.geog.ucsb.edu:7200/repositories/kwg-seed-graph-v2"
+    _SPARQL_ENDPOINT = "https://stko-roy.geog.ucsb.edu/graphdb/repositories/plume_soil_wildfire"
     _WIKIDATA_SPARQL_ENDPOINT = "https://query.wikidata.org/sparql"
 
     # _PREFIX = {
@@ -149,7 +149,7 @@ class kwg_sparqlutil:
         else:
             url = sparql_endpoint
 
-        sparqlParam = {'query': query, 'format': 'json', 'infer': "true" if doInference else "false"}
+        sparqlParam = {'query': query, 'format': 'json'}
         headers = {'Accept': 'application/sparql-results+json'}
         # headers = {'Content-type': 'application/json', 'Accept': 'application/sparql-results+json'}
 

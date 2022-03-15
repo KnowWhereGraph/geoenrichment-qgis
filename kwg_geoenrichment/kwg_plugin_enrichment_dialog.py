@@ -346,7 +346,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         for key in self.spoDict[2]["o"]:
             self.comboBox_O2.addItem(self.sparql_util.make_prefixed_iri(key))
 
-        self.comboBox_O2.currentIndexChanged.connect(self.populateThirdDegreeSubject)
+        # self.comboBox_O2.currentIndexChanged.connect(self.populateThirdDegreeSubject)
 
     def firstDegreeSubjectHandler(self):
         self.sub0 = self.comboBox_S0.currentText()
@@ -703,3 +703,24 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.thirdPredicateObjectDict = thirdPredicateObjectDict
 
         return list(set(thirdPropertyLabelList))
+
+
+    def getResults(self):
+        self.obj2 = self.comboBox_O2.currentText()
+
+        selectedVal = []
+        selectedVal.append(self.sub0)
+        selectedVal.append(self.pred0)
+        selectedVal.append(self.sub1)
+        selectedVal.append(self.pred1)
+        selectedVal.append(self.sub2)
+        selectedVal.append(self.pred2)
+        selectedVal.append(self.obj2)
+        # secondPropertyURLList.extend(self.getSecondDegreeProperty())
+        thirdPropObj = self.sparql_query.getNDegreeResults(sparql_endpoint=self.params["end_point"],
+                                                          entityList=self.EntityLi,
+                                                          selectedVals=selectedVal,
+                                                          degree=3)
+
+        self.logger.debug(str(len(thirdPropObj)))
+        return thirdPropObj
