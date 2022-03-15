@@ -117,6 +117,17 @@ class kwg_geoenrichment:
         self.eventPlaceTypeDict = dict()
         self.kwg_endpoint_dict = _SPARQL_ENDPOINT_DICT
 
+        self.mergeRuleDict = {
+            "1 - Get the average of all values (numeric)" : "avg",
+            "2 - Concate values together with a '|'" : "concat",
+            "3 - Get the number of values found" : "count",
+            "4 - Get the first value found" : "first",
+            "5 - Get the highest value (numeric)": "high",
+            "6 - Get the lowest value (numeric)": "low",
+            "7 - Get the standard deviation of all values (numeric)": "stdev",
+            "8 - Get the total of all values (numeric)": "total",
+        }
+
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
         """Get the translation for a string using Qt translation API.
@@ -646,7 +657,19 @@ then select an entity on the map.'
         #     QgsMessageLog.logMessage("property saved successfully!",
         #                              "kwg_geoenrichment", level=Qgis.Info)
         #     self.dlg.close()
-        self.dlgEnrichment.getResults()
+
+
+        results = self.dlgEnrichment.getResults()
+
+        objName = self.dlg.lineEdit_objName.text()
+        layerName = self.dlg.lineEdit_layerName.text()
+        mergeRule = self.dlg.comboBox_mergeRule.currentText()
+        mergeRuleName = self.mergeRuleDict[mergeRule]
+
+        self.createGeoPackage(results, objName, layerName, mergeRuleName)
+
+        self.dlg.close()
+
         QgsMessageLog.logMessage("Run clicked successfully!",
                                  "kwg_geoenrichment", level=Qgis.Info)
 
@@ -881,6 +904,80 @@ then select an entity on the map.'
                 context = QgsProject.instance().transformContext()
                 error = QgsVectorFileWriter.writeAsVectorFormatV2(vl, out_path, context, options)
                 self.iface.addVectorLayer(out_path, 'geo_results', 'ogr')
+
+        return error[0] == QgsVectorFileWriter.NoError
+
+    def createGeoPackage(self, GeoQueryResult, objName = "0", layerName="geo_results", mergeRuleName="first", out_path="/var/local/QGIS/kwg_results.gpkg"):
+        '''
+        GeoQueryResult: a sparql query result json obj serialized as a list of dict()
+                    SPARQL query like this:
+                    select distinct ?place ?placeLabel ?placeFlatType ?wkt
+                    where
+                    {...}
+        out_path: the output path for the create geo feature class
+        inPlaceType: the label of user spercified type IRI
+        selectedURL: the user spercified type IRI
+        isDirectInstance: True: use placeFlatType as the type of geo-entity
+                          False: use selectedURL as the type of geo-entity
+        '''
+        # a set of unique WKT for each found places
+        objIRISet = set()
+        objList = []
+        geom_type = None
+
+        util_obj = UTIL()
+
+        layerFields = QgsFields()
+        layerFields.append(QgsField('entity', QVariant.String))
+        layerFields.append(QgsField('entityLabel', QVariant.String))
+        layerFields.append(QgsField(objName, QVariant.String))
+
+        for idx, item in enumerate(GeoQueryResult):
+            wkt_literal = item["wkt"]["value"]
+            # for now, make sure all geom has the same geometry type
+            if idx == 0:
+                geom_type = util_obj.get_geometry_type_from_wkt(wkt_literal)
+
+            if len(objIRISet) == 0 or item['o']["value"] not in objIRISet:
+                objIRISet.add(item['o']["value"])
+                objList.append(
+                    [item["entity"]["value"], item["entityLabel"]["value"], item['o']["value"], wkt_literal])
+
+        if geom_type is None:
+            raise Exception("geometry type not find")
+
+        vl = QgsVectorLayer(geom_type + "?crs=epsg:4326", "geo_results", "memory")
+        pr = vl.dataProvider()
+        pr.addAttributes(layerFields)
+        vl.updateFields()
+
+        if len(objList) == 0:
+            QgsMessageLog.logMessage("No results found!",
+                                     level=Qgis.Info)
+        else:
+
+            if out_path == None:
+                QgsMessageLog.logMessage("No data will be added to the map document.", level=Qgis.Info)
+            else:
+
+                for item in objList:
+                    entity_iri, entity_label, o, wkt_literal = item
+                    wkt = wkt_literal.replace("<http://www.opengis.net/def/crs/OGC/1.3/CRS84>", "")
+
+                    feat = QgsFeature()
+                    geom = QgsGeometry.fromWkt(wkt)
+
+                    feat.setGeometry(geom)
+                    feat.setAttributes(item[0:3])
+
+                    pr.addFeature(feat)
+                vl.updateExtents()
+
+                options = QgsVectorFileWriter.SaveVectorOptions()
+                options.layerName = layerName
+                context = QgsProject.instance().transformContext()
+                error = QgsVectorFileWriter.writeAsVectorFormatV2(vl, out_path, context, options)
+                self.iface.addVectorLayer(out_path, layerName, 'ogr')
 
         return error[0] == QgsVectorFileWriter.NoError
 

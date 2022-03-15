@@ -1395,14 +1395,14 @@ class kwg_sparqlquery:
 
             query = """
     
-            select distinct ?entity ?entityLabel ?o ?oLabel where {  
+            select distinct ?entity ?entityLabel ?o ?wkt where {  
                 ?entity a %s; 
                     rdfs:label ?entityLabel;
                     %s ?o1. 
                 ?o1 a %s; %s ?o2. 
                 ?o2 a %s; %s ?o3. 
                 ?o3 a %s; rdfs:label ?o.
-                optional {?o rdfs:label ?oLabel.}
+                optional {?entity geo:hasGeometry ?geo. ?geo geo:asWKT ?wkt}
                 values ?entity {%s}
             }
             """ % (selectedVals[0], selectedVals[1], selectedVals[2], selectedVals[3], selectedVals[4], selectedVals[5], selectedVals[6], entityPrefixed)
@@ -1418,7 +1418,7 @@ class kwg_sparqlquery:
                                                                   doInference=False,
                                                                   request_method="get")
             for obj in NDegreeObjectQueryResult["results"]["bindings"]:
-                NDegreeResultBindings.add(obj)
+                NDegreeResultBindings.append(obj)
             entityListCurrentCounter += 100
 
         return NDegreeResultBindings
