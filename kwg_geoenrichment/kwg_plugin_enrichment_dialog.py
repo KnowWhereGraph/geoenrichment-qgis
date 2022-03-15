@@ -204,6 +204,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.comboBox_O0.currentIndexChanged.connect(self.populateSecondDegreeSubject)
 
     def populateSecondDegreeSubject(self):
+        self.obj0 = self.comboBox_O0.currentText()
         self.comboBox_S1.clear()
         self.comboBox_S1.addItem("--- SELECT ---")
         self.spoDict[1] = {}
@@ -211,17 +212,35 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         for key in self.spoDict[0]["o"]:
             self.comboBox_S1.addItem(self.sparql_util.make_prefixed_iri(key))
             self.spoDict[1]["s"][key] = self.spoDict[0]["o"][key]
-        index = self.comboBox_O0.findText(self.comboBox_O0.currentText(), QtCore.Qt.MatchFixedString)
+        index = self.comboBox_O0.findText(self.obj0, QtCore.Qt.MatchFixedString)
         if index >= 0:
             self.comboBox_S1.setCurrentIndex(index)
-        # self.populateSecondDegreePredicate()
+        self.populateSecondDegreePredicate()
 
     def populateSecondDegreePredicate(self):
+        self.sub1 = self.comboBox_S1.currentText()
         self.comboBox_P1.clear()
         self.comboBox_P1.addItem("--- SELECT ---")
-        secondPropertyURLList = []
-        secondPropertyURLList.extend(self.getSecondDegreeProperty())
-        self.comboBox_P1.addItems(list(set(secondPropertyURLList)))
+        selectedVal = []
+        selectedVal.append(self.sub0)
+        selectedVal.append(self.pred0)
+        selectedVal.append(self.sub1)
+        # secondPropertyURLList.extend(self.getSecondDegreeProperty())
+        secondPropObj = self.sparql_query.getNDegreePredicate(sparql_endpoint=self.params["end_point"],
+                                                              entityList=self.EntityLi,
+                                                              selectedVals = selectedVal,
+                                                              degree=2)
+
+        # populate the spoDict
+        self.spoDict[1]["p"] = {}
+        for obj in secondPropObj:
+            if "label" in obj:
+                self.spoDict[1]["p"][obj["p"]["value"]] = self.sparql_util.make_prefixed_iri(obj["label"]["value"])
+            else:
+                self.spoDict[1]["p"][obj["p"]["value"]] = ""
+
+        for key in self.spoDict[1]["p"]:
+            self.comboBox_P1.addItem(self.sparql_util.make_prefixed_iri(key))
         self.comboBox_P1.currentIndexChanged.connect(self.populateSecondDegreeObject)
         return
 
@@ -230,25 +249,44 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.comboBox_O1.clear()
         self.comboBox_O1.addItem("--- SELECT ---")
         secondObjectList = []
-        if "objectTypeList" in self.secondPredicateObjectDict[self.pred1]:
-            secondObjectList.extend(self.secondPredicateObjectDict[self.pred1]["objectTypeList"])
-        else:
-            secondObjectList.extend(self.secondPredicateObjectDict[self.pred1]["objectList"])
-        self.comboBox_O1.addItems(list(set(secondObjectList)))
-        # QgsMessageLog.logMessage(str(secondObjectList), "kwg_geoenrichment", level=Qgis.Info)
-        # QgsMessageLog.logMessage(self.pred1, "kwg_geoenrichment", level=Qgis.Info)
+
+        selectedVal = []
+        selectedVal.append(self.sub0)
+        selectedVal.append(self.pred0)
+        selectedVal.append(self.sub1)
+        selectedVal.append(self.pred1)
+        # secondPropertyURLList.extend(self.getSecondDegreeProperty())
+        secondPropObj = self.sparql_query.getNDegreeObject(sparql_endpoint=self.params["end_point"],
+                                                              entityList=self.EntityLi,
+                                                              selectedVals=selectedVal,
+                                                              degree=2)
+
+        # populate the spoDict
+        self.spoDict[1]["o"] = {}
+        for obj in secondPropObj:
+            if "label" in obj:
+                self.spoDict[1]["o"][obj["type"]["value"]] = self.sparql_util.make_prefixed_iri(obj["label"]["value"])
+            else:
+                self.spoDict[1]["o"][obj["type"]["value"]] = ""
+
+        for key in self.spoDict[1]["o"]:
+            self.comboBox_O1.addItem(self.sparql_util.make_prefixed_iri(key))
+
         self.comboBox_O1.currentIndexChanged.connect(self.populateThirdDegreeSubject)
 
     def populateThirdDegreeSubject(self):
+        self.obj1 = self.comboBox_O1.currentText()
         self.comboBox_S2.clear()
         self.comboBox_S2.addItem("--- SELECT ---")
-        secondObjectList = []
-        secondObjectList.extend(self.secondPredicateObjectDict[self.pred1]["objectTypeList"])
-        self.comboBox_S2.addItems(list(set(secondObjectList)))
-        index = self.comboBox_O1.findText(self.comboBox_O1.currentText(), QtCore.Qt.MatchFixedString)
+        self.spoDict[2] = {}
+        self.spoDict[2]["s"] = {}
+        for key in self.spoDict[1]["o"]:
+            self.comboBox_S2.addItem(self.sparql_util.make_prefixed_iri(key))
+            self.spoDict[2]["s"][key] = self.spoDict[1]["o"][key]
+        index = self.comboBox_O1.findText(self.obj1, QtCore.Qt.MatchFixedString)
         if index >= 0:
             self.comboBox_S2.setCurrentIndex(index)
-        self.populateThirdDegreePredicate()
+        # self.populateSecondDegreePredicate()
 
     def populateThirdDegreePredicate(self):
         self.comboBox_P2.clear()
