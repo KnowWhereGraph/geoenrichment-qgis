@@ -21,7 +21,6 @@
  *                                                                         *
  ***************************************************************************/
 """
-import json
 import logging
 import os.path
 from configparser import ConfigParser
@@ -31,7 +30,7 @@ from qgis.PyQt.QtWidgets import QAction, QInputDialog
 from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
     QgsCoordinateTransform, QgsCoordinateTransformContext, QgsMapLayer, \
     QgsFeatureRequest, QgsVectorLayer, QgsLayerTreeGroup, QgsRenderContext, \
-    QgsCoordinateReferenceSystem, QgsWkbTypes, QgsMessageLog, Qgis, QgsFields, QgsField, QgsVectorFileWriter
+    QgsCoordinateReferenceSystem, QgsMessageLog, Qgis, QgsFields, QgsField, QgsVectorFileWriter
 
 # Import QDraw settings
 from .drawtools import DrawPolygon, \
@@ -117,11 +116,12 @@ class kwg_geoenrichment:
         self.eventPlaceTypeDict = dict()
         self.kwg_endpoint_dict = _SPARQL_ENDPOINT_DICT
 
+        self.contentCounter = 0
         self.mergeRuleDict = {
-            "1 - Get the average of all values (numeric)" : "avg",
-            "2 - Concate values together with a '|'" : "concat",
-            "3 - Get the number of values found" : "count",
-            "4 - Get the first value found" : "first",
+            "1 - Get the average of all values (numeric)": "avg",
+            "2 - Concate values together with a '|'": "concat",
+            "3 - Get the number of values found": "count",
+            "4 - Get the first value found": "first",
             "5 - Get the highest value (numeric)": "high",
             "6 - Get the lowest value (numeric)": "low",
             "7 - Get the standard deviation of all values (numeric)": "stdev",
@@ -256,21 +256,8 @@ class kwg_geoenrichment:
         if self.first_start == True:
             self.first_start = False
         self.dlg = kwg_pluginDialog()
-        # self.dlg.setStyleSheet("""
-        # QPushButton{
-        #         background-color: #216FB3;
-        #         color: #ffffff;
-        #         height: 70px;
-        #         width: 255px;
-        #     }
-        #
-        # MainWindow {
-        #     background-image: url("/Users/nenuji/Documents/Github/kwg-qgis-geoenrichment/kwg_geoenrichment/resources/background-landing.png");
-        #     background-repeat: no-repeat;
-        #     background-position: center;
-        # }
-        # """)
-        self.dlgEnrichment = kwg_pluginEnrichmentDialog()
+
+        self.enrichmentObjBuffer = []
 
         # show the dialog
         self.dlg.show()
@@ -285,11 +272,7 @@ class kwg_geoenrichment:
 
         # Run the dialog event loop
         result = self.dlg.exec_()
-        # See if OK was pressed
-        if result:
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
-            QgsMessageLog.logMessage("Run button clicked!", "kwg_geoenrichment", level=Qgis.Info)
+        return
 
     def drawPolygon(self, sender=None):
         if self.tool:
@@ -527,22 +510,6 @@ then select an entity on the map.'
         self.resetSB()
         self.bGeom = None
 
-    def populateEventPlaceTypes(self):
-        sparqlResultJSON = self.sparqlQuery.EventTypeSPARQLQuery()
-        QgsMessageLog.logMessage(json.dumps(sparqlResultJSON), "kwg_geoenrichment",
-                                 level=Qgis.Info)
-        for obj in sparqlResultJSON:
-            if ((obj["entityType"] is not None and obj["entityType"]["type"] is not None and obj["entityType"][
-                "type"] == "uri") and
-                    (obj["entityTypeLabel"] is not None and obj["entityTypeLabel"]["type"] is not None and
-                     obj["entityTypeLabel"]["type"] == "literal")):
-                self.eventPlaceTypeDict[obj["entityTypeLabel"]["value"]] = obj["entityType"]["value"]
-
-        for key in self.eventPlaceTypeDict:
-            self.dlg.comboBox.addItem(key)
-
-        return
-
     def getInputs(self):
         params = {}
         endPointKey, endPointVal = self.dlg.comboBox_endPoint.currentText().split(" - ")
@@ -572,91 +539,46 @@ then select an entity on the map.'
         return params
 
     def addContent(self):
+
         params = self.getInputs()
         params["ifaceObj"] = self.iface
         contentItems = {}
 
-        self.dlgEnrichment.show()
-        self.dlgEnrichment.setParams(params)
-        self.dlgEnrichment.execute()
-        self.dlgEnrichment.pushButton_save.clicked.connect(self.saveContent)
+        self.enrichmentObjBuffer.append(kwg_pluginEnrichmentDialog())
 
-        return contentItems
+        self.enrichmentObjBuffer[self.contentCounter].show()
+        self.enrichmentObjBuffer[self.contentCounter].setParams(params)
+        self.enrichmentObjBuffer[self.contentCounter].execute()
+        self.enrichmentObjBuffer[self.contentCounter].pushButton_save.clicked.connect(self.saveContent)
+
+        self.contentCounter += 1
+
+        return
 
     def saveContent(self):
-        S0 = self.dlgEnrichment.tableWidget.cellWidget(0, 0).currentText()
-        S1 = self.dlgEnrichment.tableWidget.cellWidget(1, 0).currentText()
-        S2 = self.dlgEnrichment.tableWidget.cellWidget(2, 0).currentText()
-        P0 = self.dlgEnrichment.tableWidget.cellWidget(0, 1).currentText()
-        P1 = self.dlgEnrichment.tableWidget.cellWidget(1, 1).currentText()
-        P2 = self.dlgEnrichment.tableWidget.cellWidget(2, 1).currentText()
-        O0 = self.dlgEnrichment.tableWidget.cellWidget(0, 2).currentText()
-        O1 = self.dlgEnrichment.tableWidget.cellWidget(1, 2).currentText()
-        O2 = self.dlgEnrichment.tableWidget.cellWidget(2, 2).currentText()
+        i = self.enrichmentObjBuffer[self.contentCounter - 1].degreeCount
+        selectedVal = []
+        for it in range(i):
+            selectedVal.append(self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(it, 0).currentText())
+            selectedVal.append(self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(it, 1).currentText())
+        selectedVal.append(self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(i - 1, 2).currentText())
 
-        stringVal = """
-        %s - %s - %s
-        """ % (S0, P0, O0)
+        stringVal = " - ".join(selectedVal)
 
-        if S1 or P1 or O1 is not None:
-            stringVal += """
-            %s - %s - %s    
-            """ % (S1, P1, O1)
-
-        if S2 or P2 or O2 is not None:
-            stringVal += """
-                %s - %s - %s    
-            """ % (S2, P2, O2)
-
-        self.dlgEnrichment.close()
-
+        self.enrichmentObjBuffer[self.contentCounter - 1].close()
         self.dlg.listWidget.addItem(stringVal)
 
     def handleRun(self):
-        results = self.dlgEnrichment.getResults()
+        for i in range(self.contentCounter):
+            results = self.enrichmentObjBuffer[i].getResults()
 
-        objName = self.dlg.lineEdit_objName.text()
-        layerName = self.dlg.lineEdit_layerName.text()
-        mergeRule = self.dlg.comboBox_mergeRule.currentText()
-        mergeRuleName = self.mergeRuleDict[mergeRule]
+            objName = self.dlg.lineEdit_objName.text()
+            layerName = self.dlg.lineEdit_layerName.text()
+            mergeRule = self.dlg.comboBox_mergeRule.currentText()
+            mergeRuleName = self.mergeRuleDict[mergeRule]
 
-        self.createGeoPackage(results, objName, layerName, mergeRuleName)
-
+            self.createGeoPackage(results, objName, layerName, mergeRuleName)
         self.dlg.close()
-
-    def updateTable(self, jsonBindingObject, filterPred=None, currentFieldName="", keyPropertyFieldName="place_iri",
-                    featureClassName="geo_results", gpkgLocation="/var/local/QGIS/kwg_results.gpkg"):
-
-        gpkg_places_layer = gpkgLocation + "|layername=%s" % (featureClassName)
-
-        vlayer = QgsVectorLayer(gpkg_places_layer, "geo_results", "ogr")
-
-        if not vlayer.isValid():
-            QgsMessageLog.logMessage("Error reading the table",
-                                     "kwg_geoenrichment", level=Qgis.Warning)
-            return 0
-
-        fieldType = None
-        # arcpy.AddMessage("fieldType: {0}".format(fieldType))
-        pr = vlayer.dataProvider()
-        pr.addAttributes([QgsField(currentFieldName, QVariant.String)])
-        vlayer.updateFields()
-
-        selected_feature = vlayer.getFeatures()
-
-        vlayer.startEditing()
-
-        for feature in selected_feature:
-            currentKeyPropertyValue = feature["place_iri"]
-            for obj in jsonBindingObject:
-                if currentKeyPropertyValue == obj["place"]["value"] and obj["place"]["type"] == "uri":
-                    if obj["p3"]["value"] == filterPred and obj["o2"]["value"].startswith(
-                            "http://stko-kwg.geog.ucsb.edu/lod/resource/earthquakeObservation.mag."):
-                        feature[currentFieldName] = obj["o3"]["value"]
-            vlayer.updateFeature(feature)
-        vlayer.commitChanges()
-
-        return 1
 
     def performWKTConversion(self):
         layers = QgsProject.instance().mapLayers().values()
@@ -687,178 +609,15 @@ then select an entity on the map.'
 
         return wkt_rep
 
-    def createShapeFileFromSPARQLResult(self, GeoQueryResult, out_path="/var/local/QGIS/kwg_results.shp",
-                                        inPlaceType="", selectedURL="",
-                                        isDirectInstance=False):
-        '''
-        GeoQueryResult: a sparql query result json obj serialized as a list of dict()
-                    SPARQL query like this:
-                    select distinct ?place ?placeLabel ?placeFlatType ?wkt
-                    where
-                    {...}
-        out_path: the output path for the create geo feature class
-        inPlaceType: the label of user spercified type IRI
-        selectedURL: the user spercified type IRI
-        isDirectInstance: True: use placeFlatType as the type of geo-entity
-                          False: use selectedURL as the type of geo-entity
-        '''
-        # a set of unique WKT for each found places
-        placeIRISet = set()
-        placeList = []
-        geom_type = None
+    def transformSourceCRStoDestinationCRS(self, geom, src=3857, dest=4326):
+        src_crs = QgsCoordinateReferenceSystem(src)
+        dest_crs = QgsCoordinateReferenceSystem(dest)
+        geom_converter = QgsCoordinateTransform(src_crs, dest_crs, QgsProject.instance())
+        geom_reproj = geom_converter.transform(geom)
+        return geom_reproj
 
-        layerFields = QgsFields()
-        layerFields.append(QgsField('place_iri', QVariant.String))
-        layerFields.append(QgsField('label', QVariant.String))
-        layerFields.append(QgsField('type_iri', QVariant.String))
-
-        writer = QgsVectorFileWriter(out_path, 'UTF-8', layerFields, QgsWkbTypes.Polygon,
-                                     QgsCoordinateReferenceSystem('EPSG:4326'), 'ESRI Shapefile')
-
-        for idx, item in enumerate(GeoQueryResult):
-            wkt_literal = item["wkt"]["value"]
-            # for now, make sure all geom has the same geometry type
-            if idx == 0:
-                geom_type = UTIL.get_geometry_type_from_wkt(wkt_literal)
-            else:
-                assert geom_type == UTIL.get_geometry_type_from_wkt(wkt_literal)
-
-            if isDirectInstance == False:
-                placeType = item["placeFlatType"]["value"]
-            else:
-                placeType = selectedURL
-            print("{}\t{}\t{}".format(
-                item["place"]["value"], item["placeLabel"]["value"], placeType))
-            if len(placeIRISet) == 0 or item["place"]["value"] not in placeIRISet:
-                placeIRISet.add(item["place"]["value"])
-                placeList.append(
-                    [item["place"]["value"], item["placeLabel"]["value"], placeType, wkt_literal])
-
-        if geom_type is None:
-            raise Exception("geometry type not find")
-
-        if len(placeList) == 0:
-            QgsMessageLog.logMessage("No {0} within the provided polygon can be finded!".format(inPlaceType),
-                                     level=Qgis.Info)
-        else:
-
-            if out_path == None:
-                QgsMessageLog.logMessage("No data will be added to the map document.", level=Qgis.Info)
-            else:
-
-                # labelFieldLength = Json2Field.fieldLengthDecide(GeoQueryResult, "placeLabel")
-                #
-                # urlFieldLength = Json2Field.fieldLengthDecide(GeoQueryResult, "place")
-                #
-                # if isDirectInstance == False:
-                #     classFieldLength = Json2Field.fieldLengthDecide(GeoQueryResult, "placeFlatType")
-                # else:
-                #     classFieldLength = len(selectedURL) + 50
-
-                for item in placeList:
-                    place_iri, label, type_iri, wkt_literal = item
-                    wkt = wkt_literal.replace("<http://www.opengis.net/def/crs/OGC/1.3/CRS84>", "")
-
-                    feat = QgsFeature()
-                    feat.setGeometry(QgsGeometry.fromWkt(wkt))
-                    feat.setAttributes(item[0:3])
-
-                    writer.addFeature(feat)
-
-                self.iface.addVectorLayer(out_path, 'kwg_results', 'ogr')
-
-        del (writer)
-
-        return
-
-    def createGeoPackageFromSPARQLResult(self, GeoQueryResult, out_path="/var/local/QGIS/kwg_results.gpkg",
-                                         inPlaceType="", selectedURL="",
-                                         isDirectInstance=False):
-        '''
-        GeoQueryResult: a sparql query result json obj serialized as a list of dict()
-                    SPARQL query like this:
-                    select distinct ?place ?placeLabel ?placeFlatType ?wkt
-                    where
-                    {...}
-        out_path: the output path for the create geo feature class
-        inPlaceType: the label of user spercified type IRI
-        selectedURL: the user spercified type IRI
-        isDirectInstance: True: use placeFlatType as the type of geo-entity
-                          False: use selectedURL as the type of geo-entity
-        '''
-        # a set of unique WKT for each found places
-        placeIRISet = set()
-        placeList = []
-        geom_type = None
-
-        util_obj = UTIL()
-
-        layerFields = QgsFields()
-        layerFields.append(QgsField('place_iri', QVariant.String))
-        layerFields.append(QgsField('label', QVariant.String))
-        layerFields.append(QgsField('type_iri', QVariant.String))
-
-        for idx, item in enumerate(GeoQueryResult):
-            wkt_literal = item["wkt"]["value"]
-            # for now, make sure all geom has the same geometry type
-            if idx == 0:
-                geom_type = util_obj.get_geometry_type_from_wkt(wkt_literal)
-            else:
-                assert geom_type == util_obj.get_geometry_type_from_wkt(wkt_literal)
-
-            if isDirectInstance == False:
-                placeType = item["placeFlatType"]["value"]
-            else:
-                placeType = selectedURL
-            print("{}\t{}\t{}".format(
-                item["place"]["value"], item["placeLabel"]["value"], placeType))
-            if len(placeIRISet) == 0 or item["place"]["value"] not in placeIRISet:
-                placeIRISet.add(item["place"]["value"])
-                placeList.append(
-                    [item["place"]["value"], item["placeLabel"]["value"], placeType, wkt_literal])
-
-        if geom_type is None:
-            raise Exception("geometry type not find")
-
-        vl = QgsVectorLayer(geom_type + "?crs=epsg:4326", "geo_results", "memory")
-        pr = vl.dataProvider()
-        pr.addAttributes(layerFields)
-        vl.updateFields()
-
-        if len(placeList) == 0:
-            QgsMessageLog.logMessage("No {0} within the provided polygon can be finded!".format(inPlaceType),
-                                     level=Qgis.Info)
-        else:
-
-            if out_path == None:
-                QgsMessageLog.logMessage("No data will be added to the map document.", level=Qgis.Info)
-            else:
-
-                for item in placeList:
-                    place_iri, label, type_iri, wkt_literal = item
-                    wkt = wkt_literal.replace("<http://www.opengis.net/def/crs/OGC/1.3/CRS84>", "")
-
-                    feat = QgsFeature()
-                    geom = QgsGeometry.fromWkt(wkt)
-
-                    # TODO: handle the CRS
-                    # feat.setGeometry(self.transformSourceCRStoDestinationCRS(geom, src=4326, dest=3857))
-
-                    feat.setGeometry(geom)
-                    feat.setAttributes(item[0:3])
-
-                    pr.addFeature(feat)
-                vl.updateExtents()
-
-                options = QgsVectorFileWriter.SaveVectorOptions()
-                options.layerName = 'geo_results'
-                context = QgsProject.instance().transformContext()
-                error = QgsVectorFileWriter.writeAsVectorFormatV2(vl, out_path, context, options)
-                self.iface.addVectorLayer(out_path, 'geo_results', 'ogr')
-
-        return error[0] == QgsVectorFileWriter.NoError
-
-    def createGeoPackage(self, GeoQueryResult, objName = "0", layerName="geo_results", mergeRuleName="first", out_path="/var/local/QGIS/kwg_results.gpkg"):
+    def createGeoPackage(self, GeoQueryResult, objName="0", layerName="geo_results", mergeRuleName="first",
+                         out_path="/var/local/QGIS/kwg_results.gpkg"):
         '''
         GeoQueryResult: a sparql query result json obj serialized as a list of dict()
                     SPARQL query like this:
@@ -894,9 +653,6 @@ then select an entity on the map.'
                 objList.append(
                     [item["entity"]["value"], item["entityLabel"]["value"], item['o']["value"], wkt_literal])
 
-        if geom_type is None:
-            raise Exception("geometry type not find")
-
         vl = QgsVectorLayer(geom_type + "?crs=epsg:4326", "geo_results", "memory")
         pr = vl.dataProvider()
         pr.addAttributes(layerFields)
@@ -931,10 +687,3 @@ then select an entity on the map.'
                 self.iface.addVectorLayer(out_path, layerName, 'ogr')
 
         return error[0] == QgsVectorFileWriter.NoError
-
-    def transformSourceCRStoDestinationCRS(self, geom, src=3857, dest=4326):
-        src_crs = QgsCoordinateReferenceSystem(src)
-        dest_crs = QgsCoordinateReferenceSystem(dest)
-        geom_converter = QgsCoordinateTransform(src_crs, dest_crs, QgsProject.instance())
-        geom_reproj = geom_converter.transform(geom)
-        return geom_reproj

@@ -384,21 +384,30 @@ class kwg_sparqlquery:
             for entity in entityList[entityListCurrentCounter:entityListCurrentCounter + 100]:
                 entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
 
-            query = """
-    
-            select distinct ?entity ?entityLabel ?o ?wkt where {  
-                ?entity a %s; 
-                    rdfs:label ?entityLabel;
-                    %s ?o1. 
-                ?o1 a %s; %s ?o2. 
-                ?o2 a %s; %s ?o3. 
-                ?o3 a %s; rdfs:label ?o.
-                optional {?entity geo:hasGeometry ?geo. ?geo geo:asWKT ?wkt}
-                values ?entity {%s}
-            }
-            """ % (selectedVals[0], selectedVals[1], selectedVals[2], selectedVals[3], selectedVals[4], selectedVals[5], selectedVals[6], entityPrefixed)
+            # content results query
+            sub_query = """
+                    select distinct ?entity ?entityLabel ?o ?wkt where {  
+                        ?entity a %s; 
+                            rdfs:label ?entityLabel;
+                            %s ?o1.
+                    """ % (
+                selectedVals[0], selectedVals[1])
 
-            query = queryPrefix + query
+            start_counter = 1
+            for i in range(1, degree + 1):
+                start_counter += 1
+                sub_query += "\t\t\t?o" + str(i) + " a %s; " % (selectedVals[start_counter])
+                if i == degree:
+                    sub_query += "rdfs:label ?o.\n"
+                else:
+                    start_counter += 1
+                    sub_query += selectedVals[start_counter] + " ?o" + str(i + 1) + ".\n"
+
+            sub_query += "\t\t\t optional {?entity geo:hasGeometry ?geo. ?geo geo:asWKT ?wkt} values ?entity {%s}}" % (
+                entityPrefixed)
+
+            query = queryPrefix + sub_query
+            self.logger.info("programmed: " + query)
 
             QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
 
