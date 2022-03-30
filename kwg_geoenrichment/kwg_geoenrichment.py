@@ -523,31 +523,6 @@ then select an entity on the map.'
             self.iface.mapCanvas().refresh()
             QgsMessageLog.logMessage("Your polygon has been saved to a layer", "kwg_geoenrichment", level=Qgis.Info)
 
-            # # self.dlg = kwg_geoenrichmentDialog()
-            #
-            # self.populateEventPlaceTypes()
-            #
-            # # show the dialog
-            # self.dlg.show()
-            # # Run the dialog event loop
-            # result = self.dlg.exec_()
-            # # See if OK was pressed
-            # if result:
-            #     params = self.getInputs()
-            #
-            #     QgsMessageLog.logMessage("Contacting the server with the geoSPARQL request", "kwg_geoenrichment",
-            #                              level=Qgis.Info)
-            #
-            #     wkt_literal = self.performWKTConversion()
-            #     self.logger.debug(wkt_literal)
-            #     geoSPARQLResponse = self.sparqlQuery.TypeAndGeoSPARQLQuery(query_geo_wkt=wkt_literal, selectedURL=params["place_type"], geosparql_func=params["geosparql_func"])
-            #
-            #     # self.logger.debug(json.dumps(geoSPARQLResponse))
-            #     QgsMessageLog.logMessage("GeoJSON response received from the server", "kwg_geoenrichment",
-            #                              level=Qgis.Info)
-            #     self.handleGeoJSONObject(geoResult=geoSPARQLResponse)
-            #     pass
-
         self.tool.reset()
         self.resetSB()
         self.bGeom = None
@@ -609,15 +584,15 @@ then select an entity on the map.'
         return contentItems
 
     def saveContent(self):
-        S0 = self.dlgEnrichment.comboBox_S0.currentText()
-        S1 = self.dlgEnrichment.comboBox_S1.currentText()
-        S2 = self.dlgEnrichment.comboBox_S2.currentText()
-        P0 = self.dlgEnrichment.comboBox_P0.currentText()
-        P1 = self.dlgEnrichment.comboBox_P1.currentText()
-        P2 = self.dlgEnrichment.comboBox_P2.currentText()
-        O0 = self.dlgEnrichment.comboBox_O0.currentText()
-        O1 = self.dlgEnrichment.comboBox_O1.currentText()
-        O2 = self.dlgEnrichment.comboBox_O2.currentText()
+        S0 = self.dlgEnrichment.tableWidget.cellWidget(0, 0).currentText()
+        S1 = self.dlgEnrichment.tableWidget.cellWidget(1, 0).currentText()
+        S2 = self.dlgEnrichment.tableWidget.cellWidget(2, 0).currentText()
+        P0 = self.dlgEnrichment.tableWidget.cellWidget(0, 1).currentText()
+        P1 = self.dlgEnrichment.tableWidget.cellWidget(1, 1).currentText()
+        P2 = self.dlgEnrichment.tableWidget.cellWidget(2, 1).currentText()
+        O0 = self.dlgEnrichment.tableWidget.cellWidget(0, 2).currentText()
+        O1 = self.dlgEnrichment.tableWidget.cellWidget(1, 2).currentText()
+        O2 = self.dlgEnrichment.tableWidget.cellWidget(2, 2).currentText()
 
         stringVal = """
         %s - %s - %s
@@ -638,27 +613,6 @@ then select an entity on the map.'
         self.dlg.listWidget.addItem(stringVal)
 
     def handleRun(self):
-        # QgsMessageLog.logMessage("Run clicked!", "kwg_geoenrichment",level=Qgis.Info)
-
-        # results = self.dlgEnrichment.get_results()
-
-        # thirdDegreeJSONBinding = results["thirdPropertyURLListJsonBindingObject"]
-        # # QgsMessageLog.logMessage(json.dumps(thirdDegreeJSONBinding),"kwg_geoenrichment",level=Qgis.Info)
-        #
-        # filterPred = self.sparqlUtil.remake_prefixed_iri(self.dlgEnrichment.comboBox_P2.currentText())
-        #
-        # eventType = (self.dlgEnrichment.comboBox_S0.currentText().split(":"))[1]
-        # predType = (self.dlgEnrichment.comboBox_P2.currentText().split(":"))[1]
-        # results = self.updateTable(jsonBindingObject=thirdDegreeJSONBinding, filterPred=filterPred,
-        #                            currentFieldName=eventType + "_" + predType + "_mag")
-        # # QgsMessageLog.logMessage(filterPred, "kwg_geoenrichment", level=Qgis.Info)
-        # if results:
-        #     self.iface.mapCanvas().refresh()
-        #     QgsMessageLog.logMessage("property saved successfully!",
-        #                              "kwg_geoenrichment", level=Qgis.Info)
-        #     self.dlg.close()
-
-
         results = self.dlgEnrichment.getResults()
 
         objName = self.dlg.lineEdit_objName.text()
@@ -669,9 +623,6 @@ then select an entity on the map.'
         self.createGeoPackage(results, objName, layerName, mergeRuleName)
 
         self.dlg.close()
-
-        QgsMessageLog.logMessage("Run clicked successfully!",
-                                 "kwg_geoenrichment", level=Qgis.Info)
 
     def updateTable(self, jsonBindingObject, filterPred=None, currentFieldName="", keyPropertyFieldName="place_iri",
                     featureClassName="geo_results", gpkgLocation="/var/local/QGIS/kwg_results.gpkg"):

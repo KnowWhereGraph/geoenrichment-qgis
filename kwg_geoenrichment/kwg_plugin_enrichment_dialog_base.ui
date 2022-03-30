@@ -39,75 +39,6 @@
     <string>Learn More</string>
    </property>
   </widget>
-  <widget class="QComboBox" name="comboBox_S0">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>60</y>
-     <width>141</width>
-     <height>32</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="comboBox_P0">
-   <property name="geometry">
-    <rect>
-     <x>240</x>
-     <y>60</y>
-     <width>141</width>
-     <height>32</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="comboBox_O0">
-   <property name="geometry">
-    <rect>
-     <x>460</x>
-     <y>60</y>
-     <width>141</width>
-     <height>32</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_S0">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>40</y>
-     <width>21</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>S</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_P0">
-   <property name="geometry">
-    <rect>
-     <x>250</x>
-     <y>40</y>
-     <width>21</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>P</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label_O0">
-   <property name="geometry">
-    <rect>
-     <x>470</x>
-     <y>40</y>
-     <width>21</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>O</string>
-   </property>
-  </widget>
   <widget class="QPushButton" name="pushButton_save">
    <property name="geometry">
     <rect>
@@ -121,63 +52,13 @@
     <string>Save</string>
    </property>
   </widget>
-  <widget class="QComboBox" name="comboBox_S1">
+  <widget class="QTableWidget" name="tableWidget">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>100</y>
-     <width>141</width>
-     <height>32</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="comboBox_P1">
-   <property name="geometry">
-    <rect>
-     <x>240</x>
-     <y>100</y>
-     <width>141</width>
-     <height>32</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="comboBox_O1">
-   <property name="geometry">
-    <rect>
-     <x>460</x>
-     <y>100</y>
-     <width>141</width>
-     <height>32</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="comboBox_S2">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>140</y>
-     <width>141</width>
-     <height>32</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="comboBox_P2">
-   <property name="geometry">
-    <rect>
-     <x>240</x>
-     <y>140</y>
-     <width>141</width>
-     <height>32</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="comboBox_O2">
-   <property name="geometry">
-    <rect>
-     <x>460</x>
-     <y>140</y>
-     <width>141</width>
-     <height>32</height>
+     <x>30</x>
+     <y>50</y>
+     <width>561</width>
+     <height>151</height>
     </rect>
    </property>
   </widget>
