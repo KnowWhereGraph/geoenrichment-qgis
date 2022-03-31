@@ -26,7 +26,7 @@ import os.path
 from configparser import ConfigParser
 from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, QVariant
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QInputDialog
+from qgis.PyQt.QtWidgets import QAction, QInputDialog, QLineEdit, QComboBox, QHeaderView
 from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
     QgsCoordinateTransform, QgsCoordinateTransformContext, QgsMapLayer, \
     QgsFeatureRequest, QgsVectorLayer, QgsLayerTreeGroup, QgsRenderContext, \
@@ -48,7 +48,8 @@ from .qdrawsettings import QdrawSettings
 _SPARQL_ENDPOINT_DICT = {
     "prod": {
         "KWG-V2": "https://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V2",
-        "KWG-V3": "https://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V3"
+        "KWG-V3": "https://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V3",
+        "KWG-Staging": "https://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-Staging",
     },
     "test": {
         "plume_soil_wildfire": "http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire",
@@ -269,6 +270,9 @@ class kwg_geoenrichment:
         self.dlg.pushButton_content.clicked.connect(self.addContent)
 
         self.dlg.pushButton_run.clicked.connect(self.handleRun)
+
+        # show the table
+        self.setUPMergeTable()
 
         # Run the dialog event loop
         result = self.dlg.exec_()
@@ -514,7 +518,6 @@ then select an entity on the map.'
         params = {}
         endPointKey, endPointVal = self.dlg.comboBox_endPoint.currentText().split(" - ")
         params["end_point"] = self.kwg_endpoint_dict[endPointVal[1:-1]][endPointKey]
-        # params["place_type"] = self.eventPlaceTypeDict[self.dlg.comboBox.currentText()]  if (self.dlg.comboBox.currentText() in self.eventPlaceTypeDict) else self.dlg.comboBox.currentText()
         params["relation_type"] = self.dlg.comboBox_spatialRelationshipFilter.currentText()
 
         # get the function
@@ -537,6 +540,14 @@ then select an entity on the map.'
         # QgsMessageLog.logMessage(json.dumps(params), "kwg_geoenrichment", level=Qgis.Info)
 
         return params
+
+    def setUPMergeTable(self):
+        self.dlg.tableWidget.setColumnCount(2)
+        self.dlg.tableWidget.verticalHeader().setVisible(False)
+        self.dlg.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+        tableHeader = ['Name', "Merge Rule"]
+        self.dlg.tableWidget.setHorizontalHeaderLabels(tableHeader)
 
     def addContent(self):
 
@@ -567,14 +578,36 @@ then select an entity on the map.'
 
         self.enrichmentObjBuffer[self.contentCounter - 1].close()
         self.dlg.listWidget.addItem(stringVal)
+        self.updatePropMergeItem(self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(i - 1, 2).currentText())
+        return
+
+    def updatePropMergeItem(self, objName):
+        self.dlg.tableWidget.insertRow(self.contentCounter - 1)
+        objLine = QLineEdit()
+        objLine.setText(objName)
+        comboBox_M = QComboBox()
+        for txt in [
+                "1 - Get the average of all values (numeric)",
+                "2 - Concate values together with a '|'",
+                "3 - Get the number of values found",
+                "4 - Get the first value found",
+                "5 - Get the highest value (numeric)",
+                "6 - Get the lowest value (numeric)",
+                "7 - Get the standard deviation of all values (numeric)",
+                "8 - Get the total of all values (numeric)"
+            ]:
+            comboBox_M.addItem(txt)
+
+        self.dlg.tableWidget.setCellWidget(self.contentCounter - 1, 0, objLine)
+        self.dlg.tableWidget.setCellWidget(self.contentCounter - 1, 1, comboBox_M)
 
     def handleRun(self):
         for i in range(self.contentCounter):
             results = self.enrichmentObjBuffer[i].getResults()
 
-            objName = self.dlg.lineEdit_objName.text()
+            objName = self.dlg.tableWidget.cellWidget(self.contentCounter - 1, 0).text()
             layerName = self.dlg.lineEdit_layerName.text()
-            mergeRule = self.dlg.comboBox_mergeRule.currentText()
+            mergeRule = self.dlg.tableWidget.cellWidget(self.contentCounter - 1, 1).currentText()
             mergeRuleName = self.mergeRuleDict[mergeRule]
 
             self.createGeoPackage(results, objName, layerName, mergeRuleName)
@@ -616,7 +649,7 @@ then select an entity on the map.'
         geom_reproj = geom_converter.transform(geom)
         return geom_reproj
 
-    def createGeoPackage(self, GeoQueryResult, objName="0", layerName="geo_results", mergeRuleName="first",
+    def createGeoPackage(self, GeoQueryResult, objName="O", layerName="geo_results", mergeRuleName="first",
                          out_path="/var/local/QGIS/kwg_results.gpkg"):
         '''
         GeoQueryResult: a sparql query result json obj serialized as a list of dict()
