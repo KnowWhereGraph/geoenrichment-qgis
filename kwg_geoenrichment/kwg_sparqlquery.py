@@ -384,27 +384,56 @@ class kwg_sparqlquery:
             for entity in entityList[entityListCurrentCounter:entityListCurrentCounter + 100]:
                 entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
 
-            # content results query
-            sub_query = """
-                    select distinct ?entity ?entityLabel ?o ?wkt where {  
-                        ?entity a %s; 
-                            rdfs:label ?entityLabel;
-                            %s ?o1.
-                    """ % (
-                selectedVals[0], selectedVals[1])
+            finalObject = "?o" + str(degree)
 
-            start_counter = 1
-            for i in range(1, degree + 1):
-                start_counter += 1
-                sub_query += "\t\t\t?o" + str(i) + " a %s; " % (selectedVals[start_counter])
-                if i == degree:
-                    sub_query += "rdfs:label ?o.\n"
+            # content 2
+            sub_query = "select distinct ?entity ?entityLabel ?o %s ?wkt where { ?entity rdfs:label ?entityLabel. " % (finalObject)
+            for i in range (0, len(selectedVals)):
+                if i % 2 == 0:
+                    if i == 0:
+                        entityName = "?entity";
+                    else:
+                        entityName =  "?o" if (i + 1 == len(selectedVals)) else "?o" + str(i//2)
+                    className = selectedVals[i]
+                    sub_query += entityName + " a " + className + ". "
                 else:
-                    start_counter += 1
-                    sub_query += selectedVals[start_counter] + " ?o" + str(i + 1) + ".\n"
-
+                    if i == 1:
+                        entityName = "?entity"
+                        nextEntityName = "?o" if (i + 1 == len(selectedVals)) else "?o1"
+                    else:
+                        entityName = "?o" + str(i//2)
+                        nextEntityName = "?o" if (i + 1 == len(selectedVals)) else "?o" + str (i//2 + 1)
+                    propName = selectedVals[i]
+                    sub_query += entityName + " " + propName + " " + nextEntityName + ". "
             sub_query += "\t\t\t optional {?entity geo:hasGeometry ?geo. ?geo geo:asWKT ?wkt} values ?entity {%s}}" % (
                 entityPrefixed)
+
+                        # # content results query
+            # sub_query = """
+            #         select distinct ?entity ?entityLabel ?o ?wkt where {
+            #             ?entity a %s;
+            #                 rdfs:label ?entityLabel;
+            #         """ % (
+            #     selectedVals[0])
+            #
+            # if selectedVals[2] is not None and selectedVals[2] != "--- SELECT ---" and selectedVals[2] != "LITERAL":
+            #     sub_query += "%s ?o1." % (selectedVals[1])
+            # else:
+            #     sub_query += "%s ?o." % (selectedVals[1])
+            #
+            # start_counter = 1
+            # for i in range(1, degree + 1):
+            #     start_counter += 1
+            #     if selectedVals[start_counter] is not None and selectedVals[start_counter] != "--- SELECT ---" and selectedVals[start_counter] != "LITERAL":
+            #         sub_query += "\t\t\t?o" + str(i) + " a %s; " % (selectedVals[start_counter])
+            #         if i == degree:
+            #             sub_query += "rdfs:label ?o.\n"
+            #         else:
+            #             start_counter += 1
+            #             sub_query += selectedVals[start_counter] + " ?o" + str(i + 1) + ".\n"
+            #
+            # sub_query += "\t\t\t optional {?entity geo:hasGeometry ?geo. ?geo geo:asWKT ?wkt} values ?entity {%s}}" % (
+            #     entityPrefixed)
 
             query = queryPrefix + sub_query
             self.logger.info("programmed: " + query)

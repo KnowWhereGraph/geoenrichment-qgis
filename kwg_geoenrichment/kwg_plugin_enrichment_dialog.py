@@ -238,6 +238,9 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
                                                                    firstDegreeClass=self.sub0,
                                                                    firstDegreePredicate=self.pred0)
 
+        self.logger.info("firstDegreeObject : ")
+        self.logger.info(json.dumps(firstDegreeObject))
+
         # populate the spoDict
         self.spoDict[0]["o"] = {}
         for obj in firstDegreeObject:
@@ -248,6 +251,9 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
 
         for key in self.spoDict[0]["o"]:
             self.tableWidget.cellWidget(0, 2).addItem(self.sparql_util.make_prefixed_iri(key))
+
+        if not self.spoDict[0]["o"]:
+            self.tableWidget.cellWidget(0, 2).addItem("LITERAL")
 
     def populateNDegreePredicate(self):
         i = self.degreeCount
@@ -303,14 +309,29 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         for key in self.spoDict[i - 1]["o"]:
             self.tableWidget.cellWidget(i - 1, 2).addItem(self.sparql_util.make_prefixed_iri(key))
 
+        if not self.spoDict[i - 1]["o"]:
+            self.tableWidget.cellWidget(i - 1, 2).addItem("LITERAL")
+
+    def getDegree(self):
+        return self.degreeCount
+
     def getResults(self):
 
         i = self.degreeCount
         selectedVal = []
         for it in range(i):
-            selectedVal.append(self.tableWidget.cellWidget(it, 0).currentText())
-            selectedVal.append(self.tableWidget.cellWidget(it, 1).currentText())
-        selectedVal.append(self.tableWidget.cellWidget(i-1, 2).currentText())
+            subject = self.tableWidget.cellWidget(it, 0).currentText()
+            predicate = self.tableWidget.cellWidget(it, 1).currentText()
+            if subject is not None and subject != "--- SELECT ---" and subject != "LITERAL":
+                selectedVal.append(subject)
+            if predicate is not None and predicate != "--- SELECT ---" and predicate != "LITERAL":
+                selectedVal.append(predicate)
+
+        finalObject = self.tableWidget.cellWidget(i-1, 2).currentText()
+        if finalObject is not None and finalObject != "--- SELECT ---" and finalObject != "LITERAL":
+            selectedVal.append(finalObject)
+
+        self.logger.debug("selectedVal + " + str(selectedVal))
 
         thirdPropObj = self.sparql_query.getNDegreeResults(sparql_endpoint=self.params["end_point"],
                                                            entityList=self.EntityLi,
