@@ -21,6 +21,7 @@
  *                                                                         *
  ***************************************************************************/
 """
+import json
 import logging
 import os.path
 from configparser import ConfigParser
@@ -49,7 +50,7 @@ _SPARQL_ENDPOINT_DICT = {
     "prod": {
         "KWG-V2": "https://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V2",
         "KWG-V3": "https://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V3",
-        "KWG-Staging": "https://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-Staging",
+        "KWG": "https://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG",
     },
     "test": {
         "plume_soil_wildfire": "http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire",
@@ -604,13 +605,14 @@ then select an entity on the map.'
     def handleRun(self):
         for i in range(self.contentCounter):
             results = self.enrichmentObjBuffer[i].getResults()
+            degreeCount = self.enrichmentObjBuffer[i].getDegree()
 
-            objName = self.dlg.tableWidget.cellWidget(self.contentCounter - 1, 0).text()
+            objName = self.dlg.tableWidget.cellWidget(i, 0).text()
             layerName = self.dlg.lineEdit_layerName.text()
-            mergeRule = self.dlg.tableWidget.cellWidget(self.contentCounter - 1, 1).currentText()
+            mergeRule = self.dlg.tableWidget.cellWidget(i, 1).currentText()
             mergeRuleName = self.mergeRuleDict[mergeRule]
 
-            self.createGeoPackage(results, objName, layerName, mergeRuleName)
+            self.createGeoPackage(results, objName, layerName, mergeRuleName, degreeCount)
         self.dlg.close()
 
     def performWKTConversion(self):
@@ -649,8 +651,8 @@ then select an entity on the map.'
         geom_reproj = geom_converter.transform(geom)
         return geom_reproj
 
-    def createGeoPackage(self, GeoQueryResult, objName="O", layerName="geo_results", mergeRuleName="first",
-                         out_path="/var/local/QGIS/kwg_results.gpkg"):
+    def createGeoPackage(self, GeoQueryResult, objName="O", layerName="geo_results", mergeRuleName="first", degreeCount = 0,
+                         out_path="/var/local/QGIS/"):
         '''
         GeoQueryResult: a sparql query result json obj serialized as a list of dict()
                     SPARQL query like this:
@@ -664,6 +666,7 @@ then select an entity on the map.'
                           False: use selectedURL as the type of geo-entity
         '''
         # a set of unique WKT for each found places
+        out_path += objName + ".gpkg"
         objIRISet = set()
         objList = []
         geom_type = None
@@ -686,7 +689,7 @@ then select an entity on the map.'
                 objList.append(
                     [item["entity"]["value"], item["entityLabel"]["value"], item['o']["value"], wkt_literal])
 
-        vl = QgsVectorLayer(geom_type + "?crs=epsg:4326", "geo_results", "memory")
+        vl = QgsVectorLayer(geom_type + "?crs=epsg:4326", "%s_%s"%(layerName, objName), "memory")
         pr = vl.dataProvider()
         pr.addAttributes(layerFields)
         vl.updateFields()
@@ -714,9 +717,9 @@ then select an entity on the map.'
                 vl.updateExtents()
 
                 options = QgsVectorFileWriter.SaveVectorOptions()
-                options.layerName = layerName
+                options.layerName = "%s_%s"%(layerName, objName)
                 context = QgsProject.instance().transformContext()
                 error = QgsVectorFileWriter.writeAsVectorFormatV2(vl, out_path, context, options)
-                self.iface.addVectorLayer(out_path, layerName, 'ogr')
+                self.iface.addVectorLayer(out_path, "%s_%s"%(layerName, objName), 'ogr')
 
         return error[0] == QgsVectorFileWriter.NoError
