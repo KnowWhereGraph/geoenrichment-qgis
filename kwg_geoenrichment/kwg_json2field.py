@@ -1,4 +1,4 @@
-import json
+import math
 from collections import OrderedDict, namedtuple
 from decimal import Decimal
 
@@ -8,7 +8,6 @@ from qgis._core import QgsVectorLayer, QgsMessageLog, Qgis, QgsField, QgsFields,
 
 from .kwg_util import kwg_util
 
-import math
 
 class kwg_json2field:
 
@@ -106,9 +105,9 @@ class kwg_json2field:
                 #     ArcpyViz.visualize_current_layer(out_path)
         return
 
-
-    def createQGISFeatureClassFromSPARQLResult(self, GeoQueryResult, out_path="/var/local/QGIS/kwg_results.gpkg", feat_class="geo_Result",inPlaceType="", selectedURL="",
-                                           isDirectInstance=False, ifaceObj=None):
+    def createQGISFeatureClassFromSPARQLResult(self, GeoQueryResult, out_path="/var/local/QGIS/kwg_results.gpkg",
+                                               feat_class="geo_Result", inPlaceType="", selectedURL="",
+                                               isDirectInstance=False, ifaceObj=None):
         '''
         GeoQueryResult: a sparql query result json obj serialized as a list of dict()
                     SPARQL query like this:
@@ -153,13 +152,14 @@ class kwg_json2field:
         if geom_type is None:
             raise Exception("geometry type not find")
 
-        vl = QgsVectorLayer(geom_type+"?crs=epsg:4326", feat_class, "memory")
+        vl = QgsVectorLayer(geom_type + "?crs=epsg:4326", feat_class, "memory")
         pr = vl.dataProvider()
         pr.addAttributes(layerFields)
         vl.updateFields()
 
         if len(placeList) == 0:
-            QgsMessageLog.logMessage("No {0} within the provided polygon can be found!".format(inPlaceType), level=Qgis.Info)
+            QgsMessageLog.logMessage("No {0} within the provided polygon can be found!".format(inPlaceType),
+                                     level=Qgis.Info)
         else:
 
             if out_path == None:
@@ -191,7 +191,6 @@ class kwg_json2field:
 
         return error[0] == QgsVectorFileWriter.NoError
 
-
     def fieldLengthDecide(self, jsonBindingObject, fieldName):
         # This option is only applicable on fields of type text or blob
         fieldType = self.fieldDataTypeDecide(jsonBindingObject, fieldName)
@@ -212,7 +211,6 @@ class kwg_json2field:
                     return field_len
             return int(math.ceil(maxLength * 1.0 / interval) * interval)
 
-
     def fieldDataTypeDecide(self, jsonBindingObject, fieldName):
         # jsonBindingObject: a list object which is jsonObject.json()["results"]["bindings"]
         # fieldName: the name of the property/field in the JSON object thet what to evaluate
@@ -232,7 +230,6 @@ class kwg_json2field:
         majorityFieldDataType = self.urlDataType2FieldDataType(majorityDataType)
 
         return majorityFieldDataType
-
 
     def urlDataType2FieldDataType(self, urlDataType):
         # urlDataType: url string date geometry int double float bnode
@@ -255,7 +252,6 @@ class kwg_json2field:
             return -1
         else:
             return "TEXT"
-
 
     def getLinkedDataType(self, jsonBindingObjectItem, propertyName):
         # according the the property name of this jsonBindingObjectItem, return the meaningful dataType
@@ -284,7 +280,6 @@ class kwg_json2field:
         else:
             return "string"
 
-
     def buildDictFromJSONToModifyTable(self, jsonBindingObject, keyPropertyName, valuePropertyName):
         valuePropertyList = []
         keyPropertyList = []
@@ -296,7 +291,6 @@ class kwg_json2field:
         # QgsMessageLog.logMessage("keyValueDict: " + json.dumps(keyValueDict),
         #                          "kwg_geoenrichment", level=Qgis.Info)
         return keyValueDict
-
 
     def dataTypeCast(self, fieldValue, fieldDataType):
         # according to the field data type, cast the data into corresponding data type
@@ -311,11 +305,10 @@ class kwg_json2field:
         elif fieldDataType == "FLOAT":
             return float(fieldValue)
 
-
     def createMappingTableFromJSON(self, jsonBindingObject, keyPropertyName,
                                    valuePropertyName, valuePropertyURL,
-                                   keyPropertyFieldName, isInverse, isSubDivisionTable, featureClassName="geo_results", outputLocation="", ifaceObj=None):
-
+                                   keyPropertyFieldName, isInverse, isSubDivisionTable, featureClassName="geo_results",
+                                   outputLocation="", ifaceObj=None):
 
         currentValuePropertyName = self.kwgUtil.getPropertyName(valuePropertyURL)
 
@@ -328,7 +321,6 @@ class kwg_json2field:
 
         # QgsMessageLog.logMessage(tableName,
         #                          "kwg_geoenrichment", level=Qgis.Info)
-
 
         # TODO:  implement QGIS logic
         # tablePath = Json2Field.getNoExistTableNameInWorkspace(outputLocation, tableName)
@@ -378,8 +370,8 @@ class kwg_json2field:
 
         return error[0] == QgsVectorFileWriter.NoError
 
-
-    def addFieldInTableByMapping(self, jsonBindingObject, keyPropertyName, valuePropertyName, keyPropertyFieldName, valuePropertyURL, isInverse, featureClassName="geo_results", gpkgLocation=""):
+    def addFieldInTableByMapping(self, jsonBindingObject, keyPropertyName, valuePropertyName, keyPropertyFieldName,
+                                 valuePropertyURL, isInverse, featureClassName="geo_results", gpkgLocation=""):
         # according to the json object from sparql query which contains the mapping from keyProperty to valueProperty, add field in the Table
         # change the field name if there is already a field which has the same name in table
         # jsonBindingObject: the json object from sparql query which contains the mapping from keyProperty to valueProperty, ex. functionalPropertyJSON
@@ -407,7 +399,7 @@ class kwg_json2field:
 
         # TODO: temp set up; move to permanent
         # currentFieldName = self.kwgUtil.getFieldNameWithTable(currentValuePropertyName, featureClassName, gpkgLocation)
-        currentFieldName =currentValuePropertyName
+        currentFieldName = currentValuePropertyName
         if currentFieldName == -1:
             # messages.addWarningMessage("The table of current feature class has more than 10 fields for property name {0}.".format(currentValuePropertyName))
             pass

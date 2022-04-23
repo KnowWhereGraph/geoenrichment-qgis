@@ -21,10 +21,10 @@
 # authored by Jérémy Kalsron
 
 from builtins import str
-from qgis.PyQt.QtWidgets import QWidget, QPushButton, QSlider, QDesktopWidget,\
-    QLabel, QColorDialog, QVBoxLayout
-from qgis.PyQt.QtGui import QColor
 from qgis.PyQt.QtCore import Qt, QCoreApplication, pyqtSignal
+from qgis.PyQt.QtGui import QColor
+from qgis.PyQt.QtWidgets import QWidget, QPushButton, QSlider, QDesktopWidget, \
+    QLabel, QColorDialog, QVBoxLayout
 
 
 class QdrawSettings(QWidget):
@@ -63,7 +63,7 @@ class QdrawSettings(QWidget):
     def handler_opacitySliderValue(self, val):
         self.color.setAlpha(val)
         self.lbl_opacity.setText(
-            self.tr('Opacity')+': '+str(int((float(val) / 255) * 100))+'%')
+            self.tr('Opacity') + ': ' + str(int((float(val) / 255) * 100)) + '%')
         self.settingsChanged.emit()
 
     def handler_chColor(self):
