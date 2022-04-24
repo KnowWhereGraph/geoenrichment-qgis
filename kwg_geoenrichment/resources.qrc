@@ -16,5 +16,6 @@
         <file>resources/graph_Query.png</file>
         <file>resources/merge_Data.png</file>
         <file>resources/background-landing.png</file>
+        <file>resources/help-circle.png</file>
     </qresource>
 </RCC>
