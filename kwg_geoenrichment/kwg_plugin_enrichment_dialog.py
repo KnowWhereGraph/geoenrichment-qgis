@@ -31,6 +31,7 @@ from qgis.PyQt import uic
 import geojson
 from PyQt5 import QtCore
 from PyQt5.QtCore import QVariant
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QComboBox, QHeaderView
 from qgis._core import QgsMessageLog, Qgis, QgsFields, QgsField, QgsVectorLayer, QgsFeature, QgsGeometry, \
     QgsVectorFileWriter, QgsProject
@@ -73,6 +74,17 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.setUpTable()
         self.pushButton_learnMore.clicked.connect(self.addLearnMore)
 
+        # displaying help
+        self.displayingHelp = False
+        self.setFixedWidth(620)
+        self.plainTextEdit.setHidden(True)
+
+        self.path = os.path.dirname(os.path.abspath(__file__))
+        help_icon = self.path + "/resources/help-circle.png"
+        self.toolButton.setIcon(QIcon(help_icon))
+
+        self.toolButton.clicked.connect(self.displayHelp)
+
         self.sparql_query = kwg_sparqlquery()
         self.sparql_util = kwg_sparqlutil()
 
@@ -101,6 +113,10 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
                 height: 70px;
             }
 
+        QPlainTextEdit {
+                background:None;
+                background-color: #36385B;
+        }
         """
         self.setStyleSheet(stylesheet)
 
@@ -340,3 +356,13 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
 
         self.logger.debug(str(len(thirdPropObj)))
         return thirdPropObj
+
+    def displayHelp(self):
+        if self.displayingHelp:
+            self.displayingHelp = False
+            self.plainTextEdit.setHidden(True)
+            self.setFixedWidth(620)
+        else:
+            self.displayingHelp = True
+            self.plainTextEdit.setVisible(True)
+            self.setFixedWidth(900)
