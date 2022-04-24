@@ -102,6 +102,8 @@ class kwg_geoenrichment:
         self.bGeom = None
         self.settings = QdrawSettings()
 
+        self.path = os.path.dirname(os.path.abspath(__file__))
+
         # Set up the config file
         conf = ConfigParser()
         self._config = conf.read('config.ini')
@@ -234,10 +236,11 @@ class kwg_geoenrichment:
         # will be set False in run()
         self.first_start = True
 
+        icon_path = self.path + "/resources/graph_Query.png"
         if self.first_start:
             self.add_action(
-                QIcon(':/plugins/kwg_geoenrichment/resources/graph_Query.png'),
-                text=self.tr(u'Geoenrichment'),
+                QIcon(icon_path),
+                text=self.tr(u'&Geoenrichment'),
                 callback=self.run,
                 parent=self.iface.mainWindow())
 
@@ -612,7 +615,7 @@ then select an entity on the map.'
             mergeRule = self.dlg.tableWidget.cellWidget(i, 1).currentText()
             mergeRuleName = self.mergeRuleDict[mergeRule]
 
-            self.createGeoPackage(results, objName, layerName, mergeRuleName, degreeCount)
+            self.createGeoPackage(results, objName, layerName, mergeRuleName, degreeCount, out_path=self.path)
         self.dlg.close()
 
     def performWKTConversion(self):
@@ -652,7 +655,7 @@ then select an entity on the map.'
         return geom_reproj
 
     def createGeoPackage(self, GeoQueryResult, objName="O", layerName="geo_results", mergeRuleName="first", degreeCount = 0,
-                         out_path="/var/local/QGIS/"):
+                         out_path=None):
         '''
         GeoQueryResult: a sparql query result json obj serialized as a list of dict()
                     SPARQL query like this:
