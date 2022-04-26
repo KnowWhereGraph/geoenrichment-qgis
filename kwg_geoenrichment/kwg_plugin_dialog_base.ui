@@ -89,22 +89,7 @@
    </property>
    <item>
     <property name="text">
-     <string>plume_soil_wildfire - (test)</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
      <string>KWG - (prod)</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>KWG-V2 - (prod)</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>KWG-V3 - (prod)</string>
     </property>
    </item>
   </widget>
