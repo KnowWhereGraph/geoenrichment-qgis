@@ -548,10 +548,8 @@ then select an entity on the map.'
     def setUPMergeTable(self):
         self.dlg.tableWidget.setColumnCount(2)
         self.dlg.tableWidget.verticalHeader().setVisible(False)
+        self.dlg.tableWidget.horizontalHeader().setVisible(False)
         self.dlg.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-
-        tableHeader = ['Name', "Merge Rule"]
-        self.dlg.tableWidget.setHorizontalHeaderLabels(tableHeader)
 
     def addContent(self):
 
