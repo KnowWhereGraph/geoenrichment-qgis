@@ -41,7 +41,7 @@ class kwg_sparqlquery:
             ?adminRegion2 geo:hasGeometry ?arGeo.
             ?arGeo geo:asWKT ?arWKT.
             FILTER(geof:sfIntersects("%s"^^geo:wktLiteral, ?arWKT)).
-        
+
             ?adminRegion2 kwg-ont:sfContains ?s2Cell.
             ?s2Cell a kwg-ont:KWGCellLevel13.
             ?s2Cell geo:hasGeometry ?s2Geo.
@@ -51,8 +51,6 @@ class kwg_sparqlquery:
         """ % (wkt_literal, wkt_literal)
 
         query = queryPrefix + queryString
-
-        QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
 
         s2CellsQueryResult = SPARQLUtil.sparql_requests(query=query,
                                                     sparql_endpoint=sparql_endpoint,
@@ -87,16 +85,14 @@ class kwg_sparqlquery:
                 s2CellsPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(s2Cell)
 
             queryString = """
-            select distinct ?entity where { 
-                {?entity ?p ?s2Cell.} union {?s2Cell ?p ?entity.} 
-                ?entity a geo:Feature. 
+            select distinct ?entity where {
+                {?entity ?p ?s2Cell.} union {?s2Cell ?p ?entity.}
+                ?entity a geo:Feature.
                 values ?s2Cell {%s}
             }
             """ % (s2CellsPrefixed)
 
             query = queryPrefix + queryString
-
-            QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
 
             EntityQueryResult = SPARQLUtil.sparql_requests(query=query,
                                                            sparql_endpoint=sparql_endpoint,
@@ -133,17 +129,15 @@ class kwg_sparqlquery:
                 entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
 
             queryString = """
-                    select distinct ?type ?label where { 
-                        ?entity a ?type. 
-                        ?type rdfs:label ?label. 
+                    select distinct ?type ?label where {
+                        ?entity a ?type.
+                        ?type rdfs:label ?label.
                         values ?entity {%s}
                     }
                     """ % (entityPrefixed)
             # self.logger.debug("Class0Debug: " + queryString)
 
             query = queryPrefix + queryString
-
-            QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
 
             FirstDegreeClassQueryResult = SPARQLUtil.sparql_requests(query=query,
                                                                      sparql_endpoint=sparql_endpoint,
@@ -183,8 +177,8 @@ class kwg_sparqlquery:
                 entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
 
             queryString = """
-                    select distinct ?p ?label where { 
-                        ?entity a %s; 
+                    select distinct ?p ?label where {
+                        ?entity a %s;
                             ?p ?o.
                         optional {?p rdfs:label ?label}
                         values ?entity {%s}
@@ -192,8 +186,6 @@ class kwg_sparqlquery:
                     """ % (firstDegreeClass, entityPrefixed)
 
             query = queryPrefix + queryString
-
-            QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
 
             FirstDegreePredicateQueryResult = SPARQLUtil.sparql_requests(query=query,
                                                                          sparql_endpoint=sparql_endpoint,
@@ -234,16 +226,14 @@ class kwg_sparqlquery:
                 entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
 
             queryString = """
-                    select distinct ?type ?label ?o where {  
-                        ?entity a %s; %s ?o. 
-                        ?o a ?type. ?type rdfs:label ?label. 
+                    select distinct ?type ?label ?o where {
+                        ?entity a %s; %s ?o.
+                        ?o a ?type. ?type rdfs:label ?label.
                         values ?entity {%s}
                     }
                     """ % (firstDegreeClass, firstDegreePredicate, entityPrefixed)
 
             query = queryPrefix + queryString
-
-            QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
 
             FirstDegreeObjectQueryResult = SPARQLUtil.sparql_requests(query=query,
                                                                       sparql_endpoint=sparql_endpoint,
@@ -297,8 +287,6 @@ class kwg_sparqlquery:
             query = queryPrefix + propQuery
             self.logger.debug(query)
 
-            QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
-
             FirstDegreePredicateQueryResult = SPARQLUtil.sparql_requests(query=query,
                                                                          sparql_endpoint=sparql_endpoint,
                                                                          doInference=False,
@@ -350,8 +338,6 @@ class kwg_sparqlquery:
             objQuery += "?type rdfs:label ?label. values ?entity { %s } }" % (entityPrefixed)
 
             query = queryPrefix + objQuery
-
-            QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
 
             self.logger.debug(query)
 
@@ -437,8 +423,6 @@ class kwg_sparqlquery:
 
             query = queryPrefix + sub_query
             self.logger.info("programmed: " + query)
-
-            QgsMessageLog.logMessage(query, "kwg_explore", level=Qgis.Info)
 
             self.logger.debug(query)
 

@@ -541,8 +541,6 @@ then select an entity on the map.'
 
         params["geosparql_func"] = geosparql_func
 
-        # QgsMessageLog.logMessage(json.dumps(params), "kwg_geoenrichment", level=Qgis.Info)
-
         return params
 
     def setUPMergeTable(self):
@@ -580,7 +578,11 @@ then select an entity on the map.'
 
         self.enrichmentObjBuffer[self.contentCounter - 1].close()
         self.dlg.listWidget.addItem(stringVal)
-        self.updatePropMergeItem(self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(i - 1, 2).currentText())
+        objectName = self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(i - 1, 2).currentText()
+        if objectName is None or objectName == "--- SELECT ---" or objectName == "LITERAL":
+            objectName = self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(i - 1,
+                                                                                                  1).currentText()
+        self.updatePropMergeItem(objName=objectName)
         return
 
     def updatePropMergeItem(self, objName):
@@ -618,30 +620,23 @@ then select an entity on the map.'
 
     def performWKTConversion(self):
         layers = QgsProject.instance().mapLayers().values()
-        QgsMessageLog.logMessage("Update: Reading all the layers", "kwg_geoenrichment", level=Qgis.Info)
 
         # crs = QgsCoordinateReferenceSystem("EPSG:4326")
         for layer in layers:
             # self.logger.debug(layer.name())
             if layer.name() == "geo_enrichment_polygon":
-                QgsMessageLog.logMessage("Update: Retrieving features from the geoenrichment layer",
-                                         "kwg_geoenrichment", level=Qgis.Info)
                 feat = layer.getFeatures()
                 for f in feat:
                     geom = f.geometry()
 
                     # TODO: handle the CRS
                     # geom = self.transformSourceCRStoDestinationCRS(geom)
-
-                    QgsMessageLog.logMessage("Update: Geometry found", "kwg_geoenrichment", level=Qgis.Info)
                     wkt = geom.asWkt()
                 break
 
         wkt_literal_list = wkt.split(" ", 1)
         wkt_rep = ""
         wkt_rep = wkt_literal_list[0].upper() + wkt_literal_list[1]
-
-        # QgsMessageLog.logMessage("wkt representation :  " + wkt_rep , "kwg_geoenrichment", level=Qgis.Info)
 
         return wkt_rep
 

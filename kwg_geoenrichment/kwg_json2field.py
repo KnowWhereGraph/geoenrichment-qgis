@@ -288,8 +288,6 @@ class kwg_json2field:
             keyPropertyList.append(jsonItem[keyPropertyName]["value"])
 
         keyValueDict = dict(zip(keyPropertyList, valuePropertyList))
-        # QgsMessageLog.logMessage("keyValueDict: " + json.dumps(keyValueDict),
-        #                          "kwg_geoenrichment", level=Qgis.Info)
         return keyValueDict
 
     def dataTypeCast(self, fieldValue, fieldDataType):
@@ -318,9 +316,6 @@ class kwg_json2field:
         if isSubDivisionTable == True:
             currentValuePropertyName = "subDivisionIRI"
         tableName = keyPropertyFieldName + "_" + currentValuePropertyName
-
-        # QgsMessageLog.logMessage(tableName,
-        #                          "kwg_geoenrichment", level=Qgis.Info)
 
         # TODO:  implement QGIS logic
         # tablePath = Json2Field.getNoExistTableNameInWorkspace(outputLocation, tableName)

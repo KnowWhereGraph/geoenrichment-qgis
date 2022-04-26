@@ -80,6 +80,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.plainTextEdit.setHidden(True)
 
         self.path = os.path.dirname(os.path.abspath(__file__))
+        image_path = self.path + "/resources/background-landing.png"
         help_icon = self.path + "/resources/help-circle.png"
         self.toolButton.setIcon(QIcon(help_icon))
 
@@ -89,11 +90,13 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.sparql_util = kwg_sparqlutil()
 
         stylesheet = """
-        QWidget {
-            background-image: url("/Users/nenuji/Documents/Github/kwg-qgis-geoenrichment/kwg_geoenrichment/resources/background-landing.png"); 
-            opacity: 1.0;
-        }
+                QWidget {
+                    background-image: url("%s"); 
+                    opacity: 1.0;
+                }
+                """ % (image_path)
 
+        stylesheet += """
         QPushButton{
                 background-color: #216FB3;
                 color: #ffffff;
@@ -210,8 +213,6 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.logger.debug(e)
                 continue
 
-        QgsMessageLog.logMessage("S2 Cells : " + json.dumps(self.s2Cells), "kwg_unified", level=Qgis.Info)
-
         # retrieve Entity associated with S2 cells
         entityBindingObject = self.sparql_query.getEntityValuesFromS2Cells(sparql_endpoint=self.params["end_point"],
                                                                            s2Cells=self.s2Cells)
@@ -221,8 +222,6 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.EntityLi.append(obj["entity"]["value"])
             except Exception as e:
                 continue
-
-        QgsMessageLog.logMessage("Entity List : " + json.dumps(self.EntityLi), "kwg_unified", level=Qgis.Info)
 
         self.populateFirstDegreeSubject()
         return
