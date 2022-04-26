@@ -49,7 +49,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Save</string>
+    <string>Add Content</string>
    </property>
   </widget>
   <widget class="QTableWidget" name="tableWidget">
@@ -72,11 +72,11 @@
     </rect>
    </property>
    <property name="plainText">
-    <string>Select a geography feature from the first box. You may use successive boxes to explore additional information about that feature.
+    <string>Select a geography feature from the first box.  You may use successive boxes to explore additional information about that feature.
 
-Select &quot;Learn More&quot; to expand your exploration, or &quot;Add Content&quot; to add the feature to your new Feature Class.
+Select &quot;Learn More&quot; to expand your exploration,  or &quot;Add Content&quot; to add the feature to your new Feature Class.
 
-You can return to this menu multiple times to either learn more about your selected feature, or to explore additional feature types.</string>
+You can return to this menu multiple times to either learn more about your selected feature,  or to explore additional feature types.</string>
    </property>
   </widget>
   <widget class="QToolButton" name="toolButton">
