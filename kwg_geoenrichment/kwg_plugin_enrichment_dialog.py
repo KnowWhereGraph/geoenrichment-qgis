@@ -32,7 +32,7 @@ import geojson
 from PyQt5 import QtCore
 from PyQt5.QtCore import QVariant
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QComboBox, QHeaderView
+from PyQt5.QtWidgets import QComboBox, QHeaderView, QMessageBox
 from qgis._core import QgsMessageLog, Qgis, QgsFields, QgsField, QgsVectorLayer, QgsFeature, QgsGeometry, \
     QgsVectorFileWriter, QgsProject
 
@@ -135,36 +135,62 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.addLearnMore()
 
     def addLearnMore(self):
-        self.tableWidget.insertRow(self.degreeCount)
-
-        comboBox_S = QComboBox()
-        comboBox_P = QComboBox()
-        comboBox_O = QComboBox()
-
-        self.tableWidget.setCellWidget(self.degreeCount, 0, comboBox_S)
-        self.tableWidget.setCellWidget(self.degreeCount, 1, comboBox_P)
-        self.tableWidget.setCellWidget(self.degreeCount, 2, comboBox_O)
-
-        comboBox_S.show()
-        comboBox_P.show()
-        comboBox_O.show()
 
         # populate N degree subject based on the object property above
         if self.degreeCount > 0:
-            obj = self.tableWidget.cellWidget(self.degreeCount - 1, 2).currentText()
-            self.tableWidget.cellWidget(self.degreeCount, 0).clear()
-            self.tableWidget.cellWidget(self.degreeCount, 0).addItem("--- SELECT ---")
-            self.spoDict[self.degreeCount] = {}
-            self.spoDict[self.degreeCount]["s"] = {}
-            for key in self.spoDict[self.degreeCount - 1]["o"]:
-                self.tableWidget.cellWidget(self.degreeCount, 0).addItem(self.sparql_util.make_prefixed_iri(key))
-                self.spoDict[self.degreeCount]["s"][key] = self.spoDict[self.degreeCount - 1]["o"][key]
-            index = self.tableWidget.cellWidget(self.degreeCount - 1, 2).findText(obj, QtCore.Qt.MatchFixedString)
-            if index >= 0:
-                self.tableWidget.cellWidget(self.degreeCount, 0).setCurrentIndex(index)
-            self.populateNDegreePredicate()
+            finalObject = self.tableWidget.cellWidget(self.degreeCount - 1, 2).currentText()
 
-        self.degreeCount += 1
+            if finalObject is not None and finalObject != "--- SELECT ---" and finalObject != "LITERAL":
+                self.tableWidget.insertRow(self.degreeCount)
+
+                comboBox_S = QComboBox()
+                comboBox_P = QComboBox()
+                comboBox_O = QComboBox()
+
+                self.tableWidget.setCellWidget(self.degreeCount, 0, comboBox_S)
+                self.tableWidget.setCellWidget(self.degreeCount, 1, comboBox_P)
+                self.tableWidget.setCellWidget(self.degreeCount, 2, comboBox_O)
+
+                comboBox_S.show()
+                comboBox_P.show()
+                comboBox_O.show()
+
+                self.tableWidget.cellWidget(self.degreeCount, 0).clear()
+                self.tableWidget.cellWidget(self.degreeCount, 0).addItem("--- SELECT ---")
+                self.spoDict[self.degreeCount] = {}
+                self.spoDict[self.degreeCount]["s"] = {}
+                for key in self.spoDict[self.degreeCount - 1]["o"]:
+                    self.tableWidget.cellWidget(self.degreeCount, 0).addItem(self.sparql_util.make_prefixed_iri(key))
+                    self.spoDict[self.degreeCount]["s"][key] = self.spoDict[self.degreeCount - 1]["o"][key]
+                index = self.tableWidget.cellWidget(self.degreeCount - 1, 2).findText(finalObject, QtCore.Qt.MatchFixedString)
+                if index >= 0:
+                    self.tableWidget.cellWidget(self.degreeCount, 0).setCurrentIndex(index)
+                self.populateNDegreePredicate()
+                self.degreeCount += 1
+            else:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Warning)
+
+                msg.setText("Can't add more content...")
+                msg.setInformativeText("'LITERAL' data encountered!")
+                msg.setWindowTitle("Learn More Warning!")
+                msg.exec_()
+        else:
+            self.tableWidget.insertRow(self.degreeCount)
+
+            comboBox_S = QComboBox()
+            comboBox_P = QComboBox()
+            comboBox_O = QComboBox()
+
+            self.tableWidget.setCellWidget(self.degreeCount, 0, comboBox_S)
+            self.tableWidget.setCellWidget(self.degreeCount, 1, comboBox_P)
+            self.tableWidget.setCellWidget(self.degreeCount, 2, comboBox_O)
+
+            comboBox_S.show()
+            comboBox_P.show()
+            comboBox_O.show()
+
+            self.degreeCount += 1
 
     def execute(self):
         # manage first degree
