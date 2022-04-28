@@ -69,6 +69,8 @@ class kwg_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
 
         self.toolButton.clicked.connect(self.displayHelp)
 
+        self.pushButton_gdb.clicked.connect(self.displayGDB)
+
         stylesheet = """
         QWidget {
             background-image: url("%s"); 
@@ -116,3 +118,10 @@ class kwg_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             self.displayingHelp = True
             self.plainTextEdit.setVisible(True)
             self.setFixedWidth(850)
+
+    def displayGDB(self):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Warning)
+        msg.setText("Can't open a geo-database...")
+        msg.setWindowTitle("Open GDB Warning!")
+        msg.exec_()
