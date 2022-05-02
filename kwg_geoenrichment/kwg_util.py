@@ -16,17 +16,18 @@ class kwg_util:
         if "POINT".lower() in wkt.lower():
             return "POINT"
         elif "MULTIPOINT".lower() in wkt.lower():
-            return "MULTIPOINT"
+            return "POINT"
         elif "LINESTRING".lower() in wkt.lower():
-            return "POLYLINE"
+            return "LINESTRING"
         elif "MULTILINESTRING".lower() in wkt.lower():
-            return "POLYLINE"
+            return "LINESTRING"
         elif "POLYGON".lower() in wkt.lower():
             return "POLYGON"
         elif "MULTIPOLYGON".lower() in wkt.lower():
             return "POLYGON"
         else:
-            raise Exception("Unrecognized geometry type: {}".format(wkt))
+            # raise Exception("Unrecognized geometry type: {}".format(wkt))
+            return "0"
 
     def extractCommonPropertyJSON(self, commonPropertyJSON,
                                   p_url_list=[], p_name_list=[], url_dict={},

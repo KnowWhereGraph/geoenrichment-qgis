@@ -33,6 +33,10 @@ from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
     QgsFeatureRequest, QgsVectorLayer, QgsLayerTreeGroup, QgsRenderContext, \
     QgsCoordinateReferenceSystem, QgsMessageLog, Qgis, QgsFields, QgsField, QgsVectorFileWriter
 
+
+from typing import re
+import statistics
+
 # Import QDraw settings
 from .drawtools import DrawPolygon, \
     SelectPoint
@@ -122,10 +126,10 @@ class kwg_geoenrichment:
 
         self.contentCounter = 0
         self.mergeRuleDict = {
-            "1 - Get the average of all values (numeric)": "avg",
+            "1 - Get the first value found": "first",
             "2 - Concate values together with a '|'": "concat",
             "3 - Get the number of values found": "count",
-            "4 - Get the first value found": "first",
+            "4 - Get the average of all values(numeric)": "avg",
             "5 - Get the highest value (numeric)": "high",
             "6 - Get the lowest value (numeric)": "low",
             "7 - Get the standard deviation of all values (numeric)": "stdev",
@@ -260,6 +264,7 @@ class kwg_geoenrichment:
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
+
         self.dlg = kwg_pluginDialog()
 
         self.enrichmentObjBuffer = []
@@ -591,10 +596,10 @@ then select an entity on the map.'
         objLine.setText(objName)
         comboBox_M = QComboBox()
         for txt in [
-                "1 - Get the average of all values (numeric)",
+                "1 - Get the first value found",
                 "2 - Concate values together with a '|'",
                 "3 - Get the number of values found",
-                "4 - Get the first value found",
+                "4 - Get the average of all values (numeric)",
                 "5 - Get the highest value (numeric)",
                 "6 - Get the lowest value (numeric)",
                 "7 - Get the standard deviation of all values (numeric)",
@@ -614,8 +619,9 @@ then select an entity on the map.'
             layerName = self.dlg.lineEdit_layerName.text()
             mergeRule = self.dlg.tableWidget.cellWidget(i, 1).currentText()
             mergeRuleName = self.mergeRuleDict[mergeRule]
+            mergeRuleNo = int(mergeRule.split(" - ")[0])
 
-            self.createGeoPackage(results, objName, layerName, mergeRuleName, degreeCount, out_path=self.path)
+            self.createGeoPackage(results, objName, layerName, mergeRuleName, degreeCount, mergeRule=mergeRuleNo, out_path=self.path)
         self.dlg.close()
 
     def performWKTConversion(self):
@@ -647,7 +653,7 @@ then select an entity on the map.'
         geom_reproj = geom_converter.transform(geom)
         return geom_reproj
 
-    def createGeoPackage(self, GeoQueryResult, objName="O", layerName="geo_results", mergeRuleName="first", degreeCount = 0,
+    def createGeoPackage(self, GeoQueryResult, objName="O", layerName="geo_results", mergeRuleName="first", degreeCount = 0, mergeRule = 1,
                          out_path=None):
         '''
         GeoQueryResult: a sparql query result json obj serialized as a list of dict()
@@ -674,48 +680,148 @@ then select an entity on the map.'
         layerFields.append(QgsField('entityLabel', QVariant.String))
         layerFields.append(QgsField(objName, QVariant.String))
 
-        for idx, item in enumerate(GeoQueryResult):
-            wkt_literal = item["wkt"]["value"]
-            # for now, make sure all geom has the same geometry type
-            if idx == 0:
-                geom_type = util_obj.get_geometry_type_from_wkt(wkt_literal)
+        objIRISet, entityDict = self.generateRecord(GeoQueryResult, mergeRule)
 
-            if len(objIRISet) == 0 or item['o']["value"] not in objIRISet:
-                objIRISet.add(item['o']["value"])
+        for gtype in entityDict:
+            for entity in entityDict[gtype]:
                 objList.append(
-                    [item["entity"]["value"], item["entityLabel"]["value"], item['o']["value"], wkt_literal])
+                    [entity, entityDict[gtype][entity]["label"], entityDict[gtype][entity]["o"], entityDict[gtype][entity]["wkt"]])
 
-        vl = QgsVectorLayer(geom_type + "?crs=epsg:4326", "%s_%s"%(layerName, objName), "memory")
-        pr = vl.dataProvider()
-        pr.addAttributes(layerFields)
-        vl.updateFields()
+            vl = QgsVectorLayer(gtype + "?crs=epsg:4326", "%s_%s_%s"%(layerName, objName, gtype), "memory")
+            pr = vl.dataProvider()
+            pr.addAttributes(layerFields)
+            vl.updateFields()
 
-        if len(objList) == 0:
-            QgsMessageLog.logMessage("No results found!",
-                                     level=Qgis.Info)
-        else:
-
-            if out_path == None:
-                QgsMessageLog.logMessage("No data will be added to the map document.", level=Qgis.Info)
+            if len(objList) == 0:
+                QgsMessageLog.logMessage("No results found!",
+                                         level=Qgis.Info)
             else:
 
-                for item in objList:
-                    entity_iri, entity_label, o, wkt_literal = item
-                    wkt = wkt_literal.replace("<http://www.opengis.net/def/crs/OGC/1.3/CRS84>", "")
+                if out_path == None:
+                    QgsMessageLog.logMessage("No data will be added to the map document.", level=Qgis.Info)
+                else:
 
-                    feat = QgsFeature()
-                    geom = QgsGeometry.fromWkt(wkt)
+                    for item in objList:
+                        entity_iri, entity_label, o, wkt_literal = item
+                        wkt = wkt_literal.replace("<http://www.opengis.net/def/crs/OGC/1.3/CRS84>", "")
 
-                    feat.setGeometry(geom)
-                    feat.setAttributes(item[0:3])
+                        feat = QgsFeature()
+                        geom = QgsGeometry.fromWkt(wkt)
 
-                    pr.addFeature(feat)
-                vl.updateExtents()
+                        feat.setGeometry(geom)
+                        feat.setAttributes(item[0:3])
 
-                options = QgsVectorFileWriter.SaveVectorOptions()
-                options.layerName = "%s_%s"%(layerName, objName)
-                context = QgsProject.instance().transformContext()
-                error = QgsVectorFileWriter.writeAsVectorFormatV2(vl, out_path, context, options)
-                self.iface.addVectorLayer(out_path, "%s_%s"%(layerName, objName), 'ogr')
+                        pr.addFeature(feat)
+                    vl.updateExtents()
+
+                    options = QgsVectorFileWriter.SaveVectorOptions()
+                    options.layerName = "%s_%s_%s"%(layerName, objName, gtype)
+                    context = QgsProject.instance().transformContext()
+                    error = QgsVectorFileWriter.writeAsVectorFormatV2(vl, out_path, context, options)
+                    self.iface.addVectorLayer(out_path, "%s_%s_%s"%(layerName, objName, gtype), 'ogr')
 
         return error[0] == QgsVectorFileWriter.NoError
+
+
+    def generateRecord(self, GeoQueryResult = {}, mergeRule = 1):
+
+        util_obj = UTIL()
+        objIRISet = set()
+        entityDict= {}
+
+        for idx, item in enumerate(GeoQueryResult):
+            wkt_literal = item["wkt"]["value"]
+            geom_type = util_obj.get_geometry_type_from_wkt(wkt_literal)
+            entityVal = item["entity"]["value"]
+
+            if len(objIRISet) == 0 or entityVal not in objIRISet:
+                objIRISet.add(entityVal)
+
+            entityLabelVal = item["entityLabel"]["value"]
+            entityOVal = item['o']["value"]
+            if geom_type != "0":
+                if geom_type not in entityDict:
+                    entityDict[geom_type] = {}
+                if entityVal not in entityDict[geom_type]:
+                    entityDict[geom_type][entityVal] = {}
+                    entityDict[geom_type][entityVal]["label"] = entityLabelVal
+                    entityDict[geom_type][entityVal]["o"] = []
+                    entityDict[geom_type][entityVal]["o"].append(entityOVal)
+                    entityDict[geom_type][entityVal]["wkt"] = wkt_literal
+                else:
+                    entityDict[geom_type][entityVal]["label"] = entityLabelVal
+                    entityDict[geom_type][entityVal]["o"].append(entityOVal)
+                    entityDict[geom_type][entityVal]["wkt"] = wkt_literal
+            else:
+                self.logger.info("Geometry not found; expunging record")
+        entityDict = self.generateFormattedEntityDict(entityDict, mergeRule)
+
+        return objIRISet, entityDict
+
+
+    def generateFormattedEntityDict(self, entityDict = {}, mergeRule = 1):
+        for gtype in entityDict:
+            for eVal in entityDict[gtype]:
+                if mergeRule == 1:
+                    for eVal in entityDict[gtype]:
+                        entityDict[gtype][eVal]["o"] = entityDict[gtype][eVal]["o"][0]
+                if mergeRule == 2:
+                    entityDict[gtype][eVal]["o"] = " | ".join(entityDict[gtype][eVal]["o"])
+                if mergeRule == 3:
+                    entityDict[gtype][eVal]["o"] = len(entityDict[gtype][eVal]["o"])
+                if mergeRule == 4:
+                    temp_li = []
+                    for idx, val in enumerate(entityDict[gtype][eVal]["o"]):
+                        try:
+                            temp_li.append(self.parse_str(val))
+                        except:
+                            continue
+                    entityDict[gtype][eVal]["o"] = sum(temp_li) / len(temp_li)
+                if mergeRule == 5:
+                    temp_li = []
+                    for idx, val in enumerate(entityDict[gtype][eVal]["o"]):
+                        try:
+                            temp_li.append(self.parse_str(val))
+                        except:
+                            continue
+                    entityDict[gtype][eVal]["o"] = max(temp_li)
+                if mergeRule == 6:
+                    temp_li = []
+                    for idx, val in enumerate(entityDict[gtype][eVal]["o"]):
+                        try:
+                            temp_li.append(self.parse_str(val))
+                        except:
+                            continue
+                    entityDict[gtype][eVal]["o"] = min(temp_li)
+                if mergeRule == 7:
+                    temp_li = []
+                    for idx, val in enumerate(entityDict[gtype][eVal]["o"]):
+                        try:
+                            temp_li.append(self.parse_str(val))
+                        except:
+                            continue
+                    entityDict[gtype][eVal]["o"] = statistics.stdev(temp_li)
+                if mergeRule == 8:
+                    temp_li = []
+                    for idx, val in enumerate(entityDict[gtype][eVal]["o"]):
+                        try:
+                            temp_li.append(self.parse_str(val))
+                        except:
+                            continue
+                    entityDict[gtype][eVal]["o"] = sum(temp_li)
+
+        return entityDict
+
+    def parse_str(self, num):
+        """
+        Parse a string that is expected to contain a number.
+        :param num: str. the number in string.
+        :return: float or int. Parsed num.
+        """
+        if not isinstance(num, str):  # optional - check type
+            raise TypeError('num should be a str. Got {}.'.format(type(num)))
+        if re.compile('^\s*\d+\s*$').search(num):
+            return int(num)
+        if re.compile('^\s*(\d*\.\d+)|(\d+\.\d*)\s*$').search(num):
+            return float(num)
+        raise ValueError('num is not a number. Got {}.'.format(num))  # optional
