@@ -774,10 +774,7 @@ then select an entity on the map.'
         for gtype in entityDict:
             for eVal in entityDict[gtype]:
                 if mergeRule == 1:
-                    self.logger.info("Rule 1: selected")
                     entityDict[gtype][eVal]["o"] = entityDict[gtype][eVal]["o"][0]
-                    self.logger.info(type(entityDict[gtype][eVal]["o"]))
-                    self.logger.info(str(entityDict[gtype][eVal]["o"]))
                 if mergeRule == 2:
                     entityDict[gtype][eVal]["o"] = " | ".join(entityDict[gtype][eVal]["o"])
                 if mergeRule == 3:
