@@ -10,7 +10,7 @@ class kwg_sparqlutil:
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.DEBUG)  # or whatever
         handler = logging.FileHandler(
-            '/var/local/QGIS/kwg_geoenrichment.log', 'w',
+            'kwg_geoenrichment.log', 'w',
             'utf-8')  # or whatever
         formatter = logging.Formatter(
             '%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')  # or whatever

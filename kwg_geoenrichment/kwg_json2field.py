@@ -83,26 +83,7 @@ class kwg_json2field:
                     classFieldLength = self.fieldLengthDecide(GeoQueryResult, "placeFlatType")
                 else:
                     classFieldLength = len(selectedURL) + 50
-                # arcpy.AddMessage("classFieldLength: {0}".format(classFieldLength))
 
-                # # add field to this point feature class
-                # arcpy.AddField_management(geo_feature_class, "Label", "TEXT", field_length=labelFieldLength)
-                # arcpy.AddField_management(geo_feature_class, "URL", "TEXT", field_length=urlFieldLength)
-                # arcpy.AddField_management(geo_feature_class, "Class", "TEXT", field_length=classFieldLength)
-                #
-                # insertCursor = arcpy.da.InsertCursor(out_path, ['URL', 'Label', "Class", 'SHAPE@WKT', ])
-                # for item in placeList:
-                #     place_iri, label, type_iri, wkt_literal = item
-                #     wkt = wkt_literal.replace("<http://www.opengis.net/def/crs/OGC/1.3/CRS84>", "")
-                #     try:
-                #         insertCursor.insertRow((place_iri, label, type_iri, wkt))
-                #     except Error:
-                #         arcpy.AddMessage("Error inserting geo data: {} {} {}".format(place_iri, label, type_iri))
-                #
-                # del insertCursor
-                #
-                # if viz_res:
-                #     ArcpyViz.visualize_current_layer(out_path)
         return
 
     def createQGISFeatureClassFromSPARQLResult(self, GeoQueryResult, out_path="/var/local/QGIS/kwg_results.gpkg",

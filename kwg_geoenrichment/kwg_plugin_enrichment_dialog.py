@@ -59,7 +59,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.DEBUG)  # or whatever
         handler = logging.FileHandler(
-            '/var/local/QGIS/kwg_geoenrichment.log', 'w',
+            'kwg_geoenrichment.log', 'w',
             'utf-8')  # or whatever
         formatter = logging.Formatter(
             '%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')  # or whatever
@@ -91,7 +91,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
 
         stylesheet = """
                 QWidget {
-                    background-image: url("%s"); 
+                    background-image: url("%s");
                     opacity: 1.0;
                 }
                 """ % (image_path)
