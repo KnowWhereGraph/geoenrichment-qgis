@@ -23,10 +23,12 @@
 """
 import logging
 import os
-from qgis.PyQt import QtWidgets
+from qgis.PyQt import QtWidgets, Qt
 from qgis.PyQt import uic
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QSplitter, QTextEdit, QFrame, QDockWidget, QListWidget, QMessageBox
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'kwg_plugin_dialog_base.ui'))
@@ -43,23 +45,42 @@ class kwg_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
 
+        # displaying help
+        self.displayingHelp = False
+        self.setFixedWidth(650)
+        self.plainTextEdit.setHidden(True)
+
         # logging
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.DEBUG)  # or whatever
+        self.path = os.path.dirname(os.path.abspath(__file__))
+        if not os.path.exists(self.path + "/logs"):
+            os.makedirs(self.path + "/logs")
         handler = logging.FileHandler(
-            '/var/local/QGIS/kwg_geoenrichment.log', 'w',
+            self.path + '/logs/kwg_geoenrichment.log', 'w+',
             'utf-8')  # or whatever
         formatter = logging.Formatter(
             '%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')  # or whatever
         handler.setFormatter(formatter)  # Pass handler as a parameter, not assign
         self.logger.addHandler(handler)
 
+        image_path = self.path + "/resources/background-landing.png"
+
+        help_icon = self.path + "/resources/help-circle.png"
+        self.toolButton.setIcon(QIcon(help_icon))
+
+        self.toolButton.clicked.connect(self.displayHelp)
+
+        self.pushButton_gdb.clicked.connect(self.displayGDB)
+
         stylesheet = """
         QWidget {
-            background-image: url("/Users/nenuji/Documents/Github/kwg-qgis-geoenrichment/kwg_geoenrichment/resources/background-landing.png"); 
+            background-image: url("%s"); 
             opacity: 1.0;
         }
-        
+        """ % (image_path)
+
+        stylesheet += """
         QPushButton{
                 background-color: #216FB3;
                 color: #ffffff;
@@ -82,6 +103,27 @@ class kwg_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
                 height: 70px;
                 width: 255px;
                 background: linear-gradient(308.55deg, rgba(0,2,31,0) 0%, #00011F 100%), linear-gradient(359.14deg, rgba(0,2,31,0) 0%, #00011F 100%);
+        }   
+        QPlainTextEdit {
+                background:None;
+                background-color: #36385B;
         }
-        """
+        """ 
         self.setStyleSheet(stylesheet)
+
+    def displayHelp(self):
+        if self.displayingHelp:
+            self.displayingHelp = False
+            self.plainTextEdit.setHidden(True)
+            self.setFixedWidth(650)
+        else:
+            self.displayingHelp = True
+            self.plainTextEdit.setVisible(True)
+            self.setFixedWidth(850)
+
+    def displayGDB(self):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Warning)
+        msg.setText("Can't open a geo-database...")
+        msg.setWindowTitle("Open GDB Warning!")
+        msg.exec_()

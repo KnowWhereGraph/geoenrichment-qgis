@@ -28,10 +28,10 @@ from qgis.PyQt import QtWidgets
 from qgis.PyQt import uic
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
-import geojson
 from PyQt5 import QtCore
 from PyQt5.QtCore import QVariant
-from PyQt5.QtWidgets import QComboBox, QHeaderView
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QComboBox, QHeaderView, QMessageBox
 from qgis._core import QgsMessageLog, Qgis, QgsFields, QgsField, QgsVectorLayer, QgsFeature, QgsGeometry, \
     QgsVectorFileWriter, QgsProject
 
@@ -56,9 +56,12 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
 
         # logging
         self.logger = logging.getLogger()
+        self.path = os.path.dirname(os.path.abspath(__file__))
         self.logger.setLevel(logging.DEBUG)  # or whatever
+        if not os.path.exists(self.path + "/logs"):
+            os.makedirs(self.path + "/logs")
         handler = logging.FileHandler(
-            '/var/local/QGIS/kwg_geoenrichment.log', 'w',
+            self.path + '/logs/kwg_geoenrichment.log', 'w+',
             'utf-8')  # or whatever
         formatter = logging.Formatter(
             '%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')  # or whatever
@@ -73,15 +76,28 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.setUpTable()
         self.pushButton_learnMore.clicked.connect(self.addLearnMore)
 
+        # displaying help
+        self.displayingHelp = False
+        self.setFixedWidth(620)
+        self.plainTextEdit.setHidden(True)
+
+        image_path = self.path + "/resources/background-landing.png"
+        help_icon = self.path + "/resources/help-circle.png"
+        self.toolButton.setIcon(QIcon(help_icon))
+
+        self.toolButton.clicked.connect(self.displayHelp)
+
         self.sparql_query = kwg_sparqlquery()
         self.sparql_util = kwg_sparqlutil()
 
         stylesheet = """
-        QWidget {
-            background-image: url("/Users/nenuji/Documents/Github/kwg-qgis-geoenrichment/kwg_geoenrichment/resources/background-landing.png"); 
-            opacity: 1.0;
-        }
+                QWidget {
+                    background-image: url("%s");
+                    opacity: 1.0;
+                }
+                """ % (image_path)
 
+        stylesheet += """
         QPushButton{
                 background-color: #216FB3;
                 color: #ffffff;
@@ -101,6 +117,10 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
                 height: 70px;
             }
 
+        QPlainTextEdit {
+                background:None;
+                background-color: #36385B;
+        }
         """
         self.setStyleSheet(stylesheet)
 
@@ -119,36 +139,62 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.addLearnMore()
 
     def addLearnMore(self):
-        self.tableWidget.insertRow(self.degreeCount)
-
-        comboBox_S = QComboBox()
-        comboBox_P = QComboBox()
-        comboBox_O = QComboBox()
-
-        self.tableWidget.setCellWidget(self.degreeCount, 0, comboBox_S)
-        self.tableWidget.setCellWidget(self.degreeCount, 1, comboBox_P)
-        self.tableWidget.setCellWidget(self.degreeCount, 2, comboBox_O)
-
-        comboBox_S.show()
-        comboBox_P.show()
-        comboBox_O.show()
 
         # populate N degree subject based on the object property above
         if self.degreeCount > 0:
-            obj = self.tableWidget.cellWidget(self.degreeCount - 1, 2).currentText()
-            self.tableWidget.cellWidget(self.degreeCount, 0).clear()
-            self.tableWidget.cellWidget(self.degreeCount, 0).addItem("--- SELECT ---")
-            self.spoDict[self.degreeCount] = {}
-            self.spoDict[self.degreeCount]["s"] = {}
-            for key in self.spoDict[self.degreeCount - 1]["o"]:
-                self.tableWidget.cellWidget(self.degreeCount, 0).addItem(self.sparql_util.make_prefixed_iri(key))
-                self.spoDict[self.degreeCount]["s"][key] = self.spoDict[self.degreeCount - 1]["o"][key]
-            index = self.tableWidget.cellWidget(self.degreeCount - 1, 2).findText(obj, QtCore.Qt.MatchFixedString)
-            if index >= 0:
-                self.tableWidget.cellWidget(self.degreeCount, 0).setCurrentIndex(index)
-            self.populateNDegreePredicate()
+            finalObject = self.tableWidget.cellWidget(self.degreeCount - 1, 2).currentText()
 
-        self.degreeCount += 1
+            if finalObject is not None and finalObject != "--- SELECT ---" and finalObject != "LITERAL":
+                self.tableWidget.insertRow(self.degreeCount)
+
+                comboBox_S = QComboBox()
+                comboBox_P = QComboBox()
+                comboBox_O = QComboBox()
+
+                self.tableWidget.setCellWidget(self.degreeCount, 0, comboBox_S)
+                self.tableWidget.setCellWidget(self.degreeCount, 1, comboBox_P)
+                self.tableWidget.setCellWidget(self.degreeCount, 2, comboBox_O)
+
+                comboBox_S.show()
+                comboBox_P.show()
+                comboBox_O.show()
+
+                self.tableWidget.cellWidget(self.degreeCount, 0).clear()
+                self.tableWidget.cellWidget(self.degreeCount, 0).addItem("--- SELECT ---")
+                self.spoDict[self.degreeCount] = {}
+                self.spoDict[self.degreeCount]["s"] = {}
+                for key in self.spoDict[self.degreeCount - 1]["o"]:
+                    self.tableWidget.cellWidget(self.degreeCount, 0).addItem(self.sparql_util.make_prefixed_iri(key))
+                    self.spoDict[self.degreeCount]["s"][key] = self.spoDict[self.degreeCount - 1]["o"][key]
+                index = self.tableWidget.cellWidget(self.degreeCount - 1, 2).findText(finalObject, QtCore.Qt.MatchFixedString)
+                if index >= 0:
+                    self.tableWidget.cellWidget(self.degreeCount, 0).setCurrentIndex(index)
+                self.populateNDegreePredicate()
+                self.degreeCount += 1
+            else:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Warning)
+
+                msg.setText("Can't add more content...")
+                msg.setInformativeText("'LITERAL' data encountered!")
+                msg.setWindowTitle("Learn More Warning!")
+                msg.exec_()
+        else:
+            self.tableWidget.insertRow(self.degreeCount)
+
+            comboBox_S = QComboBox()
+            comboBox_P = QComboBox()
+            comboBox_O = QComboBox()
+
+            self.tableWidget.setCellWidget(self.degreeCount, 0, comboBox_S)
+            self.tableWidget.setCellWidget(self.degreeCount, 1, comboBox_P)
+            self.tableWidget.setCellWidget(self.degreeCount, 2, comboBox_O)
+
+            comboBox_S.show()
+            comboBox_P.show()
+            comboBox_O.show()
+
+            self.degreeCount += 1
 
     def execute(self):
         # manage first degree
@@ -168,8 +214,6 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.logger.debug(e)
                 continue
 
-        QgsMessageLog.logMessage("S2 Cells : " + json.dumps(self.s2Cells), "kwg_unified", level=Qgis.Info)
-
         # retrieve Entity associated with S2 cells
         entityBindingObject = self.sparql_query.getEntityValuesFromS2Cells(sparql_endpoint=self.params["end_point"],
                                                                            s2Cells=self.s2Cells)
@@ -179,8 +223,6 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.EntityLi.append(obj["entity"]["value"])
             except Exception as e:
                 continue
-
-        QgsMessageLog.logMessage("Entity List : " + json.dumps(self.EntityLi), "kwg_unified", level=Qgis.Info)
 
         self.populateFirstDegreeSubject()
         return
@@ -340,3 +382,13 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
 
         self.logger.debug(str(len(thirdPropObj)))
         return thirdPropObj
+
+    def displayHelp(self):
+        if self.displayingHelp:
+            self.displayingHelp = False
+            self.plainTextEdit.setHidden(True)
+            self.setFixedWidth(620)
+        else:
+            self.displayingHelp = True
+            self.plainTextEdit.setVisible(True)
+            self.setFixedWidth(900)

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>656</width>
+    <width>842</width>
     <height>448</height>
    </rect>
   </property>
@@ -49,7 +49,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Draw Polygon</string>
+    <string>Select Area</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_layerName">
@@ -89,22 +89,7 @@
    </property>
    <item>
     <property name="text">
-     <string>plume_soil_wildfire - (test)</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
      <string>KWG - (prod)</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>KWG-V2 - (prod)</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>KWG-V3 - (prod)</string>
     </property>
    </item>
   </widget>
@@ -190,9 +175,9 @@
   <widget class="QTableWidget" name="tableWidget">
    <property name="geometry">
     <rect>
-     <x>20</x>
+     <x>50</x>
      <y>250</y>
-     <width>256</width>
+     <width>401</width>
      <height>81</height>
     </rect>
    </property>
@@ -208,6 +193,36 @@
    </property>
    <property name="text">
     <string>...</string>
+   </property>
+  </widget>
+  <widget class="QPlainTextEdit" name="plainTextEdit">
+   <property name="geometry">
+    <rect>
+     <x>650</x>
+     <y>30</y>
+     <width>171</width>
+     <height>381</height>
+    </rect>
+   </property>
+   <property name="plainText">
+    <string>To begin exploring, select an area of interest.  You can either upload a Geodatabase file with an existing polygon layer,  or choose &quot;Select Area&quot; to create a polygon layer representing your area of interest.
+
+After selecting an area of interest, choose &quot;Select Content&quot; to learn about what happened in that area.  You may run this feature as many times as desired.
+
+When you're ready to create your new Feature Class,  provide a name for the new layer and hit &quot;Run&quot;</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>50</x>
+     <y>230</y>
+     <width>151</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Save selected features</string>
    </property>
   </widget>
  </widget>
