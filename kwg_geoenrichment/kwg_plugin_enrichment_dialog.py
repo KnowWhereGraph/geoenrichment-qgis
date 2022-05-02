@@ -28,7 +28,6 @@ from qgis.PyQt import QtWidgets
 from qgis.PyQt import uic
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
-import geojson
 from PyQt5 import QtCore
 from PyQt5.QtCore import QVariant
 from PyQt5.QtGui import QIcon
