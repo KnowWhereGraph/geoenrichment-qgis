@@ -113,7 +113,10 @@ class kwg_geoenrichment:
         self._config = conf.read('config.ini')
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.DEBUG)  # or whatever
-        handler = logging.FileHandler('kwg_geoenrichment.log', 'w', 'utf-8')  # or whatever
+        self.path = os.path.dirname(os.path.abspath(__file__))
+        if not os.path.exists(self.path + "/logs"):
+            os.makedirs(self.path + "/logs")
+        handler = logging.FileHandler(self.path + '/logs/kwg_geoenrichment.log', 'w+', 'utf-8')  # or whatever
         formatter = logging.Formatter(
             '%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')  # or whatever
         handler.setFormatter(formatter)  # Pass handler as a parameter, not assign

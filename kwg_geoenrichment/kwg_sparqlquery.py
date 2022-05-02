@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from collections import namedtuple
 from qgis.core import QgsMessageLog, Qgis
 
@@ -12,8 +13,11 @@ class kwg_sparqlquery:
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.DEBUG)  # or whatever
         self.sparqlUTIL = kwg_sparqlutil()
+        self.path = os.path.dirname(os.path.abspath(__file__))
+        if not os.path.exists(self.path + "/logs"):
+            os.makedirs(self.path + "/logs")
         handler = logging.FileHandler(
-            'kwg_geoenrichment.log', 'w',
+            self.path + '/logs/kwg_geoenrichment.log', 'w+',
             'utf-8')  # or whatever
         formatter = logging.Formatter(
             '%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')  # or whatever

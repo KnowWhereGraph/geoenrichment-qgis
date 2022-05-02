@@ -57,9 +57,12 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
 
         # logging
         self.logger = logging.getLogger()
+        self.path = os.path.dirname(os.path.abspath(__file__))
         self.logger.setLevel(logging.DEBUG)  # or whatever
+        if not os.path.exists(self.path + "/logs"):
+            os.makedirs(self.path + "/logs")
         handler = logging.FileHandler(
-            'kwg_geoenrichment.log', 'w',
+            self.path + '/logs/kwg_geoenrichment.log', 'w+',
             'utf-8')  # or whatever
         formatter = logging.Formatter(
             '%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')  # or whatever
@@ -79,7 +82,6 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.setFixedWidth(620)
         self.plainTextEdit.setHidden(True)
 
-        self.path = os.path.dirname(os.path.abspath(__file__))
         image_path = self.path + "/resources/background-landing.png"
         help_icon = self.path + "/resources/help-circle.png"
         self.toolButton.setIcon(QIcon(help_icon))

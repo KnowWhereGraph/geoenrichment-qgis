@@ -53,15 +53,17 @@ class kwg_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         # logging
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.DEBUG)  # or whatever
+        self.path = os.path.dirname(os.path.abspath(__file__))
+        if not os.path.exists(self.path + "/logs"):
+            os.makedirs(self.path + "/logs")
         handler = logging.FileHandler(
-            'kwg_geoenrichment.log', 'w',
+            self.path + '/logs/kwg_geoenrichment.log', 'w+',
             'utf-8')  # or whatever
         formatter = logging.Formatter(
             '%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')  # or whatever
         handler.setFormatter(formatter)  # Pass handler as a parameter, not assign
         self.logger.addHandler(handler)
 
-        self.path = os.path.dirname(os.path.abspath(__file__))
         image_path = self.path + "/resources/background-landing.png"
 
         help_icon = self.path + "/resources/help-circle.png"
