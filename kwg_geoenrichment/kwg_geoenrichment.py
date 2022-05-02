@@ -640,7 +640,6 @@ then select an entity on the map.'
 
         # crs = QgsCoordinateReferenceSystem("EPSG:4326")
         for layer in layers:
-            # self.logger.debug(layer.name())
             if layer.name() == "geo_enrichment_polygon":
                 feat = layer.getFeatures()
                 for f in feat:
@@ -686,14 +685,16 @@ then select an entity on the map.'
 
         util_obj = UTIL()
 
-        layerFields = QgsFields()
-        layerFields.append(QgsField('entity', QVariant.String))
-        layerFields.append(QgsField('entityLabel', QVariant.String))
-        layerFields.append(QgsField(objName, QVariant.String))
-
         objIRISet, entityDict = self.generateRecord(GeoQueryResult, mergeRule)
 
         for gtype in entityDict:
+
+            layerFields = QgsFields()
+            layerFields.append(QgsField('entity', QVariant.String))
+            layerFields.append(QgsField('entityLabel', QVariant.String))
+            layerFields.append(QgsField(objName, QVariant.String))
+
+            objList = []
             for entity in entityDict[gtype]:
                 objList.append(
                     [entity, entityDict[gtype][entity]["label"], entityDict[gtype][entity]["o"], entityDict[gtype][entity]["wkt"]])
@@ -711,7 +712,7 @@ then select an entity on the map.'
                 if out_path == None:
                     QgsMessageLog.logMessage("No data will be added to the map document.", level=Qgis.Info)
                 else:
-
+                    vl.startEditing()
                     for item in objList:
                         entity_iri, entity_label, o, wkt_literal = item
                         wkt = wkt_literal.replace("<http://www.opengis.net/def/crs/OGC/1.3/CRS84>", "")
@@ -722,14 +723,16 @@ then select an entity on the map.'
                         feat.setGeometry(geom)
                         feat.setAttributes(item[0:3])
 
-                        pr.addFeature(feat)
+                        vl.addFeature(feat)
+                    vl.endEditCommand()
+                    vl.commitChanges()
                     vl.updateExtents()
 
                     options = QgsVectorFileWriter.SaveVectorOptions()
                     options.layerName = "%s_%s_%s"%(layerName, objName, gtype)
                     context = QgsProject.instance().transformContext()
                     error = QgsVectorFileWriter.writeAsVectorFormatV2(vl, out_path, context, options)
-                    self.iface.addVectorLayer(out_path, "%s_%s_%s"%(layerName, objName, gtype), 'ogr')
+                    QgsProject.instance().addMapLayer(vl)
 
         return error[0] == QgsVectorFileWriter.NoError
 
@@ -766,7 +769,6 @@ then select an entity on the map.'
             else:
                 self.logger.info("Geometry not found; expunging record")
         entityDict = self.generateFormattedEntityDict(entityDict, mergeRule)
-
         return objIRISet, entityDict
 
 
