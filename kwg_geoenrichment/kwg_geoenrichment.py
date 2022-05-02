@@ -31,8 +31,7 @@ from qgis.PyQt.QtWidgets import QAction, QInputDialog, QLineEdit, QComboBox, QHe
 from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
     QgsCoordinateTransform, QgsCoordinateTransformContext, QgsMapLayer, \
     QgsFeatureRequest, QgsVectorLayer, QgsLayerTreeGroup, QgsRenderContext, \
-    QgsCoordinateReferenceSystem, QgsMessageLog, Qgis, QgsFields, QgsField, QgsVectorFileWriter
-
+    QgsCoordinateReferenceSystem, QgsMessageLog, Qgis, QgsFields, QgsField, QgsVectorFileWriter, QgsLayerTreeLayer
 
 from typing import re
 import statistics
@@ -476,6 +475,14 @@ then select an entity on the map.'
         if ok and not warning:
 
             name = "geo_enrichment_polygon"
+            pjt = QgsProject.instance()
+            if pjt.layerTreeRoot().findGroup(self.tr('Geometry')) is not None:
+                group = pjt.layerTreeRoot().findGroup(
+                    self.tr('Geometry'))
+
+                for child in group.children():
+                    if isinstance(child, QgsLayerTreeLayer):
+                        QgsProject.instance().removeMapLayer(child.layerId())
 
             # save the buffer
             if self.drawShape == 'point':
@@ -510,7 +517,7 @@ then select an entity on the map.'
             layer.dataProvider().addFeatures([feature])
             layer.commitChanges()
 
-            pjt = QgsProject.instance()
+
             pjt.addMapLayer(layer, False)
             if pjt.layerTreeRoot().findGroup(self.tr('Geometry')) is None:
                 pjt.layerTreeRoot().insertChildNode(
@@ -626,6 +633,7 @@ then select an entity on the map.'
 
             self.createGeoPackage(results, objName, layerName, mergeRuleName, degreeCount, mergeRule=mergeRuleNo, out_path=self.path)
         self.dlg.close()
+        self.contentCounter = 0
 
     def performWKTConversion(self):
         layers = QgsProject.instance().mapLayers().values()
@@ -766,8 +774,10 @@ then select an entity on the map.'
         for gtype in entityDict:
             for eVal in entityDict[gtype]:
                 if mergeRule == 1:
-                    for eVal in entityDict[gtype]:
-                        entityDict[gtype][eVal]["o"] = entityDict[gtype][eVal]["o"][0]
+                    self.logger.info("Rule 1: selected")
+                    entityDict[gtype][eVal]["o"] = entityDict[gtype][eVal]["o"][0]
+                    self.logger.info(type(entityDict[gtype][eVal]["o"]))
+                    self.logger.info(str(entityDict[gtype][eVal]["o"]))
                 if mergeRule == 2:
                     entityDict[gtype][eVal]["o"] = " | ".join(entityDict[gtype][eVal]["o"])
                 if mergeRule == 3:
