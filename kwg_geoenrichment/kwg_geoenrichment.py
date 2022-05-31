@@ -544,6 +544,7 @@ then select an entity on the map.'
             QgsMessageLog.logMessage("Your polygon has been saved to a layer", "kwg_geoenrichment", level=Qgis.Info)
 
             self.updateSelectContent()
+            self.setUpCaller()
 
         self.tool.reset()
         self.resetSB()
@@ -564,6 +565,17 @@ then select an entity on the map.'
         self.dlg.tableWidget.horizontalHeader().setVisible(False)
         self.dlg.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
+    def setUpCaller(self):
+        params = self.getInputs()
+        params["ifaceObj"] = self.iface
+        contentItems = {}
+
+        self.enrichmentObjBuffer.append(kwg_pluginEnrichmentDialog())
+
+        self.enrichmentObjBuffer[self.contentCounter].setParams(params)
+        self.enrichmentObjBuffer[self.contentCounter].execute()
+
+
     def addContent(self):
 
         if self.disableSelectContent:
@@ -576,11 +588,8 @@ then select an entity on the map.'
 
         self.dlg.hide()
 
-        self.enrichmentObjBuffer.append(kwg_pluginEnrichmentDialog())
-
         self.enrichmentObjBuffer[self.contentCounter].show()
-        self.enrichmentObjBuffer[self.contentCounter].setParams(params)
-        self.enrichmentObjBuffer[self.contentCounter].execute()
+
         self.enrichmentObjBuffer[self.contentCounter].pushButton_save.clicked.connect(self.saveContent)
 
         self.contentCounter += 1
