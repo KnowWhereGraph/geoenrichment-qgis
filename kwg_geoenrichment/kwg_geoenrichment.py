@@ -37,6 +37,8 @@ from typing import re
 import statistics
 
 # Import QDraw settings
+from PyQt5.uic.properties import QtCore
+
 from .drawtools import DrawPolygon, \
     SelectPoint
 from .kwg_plugin_dialog import kwg_pluginDialog
@@ -272,6 +274,9 @@ class kwg_geoenrichment:
         if self.first_start == True:
             self.first_start = False
 
+        # set the content counter to 0 on re-run
+        self.contentCounter = 0
+
         self.dlg = kwg_pluginDialog()
 
         self.enrichmentObjBuffer = []
@@ -279,11 +284,11 @@ class kwg_geoenrichment:
         # show the dialog
         self.dlg.show()
 
-        # get the geometry from the user
-        self.dlg.pushButton_polygon.clicked.connect(self.drawPolygon)
-
         # disable GDB Button
         self.dlg.pushButton_gdb.clicked.connect(lambda: self.displayButtonHelp(isGDB=True))
+
+        # get the geometry from the user
+        self.dlg.pushButton_polygon.clicked.connect(self.drawPolygon)
 
         # get contents (open another dialog box)
         self.dlg.pushButton_content.clicked.connect(self.addContent)
@@ -298,6 +303,7 @@ class kwg_geoenrichment:
         return
 
     def drawPolygon(self, sender=None):
+        self.dlg.hide()
         if self.tool:
             self.tool.reset()
         self.tool = DrawPolygon(self.iface, self.settings.getColor())
@@ -537,6 +543,8 @@ then select an entity on the map.'
             self.iface.mapCanvas().refresh()
             QgsMessageLog.logMessage("Your polygon has been saved to a layer", "kwg_geoenrichment", level=Qgis.Info)
 
+            self.updateSelectContent()
+
         self.tool.reset()
         self.resetSB()
         self.bGeom = None
@@ -545,24 +553,8 @@ then select an entity on the map.'
         params = {}
         endPointKey, endPointVal = self.dlg.comboBox_endPoint.currentText().split(" - ")
         params["end_point"] = self.kwg_endpoint_dict[endPointVal[1:-1]][endPointKey]
-        params["relation_type"] = self.dlg.comboBox_spatialRelationshipFilter.currentText()
-
-        # get the function
-        geosparql_func = list()
-        if params["relation_type"] == "CONTAINS + INTERSECTS":
-            geosparql_func = ["geo:sfContains", "geo:sfIntersects"]
-        elif params["relation_type"] == "CONTAINS":
-            geosparql_func = ["geo:sfContains"]
-        elif params["relation_type"] == "WITHIN":
-            geosparql_func = ["geo:sfWithin"]
-        elif params["relation_type"] == "INTERSECTS":
-            geosparql_func = ["geo:sfIntersects"]
-        else:
-            QgsMessageLog.logMessage("The spatial relation is not supported!", "kwg_geoenrichment", level=Qgis.Critical)
 
         params["wkt_literal"] = self.performWKTConversion()
-
-        params["geosparql_func"] = geosparql_func
 
         return params
 
@@ -610,6 +602,7 @@ then select an entity on the map.'
             objectName = self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(i - 1,
                                                                                                   1).currentText()
         self.updatePropMergeItem(objName=objectName)
+        self.enableRunButton()
         return
 
     def updatePropMergeItem(self, objName):
@@ -865,3 +858,28 @@ then select an entity on the map.'
             msg.setText("Please select area of interest using the 'Select Area' button")
             msg.setWindowTitle("'Select Area' First!")
         msg.exec_()
+
+    def updateSelectContent(self):
+        self.disableSelectContent = False
+        self.dlg.pushButton_content.setStyleSheet("""
+            #pushButton_content {
+                border-radius: 3px;
+                background-color: #216FB3;
+                color: #ffffff;
+                height: 70px;
+                width: 255px;
+            }
+        """)
+        self.dlg.show()
+
+    def enableRunButton(self):
+        self.disableRun = False
+        self.dlg.pushButton_content.setStyleSheet("""
+                    #pushButton_run {
+                        border-radius: 3px;
+                        background-color: #216FB3;
+                        color: #ffffff;
+                        height: 70px;
+                        width: 255px;
+                    }
+                """)
