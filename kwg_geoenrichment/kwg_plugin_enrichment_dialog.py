@@ -111,8 +111,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.tableWidget.verticalHeader().setVisible(False)
         self.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
-        tableHeader = ['S', 'P', "O"]
-        self.tableWidget.setHorizontalHeaderLabels(tableHeader)
+        self.tableWidget.horizontalHeader().hide()
 
         self.addLearnMore()
 
