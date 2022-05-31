@@ -71,65 +71,17 @@ class kwg_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
 
         self.toolButton.clicked.connect(self.displayHelp)
 
-        stylesheet = """
+        bg_img = """
         QDialog {
-            background-image: url("%s"); 
+            background-image: url("%s");
         }
         """ % (image_path)
 
-        stylesheet += """
-            
-        #pushButton_gdb {
-                border-radius: 3px;
-                background-color: grey;
-                color: black;
-            }
-        
-        #pushButton_content {
-                border-radius: 3px;
-                background-color: grey;
-                color: black;
-            }
-        
-        #pushButton_run {
-                border-radius: 3px;
-                background-color: grey;
-                color: black;
-            }
-        
-        #pushButton_polygon {
-                border-radius: 3px;
-                background-color: #216FB3;
-                color: #ffffff;
-                height: 70px;
-                width: 255px;
-            }
-        
-        QLabel {
-                color: white;
-            }
-            
-        QComboBox{
-                background-color: #216FB3;
-                color: #ffffff;
-                height: 70px;
-            }
-            
-        QListWidget{
-                color: #ffffff;
-                height: 70px;
-            }
-        QLineEdit {
-                height: 70px;
-                width: 255px;
-                background: linear-gradient(308.55deg, rgba(0,2,31,0) 0%, #00011F 100%), linear-gradient(359.14deg, rgba(0,2,31,0) 0%, #00011F 100%);
-        }   
-        QPlainTextEdit {
-                background:None;
-                background-color: #36385B;
-        }
-        """ 
-        self.setStyleSheet(stylesheet)
+        sshFile = self.path + "/style.qss"
+        with open(sshFile, "r") as fh:
+            qss = fh.read()
+            qss += bg_img
+            self.setStyleSheet(qss)
 
     def displayHelp(self):
         if self.displayingHelp:

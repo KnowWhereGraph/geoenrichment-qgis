@@ -90,39 +90,17 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.sparql_query = kwg_sparqlquery()
         self.sparql_util = kwg_sparqlutil()
 
-        stylesheet = """
-                QWidget {
-                    background-image: url("%s");
-                    opacity: 1.0;
-                }
-                """ % (image_path)
-
-        stylesheet += """
-        QPushButton{
-                background-color: #216FB3;
-                color: #ffffff;
-                height: 70px;
-                width: 255px;
-            }
-
-        QComboBox{
-                background-color: #216FB3;
-                color: #ffffff;
-                height: 70px;
-            }
-
-        QListWidget{
-                background-color: #216FB3;
-                color: #ffffff;
-                height: 70px;
-            }
-
-        QPlainTextEdit {
-                background:None;
-                background-color: #36385B;
+        bg_img = """
+        QDialog {
+            background-image: url("%s");
         }
-        """
-        self.setStyleSheet(stylesheet)
+        """ % (image_path)
+
+        sshFile = self.path + "/style.qss"
+        with open(sshFile, "r") as fh:
+            qss = fh.read()
+            qss += bg_img
+            self.setStyleSheet(qss)
 
     def setParams(self, params):
         self.params.update(params)

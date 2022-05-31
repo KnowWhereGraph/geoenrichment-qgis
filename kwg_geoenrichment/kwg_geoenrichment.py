@@ -574,6 +574,8 @@ then select an entity on the map.'
         params["ifaceObj"] = self.iface
         contentItems = {}
 
+        self.dlg.hide()
+
         self.enrichmentObjBuffer.append(kwg_pluginEnrichmentDialog())
 
         self.enrichmentObjBuffer[self.contentCounter].show()
@@ -874,12 +876,13 @@ then select an entity on the map.'
 
     def enableRunButton(self):
         self.disableRun = False
-        self.dlg.pushButton_content.setStyleSheet("""
-                    #pushButton_run {
-                        border-radius: 3px;
-                        background-color: #216FB3;
-                        color: #ffffff;
-                        height: 70px;
-                        width: 255px;
-                    }
-                """)
+        self.dlg.pushButton_run.setStyleSheet("""
+            #pushButton_run {
+                border-radius: 3px;
+                background-color: #216FB3;
+                color: #ffffff;
+                height: 70px;
+                width: 255px;
+            }
+        """)
+        self.dlg.show()
