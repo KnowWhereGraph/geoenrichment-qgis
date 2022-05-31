@@ -27,7 +27,7 @@ import os.path
 from configparser import ConfigParser
 from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, QVariant
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QInputDialog, QLineEdit, QComboBox, QHeaderView
+from qgis.PyQt.QtWidgets import QAction, QInputDialog, QLineEdit, QComboBox, QHeaderView, QMessageBox
 from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
     QgsCoordinateTransform, QgsCoordinateTransformContext, QgsMapLayer, \
     QgsFeatureRequest, QgsVectorLayer, QgsLayerTreeGroup, QgsRenderContext, \
@@ -125,6 +125,11 @@ class kwg_geoenrichment:
         self.sparqlUtil = kwg_sparqlutil()
         self.eventPlaceTypeDict = dict()
         self.kwg_endpoint_dict = _SPARQL_ENDPOINT_DICT
+
+        # setting up button flags
+        self.disableGDB = True
+        self.disableSelectContent = True
+        self.disableRun = True
 
         self.contentCounter = 0
         self.mergeRuleDict = {
@@ -276,6 +281,9 @@ class kwg_geoenrichment:
 
         # get the geometry from the user
         self.dlg.pushButton_polygon.clicked.connect(self.drawPolygon)
+
+        # disable GDB Button
+        self.dlg.pushButton_gdb.clicked.connect(lambda: self.displayButtonHelp(isGDB=True))
 
         # get contents (open another dialog box)
         self.dlg.pushButton_content.clicked.connect(self.addContent)
@@ -566,6 +574,10 @@ then select an entity on the map.'
 
     def addContent(self):
 
+        if self.disableSelectContent:
+            self.displayButtonHelp()
+            return
+
         params = self.getInputs()
         params["ifaceObj"] = self.iface
         contentItems = {}
@@ -621,6 +633,11 @@ then select an entity on the map.'
         self.dlg.tableWidget.setCellWidget(self.contentCounter - 1, 1, comboBox_M)
 
     def handleRun(self):
+
+        if self.disableRun:
+            self.displayButtonHelp()
+            return
+
         for i in range(self.contentCounter):
             results = self.enrichmentObjBuffer[i].getResults()
             degreeCount = self.enrichmentObjBuffer[i].getDegree()
@@ -837,3 +854,14 @@ then select an entity on the map.'
         if re.compile('^\s*(\d*\.\d+)|(\d+\.\d*)\s*$').search(num):
             return float(num)
         raise ValueError('num is not a number. Got {}.'.format(num))  # optional
+
+    def displayButtonHelp(self, isGDB=False):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Warning)
+        if isGDB:
+            msg.setText("Can't open a geo-database...")
+            msg.setWindowTitle("Open GDB Warning!")
+        else:
+            msg.setText("Please select area of interest using the 'Select Area' button")
+            msg.setWindowTitle("'Select Area' First!")
+        msg.exec_()

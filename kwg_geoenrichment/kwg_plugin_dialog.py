@@ -71,21 +71,42 @@ class kwg_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
 
         self.toolButton.clicked.connect(self.displayHelp)
 
-        self.pushButton_gdb.clicked.connect(self.displayGDB)
-
         stylesheet = """
-        QWidget {
+        QDialog {
             background-image: url("%s"); 
-            opacity: 1.0;
         }
         """ % (image_path)
 
         stylesheet += """
-        QPushButton{
+            
+        #pushButton_gdb {
+                border-radius: 3px;
+                background-color: grey;
+                color: black;
+            }
+        
+        #pushButton_content {
+                border-radius: 3px;
+                background-color: grey;
+                color: black;
+            }
+        
+        #pushButton_run {
+                border-radius: 3px;
+                background-color: grey;
+                color: black;
+            }
+        
+        #pushButton_polygon {
+                border-radius: 3px;
                 background-color: #216FB3;
                 color: #ffffff;
                 height: 70px;
                 width: 255px;
+            }
+        
+        QLabel {
+                color: white;
             }
             
         QComboBox{
@@ -95,7 +116,6 @@ class kwg_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             }
             
         QListWidget{
-                background-color: #216FB3;
                 color: #ffffff;
                 height: 70px;
             }
@@ -120,10 +140,3 @@ class kwg_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             self.displayingHelp = True
             self.plainTextEdit.setVisible(True)
             self.setFixedWidth(850)
-
-    def displayGDB(self):
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Warning)
-        msg.setText("Can't open a geo-database...")
-        msg.setWindowTitle("Open GDB Warning!")
-        msg.exec_()

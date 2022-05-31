@@ -83,7 +83,7 @@
     <rect>
      <x>20</x>
      <y>40</y>
-     <width>141</width>
+     <width>321</width>
      <height>32</height>
     </rect>
    </property>
@@ -92,49 +92,6 @@
      <string>KWG - (prod)</string>
     </property>
    </item>
-  </widget>
-  <widget class="QComboBox" name="comboBox_spatialRelationshipFilter">
-   <property name="geometry">
-    <rect>
-     <x>220</x>
-     <y>40</y>
-     <width>141</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <item>
-    <property name="text">
-     <string>CONTAINS</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>CONTAINS + INTERSECTS</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>INTERSECTS</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>WITHIN</string>
-    </property>
-   </item>
-  </widget>
-  <widget class="QLabel" name="label_spatialRelationshipFilter">
-   <property name="geometry">
-    <rect>
-     <x>220</x>
-     <y>20</y>
-     <width>161</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Spatial Relationship Filter</string>
-   </property>
   </widget>
   <widget class="QPushButton" name="pushButton_content">
    <property name="geometry">
