@@ -52,7 +52,7 @@ class kwg_sparqlquery:
             ?s2Geo geo:asWKT ?s2WKT.
             FILTER(geof:sfIntersects("%s"^^geo:wktLiteral, ?s2WKT) || geof:sfWithin("%s"^^geo:wktLiteral, ?s2WKT)).
         }
-        """ % (wkt_literal, wkt_literal)
+        """ % (wkt_literal, wkt_literal, wkt_literal, wkt_literal)
 
         query = queryPrefix + queryString
 
