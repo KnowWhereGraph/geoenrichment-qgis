@@ -56,6 +56,8 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
 
         # logging
         self.logger = logging.getLogger()
+        self.labelPropDict = dict()
+        self.labelPropDict["LITERAL"] = "LITERAL"
         self.path = os.path.dirname(os.path.abspath(__file__))
         self.logger.setLevel(logging.DEBUG)  # or whatever
         if not os.path.exists(self.path + "/logs"):
@@ -119,7 +121,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
 
         # populate N degree subject based on the object property above
         if self.degreeCount > 0:
-            finalObject = self.tableWidget.cellWidget(self.degreeCount - 1, 2).currentText()
+            finalObject = self.labelPropDict[self.tableWidget.cellWidget(self.degreeCount - 1, 2).currentText()]
 
             if finalObject is not None and finalObject != "--- SELECT ---" and finalObject != "LITERAL":
                 self.tableWidget.insertRow(self.degreeCount)
@@ -221,14 +223,14 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
             self.spoDict[0]["s"][obj["type"]["value"]] = self.sparql_util.make_prefixed_iri(obj["label"]["value"])
 
         for key in self.spoDict[0]["s"]:
-            self.tableWidget.cellWidget(0, 0).addItem(self.sparql_util.make_prefixed_iri(key))
+            self.tableWidget.cellWidget(0, 0).addItem(self.updateLabelPropDict(self.sparql_util.make_prefixed_iri(key)))
         self.tableWidget.cellWidget(0, 0).currentIndexChanged.connect(lambda: self.populateFirstDegreePredicate())
 
     def populateFirstDegreePredicate(self):
         self.tableWidget.cellWidget(0, 1).clear()
         self.tableWidget.cellWidget(0, 1).addItem("--- SELECT ---")
 
-        self.sub0 = self.tableWidget.cellWidget(0, 0).currentText()
+        self.sub0 = self.labelPropDict[self.tableWidget.cellWidget(0, 0).currentText()]
         predicateObject = self.sparql_query.getFirstDegreePredicate(sparql_endpoint=self.params["end_point"],
                                                                     entityList=self.EntityLi,
                                                                     firstDegreeClass=self.sub0)
@@ -242,13 +244,13 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.spoDict[0]["p"][obj["p"]["value"]] = ""
 
         for key in self.spoDict[0]["p"]:
-            self.tableWidget.cellWidget(0, 1).addItem(self.sparql_util.make_prefixed_iri(key))
+            self.tableWidget.cellWidget(0, 1).addItem(self.updateLabelPropDict(self.sparql_util.make_prefixed_iri(key)))
 
         self.tableWidget.cellWidget(0, 1).currentIndexChanged.connect(self.populateFirstDegreeObject)
         return
 
     def populateFirstDegreeObject(self):
-        self.pred0 = self.tableWidget.cellWidget(0, 1).currentText()
+        self.pred0 = self.labelPropDict[self.tableWidget.cellWidget(0, 1).currentText()]
         self.tableWidget.cellWidget(0, 2).clear()
         self.tableWidget.cellWidget(0, 2).addItem("--- SELECT ---")
 
@@ -269,7 +271,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.spoDict[0]["o"][obj["type"]["value"]] = ""
 
         for key in self.spoDict[0]["o"]:
-            self.tableWidget.cellWidget(0, 2).addItem(self.sparql_util.make_prefixed_iri(key))
+            self.tableWidget.cellWidget(0, 2).addItem(self.updateLabelPropDict(self.sparql_util.make_prefixed_iri(key)))
 
         if not self.spoDict[0]["o"]:
             self.tableWidget.cellWidget(0, 2).addItem("LITERAL")
@@ -280,9 +282,9 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.tableWidget.cellWidget(i, 1).addItem("--- SELECT ---")
         selectedVal = []
         for it in range(i+1):
-            selectedVal.append(self.tableWidget.cellWidget(it, 0).currentText())
+            selectedVal.append(self.labelPropDict[self.tableWidget.cellWidget(it, 0).currentText()])
             if it < i:
-                selectedVal.append(self.tableWidget.cellWidget(it, 1).currentText())
+                selectedVal.append(self.labelPropDict[self.tableWidget.cellWidget(it, 1).currentText()])
         # secondPropertyURLList.extend(self.getSecondDegreeProperty())
         secondPredObj = self.sparql_query.getNDegreePredicate(sparql_endpoint=self.params["end_point"],
                                                               entityList=self.EntityLi,
@@ -298,7 +300,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.spoDict[i]["p"][obj["p"]["value"]] = ""
 
         for key in self.spoDict[i]["p"]:
-            self.tableWidget.cellWidget(i, 1).addItem(self.sparql_util.make_prefixed_iri(key))
+            self.tableWidget.cellWidget(i, 1).addItem(self.updateLabelPropDict(self.sparql_util.make_prefixed_iri(key)))
         self.tableWidget.cellWidget(i, 1).currentIndexChanged.connect(self.populateNDegreeObject)
         return
 
@@ -309,8 +311,8 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
 
         selectedVal = []
         for it in range(i):
-            selectedVal.append(self.tableWidget.cellWidget(it, 0).currentText())
-            selectedVal.append(self.tableWidget.cellWidget(it, 1).currentText())
+            selectedVal.append(self.labelPropDict[self.tableWidget.cellWidget(it, 0).currentText()])
+            selectedVal.append(self.labelPropDict[self.tableWidget.cellWidget(it, 1).currentText()])
         # secondPropertyURLList.extend(self.getSecondDegreeProperty())
         secondPropObj = self.sparql_query.getNDegreeObject(sparql_endpoint=self.params["end_point"],
                                                            entityList=self.EntityLi,
@@ -326,7 +328,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.spoDict[i - 1]["o"][obj["type"]["value"]] = ""
 
         for key in self.spoDict[i - 1]["o"]:
-            self.tableWidget.cellWidget(i - 1, 2).addItem(self.sparql_util.make_prefixed_iri(key))
+            self.tableWidget.cellWidget(i - 1, 2).addItem(self.updateLabelPropDict(self.sparql_util.make_prefixed_iri(key)))
 
         if not self.spoDict[i - 1]["o"]:
             self.tableWidget.cellWidget(i - 1, 2).addItem("LITERAL")
@@ -339,14 +341,14 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         i = self.degreeCount
         selectedVal = []
         for it in range(i):
-            subject = self.tableWidget.cellWidget(it, 0).currentText()
-            predicate = self.tableWidget.cellWidget(it, 1).currentText()
+            subject = self.labelPropDict[self.tableWidget.cellWidget(it, 0).currentText()]
+            predicate = self.labelPropDict[self.tableWidget.cellWidget(it, 1).currentText()]
             if subject is not None and subject != "--- SELECT ---" and subject != "LITERAL":
                 selectedVal.append(subject)
             if predicate is not None and predicate != "--- SELECT ---" and predicate != "LITERAL":
                 selectedVal.append(predicate)
 
-        finalObject = self.tableWidget.cellWidget(i-1, 2).currentText()
+        finalObject = self.labelPropDict[self.tableWidget.cellWidget(i-1, 2).currentText()]
         if finalObject is not None and finalObject != "--- SELECT ---" and finalObject != "LITERAL":
             selectedVal.append(finalObject)
 
@@ -369,3 +371,13 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
             self.displayingHelp = True
             self.plainTextEdit.setVisible(True)
             self.setFixedWidth(900)
+
+
+    def updateLabelPropDict(self, label):
+        newLabel = ""
+        if ":" in label:
+            newLabel = label.split(":")[1]
+        else:
+            newLabel = label
+        self.labelPropDict[newLabel] = label
+        return newLabel
