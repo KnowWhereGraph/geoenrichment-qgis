@@ -44,13 +44,13 @@ class kwg_sparqlquery:
             ?adminRegion2 a kwg-ont:AdministrativeRegion_3.
             ?adminRegion2 geo:hasGeometry ?arGeo.
             ?arGeo geo:asWKT ?arWKT.
-            FILTER(geof:sfIntersects("%s"^^geo:wktLiteral, ?arWKT)).
+            FILTER(geof:sfIntersects("%s"^^geo:wktLiteral, ?arWKT) || geof:sfWithin("%s"^^geo:wktLiteral, ?arWKT)).
 
             ?adminRegion2 kwg-ont:sfContains ?s2Cell.
             ?s2Cell a kwg-ont:KWGCellLevel13.
             ?s2Cell geo:hasGeometry ?s2Geo.
             ?s2Geo geo:asWKT ?s2WKT.
-            FILTER(geof:sfIntersects("%s"^^geo:wktLiteral, ?s2WKT)).
+            FILTER(geof:sfIntersects("%s"^^geo:wktLiteral, ?s2WKT) || geof:sfWithin("%s"^^geo:wktLiteral, ?s2WKT)).
         }
         """ % (wkt_literal, wkt_literal)
 
