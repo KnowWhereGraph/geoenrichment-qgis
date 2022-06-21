@@ -376,7 +376,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
     def updateLabelPropDict(self, label):
         newLabel = ""
         if ":" in label:
-            newLabel = label.split(":")[1]
+            newLabel = (label.split(":")[1]).strip()
         else:
             newLabel = label
         self.labelPropDict[newLabel] = label

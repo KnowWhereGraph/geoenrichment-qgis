@@ -25,13 +25,17 @@ import json
 import logging
 import os.path
 from configparser import ConfigParser
-from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, QVariant
+from datetime import time
+from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, QVariant, QObject, pyqtSignal, QTimer
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QInputDialog, QLineEdit, QComboBox, QHeaderView, QMessageBox
+from qgis.PyQt.QtWidgets import QAction, QInputDialog, QLineEdit, QComboBox, QHeaderView, QMessageBox, QCheckBox
 from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
     QgsCoordinateTransform, QgsCoordinateTransformContext, QgsMapLayer, \
     QgsFeatureRequest, QgsVectorLayer, QgsLayerTreeGroup, QgsRenderContext, \
     QgsCoordinateReferenceSystem, QgsMessageLog, Qgis, QgsFields, QgsField, QgsVectorFileWriter, QgsLayerTreeLayer
+from time import sleep
+from multiprocessing import Process
+
 
 from typing import re
 import statistics
@@ -283,6 +287,8 @@ class kwg_geoenrichment:
 
         # show the dialog
         self.dlg.show()
+        self.content_flag = QCheckBox("content_flag")
+        self.content_dlg_display = QCheckBox("content_dlg_display")
 
         # disable GDB Button
         self.dlg.pushButton_gdb.clicked.connect(lambda: self.displayButtonHelp(isGDB=True))
@@ -290,28 +296,23 @@ class kwg_geoenrichment:
         # get the geometry from the user
         self.dlg.pushButton_polygon.clicked.connect(self.drawPolygon)
 
-        # get contents (open another dialog box)
-        self.dlg.pushButton_content.clicked.connect(self.addContent)
+        # self.content_flag.stateChanged.connect(lambda: self.setUpCaller())
+        #
+        # self.content_dlg_display.stateChanged.connect(lambda: self.addContent())
 
+        # handle tool run
         self.dlg.pushButton_run.clicked.connect(self.handleRun)
 
         # show the table
         self.setUPMergeTable()
-
-        # Run the dialog event loop
-        result = self.dlg.exec_()
         return
 
-    def drawPolygon(self, sender=None):
+    def drawPolygon(self):
         self.dlg.hide()
         if self.tool:
             self.tool.reset()
         self.tool = DrawPolygon(self.iface, self.settings.getColor())
-        # self.tool.setAction(self.actions[4])
-        if sender == "explore":
-            self.tool.selectionDone.connect(lambda: self.drawExplore())
-        else:
-            self.tool.selectionDone.connect(lambda: self.draw())
+        self.tool.selectionDone.connect(lambda: self.draw())
         self.tool.move.connect(self.updateSB)
         self.iface.mapCanvas().setMapTool(self.tool)
         self.drawShape = 'polygon'
@@ -544,11 +545,12 @@ then select an entity on the map.'
             QgsMessageLog.logMessage("Your polygon has been saved to a layer", "kwg_geoenrichment", level=Qgis.Info)
 
             self.updateSelectContent()
-            self.setUpCaller()
+            QTimer.singleShot(1, self.setUpCaller)
 
         self.tool.reset()
         self.resetSB()
         self.bGeom = None
+        self.content_flag.setChecked(True)
 
     def getInputs(self):
         params = {}
@@ -566,25 +568,25 @@ then select an entity on the map.'
         self.dlg.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
     def setUpCaller(self):
+        self.content_flag.disconnect()
         params = self.getInputs()
         params["ifaceObj"] = self.iface
-        contentItems = {}
 
         self.enrichmentObjBuffer.append(kwg_pluginEnrichmentDialog())
+
+        # get contents (open another dialog box)
+        self.dlg.pushButton_content.clicked.connect(self.addContent)
 
         self.enrichmentObjBuffer[self.contentCounter].setParams(params)
         self.enrichmentObjBuffer[self.contentCounter].execute()
 
 
     def addContent(self):
+        self.content_dlg_display.disconnect()
 
         if self.disableSelectContent:
             self.displayButtonHelp()
             return
-
-        params = self.getInputs()
-        params["ifaceObj"] = self.iface
-        contentItems = {}
 
         self.dlg.hide()
 
