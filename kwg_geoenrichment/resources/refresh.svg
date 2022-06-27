@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="35px" height="29px" viewBox="0 0 35 29" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>refresh</title>
+    <g id="Tool" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round">
+        <g id="refresh" transform="translate(2.000000, 2.000000)" stroke="#FFFFFF" stroke-width="2.8">
+            <polyline id="Path" points="31 1.38617778 31 9.72154445 22.5454545 9.72154445"></polyline>
+            <polyline id="Path" points="0 23.6138222 0 15.2784556 8.45454545 15.2784556"></polyline>
+            <path d="M3.53681818,8.33231667 C4.98942412,4.2852345 8.44646737,1.25589356 12.6934949,0.308495817 C16.9405225,-0.63890193 21.3835757,0.628139718 24.4618182,3.66451134 L31,9.72154445 M0,15.2784556 L6.53818182,21.3354887 C9.61642427,24.3718603 14.0594775,25.6389019 18.3065051,24.6915042 C22.5535326,23.7441064 26.0105759,20.7147655 27.4631818,16.6676833" id="Shape"></path>
+        </g>
+    </g>
+</svg>

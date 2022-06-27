@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="26px" height="32px" viewBox="0 0 26 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>file</title>
+    <g id="Tool" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round">
+        <g id="file" transform="translate(2.000000, 2.000000)" stroke="#FFFFFF" stroke-width="2.8">
+            <path d="M12.375,0 L2.75,0 C1.23121694,0 0,1.2536027 0,2.8 L0,25.2 C0,26.7463973 1.23121694,28 2.75,28 L19.25,28 C20.7687831,28 22,26.7463973 22,25.2 L22,9.8 L12.375,0 Z" id="Path"></path>
+            <polyline id="Path" points="12.375 0 12.375 9.8 22 9.8"></polyline>
+        </g>
+    </g>
+</svg>

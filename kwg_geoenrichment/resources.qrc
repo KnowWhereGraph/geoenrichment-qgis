@@ -17,5 +17,9 @@
         <file>resources/merge_Data.png</file>
         <file>resources/background-landing.png</file>
         <file>resources/help-circle.png</file>
+        <file>resources/loading.gif</file>
+        <file>resources/plus.svg</file>
+        <file>resources/refresh.svg</file>
+        <file>resources/file.svg</file>
     </qresource>
 </RCC>
