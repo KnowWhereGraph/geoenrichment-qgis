@@ -26,7 +26,8 @@ import logging
 import os.path
 from configparser import ConfigParser
 from datetime import time
-from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, QVariant, QObject, pyqtSignal, QTimer
+from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, QVariant, QObject, pyqtSignal, QTimer, \
+    QThreadPool, QRunnable, pyqtSlot
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QInputDialog, QLineEdit, QComboBox, QHeaderView, QMessageBox, QCheckBox
 from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
@@ -66,7 +67,6 @@ _SPARQL_ENDPOINT_DICT = {
     }
 }
 
-
 class kwg_geoenrichment:
     """QGIS Plugin Implementation."""
 
@@ -101,6 +101,9 @@ class kwg_geoenrichment:
         # Check if plugin was started the first time in current QGIS session
         # Must be set in initGui() to survive plugin reloads
         self.first_start = None
+
+        self.threadpool = QThreadPool()
+        QgsMessageLog.logMessage(("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount()))
 
         # QDraw specific configs
         self.sb = self.iface.statusBarIface()
@@ -578,7 +581,9 @@ then select an entity on the map.'
         self.dlg.pushButton_content.clicked.connect(self.addContent)
 
         self.enrichmentObjBuffer[self.contentCounter].setParams(params)
-        self.enrichmentObjBuffer[self.contentCounter].execute()
+
+        worker = Worker(self.enrichmentObjBuffer, self.contentCounter)
+        self.threadpool.start(worker)
 
 
     def addContent(self):
@@ -587,6 +592,8 @@ then select an entity on the map.'
         if self.disableSelectContent:
             self.displayButtonHelp()
             return
+
+        self.dlg.pushButton_content.setText("Searching area...")
 
         self.dlg.hide()
 
@@ -897,3 +904,18 @@ then select an entity on the map.'
             }
         """)
         self.dlg.show()
+
+
+class Worker(QRunnable, ):
+
+    def __init__(self, enrichmentObjBuffer, contentCounter):
+        super(Worker, self).__init__()
+        self.enrichmentObjBuffer = enrichmentObjBuffer
+        self.contentCounter = contentCounter
+
+    @pyqtSlot()
+    def run(self):
+        '''
+        Runnable code for executing S2 cells query
+        '''
+        self.enrichmentObjBuffer[self.contentCounter].execute()
