@@ -606,6 +606,8 @@ then select an entity on the map.'
         return
 
     def saveContent(self):
+
+        self.dlg.pushButton_content.setText("Select Content")
         i = self.enrichmentObjBuffer[self.contentCounter - 1].degreeCount
         selectedVal = []
         for it in range(i):

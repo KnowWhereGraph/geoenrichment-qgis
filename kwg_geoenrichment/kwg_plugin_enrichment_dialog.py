@@ -29,9 +29,9 @@ from qgis.PyQt import uic
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 from PyQt5 import QtCore
-from PyQt5.QtCore import QVariant
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QComboBox, QHeaderView, QMessageBox
+from PyQt5.QtCore import QVariant, QRunnable, pyqtSlot, QThreadPool
+from PyQt5.QtGui import QIcon, QMovie
+from PyQt5.QtWidgets import QComboBox, QHeaderView, QMessageBox, QCheckBox
 from qgis._core import QgsMessageLog, Qgis, QgsFields, QgsField, QgsVectorLayer, QgsFeature, QgsGeometry, \
     QgsVectorFileWriter, QgsProject
 
@@ -74,6 +74,10 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.s2Cells = []
         self.EntityLi = []
 
+        self.graphicsView = QMovie("earth.gif")
+
+        self.threadpool = QThreadPool()
+
         self.degreeCount = 0
         self.setUpTable()
         self.pushButton_learnMore.clicked.connect(self.addLearnMore)
@@ -86,6 +90,15 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         image_path = self.path + "/resources/background-landing.png"
         help_icon = self.path + "/resources/help-circle.png"
         self.toolButton.setIcon(QIcon(help_icon))
+
+        self.entitiesRetrieved = QCheckBox()
+        self.entitiesRetrieved.setChecked(False)
+        self.entitiesRetrieved.stateChanged.connect(lambda: self.populateFirstDegreeSubject())
+
+        self.retrievingQuery = QCheckBox()
+        self.retrievingQuery.setChecked(False)
+        self.retrievingQuery.stateChanged.connect(lambda: self.queryStateHandler())
+
 
         self.toolButton.clicked.connect(self.displayHelp)
 
@@ -107,6 +120,10 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
     def setParams(self, params):
         self.params.update(params)
         self.ifaceObj = self.params["ifaceObj"]
+
+    def queryStateHandler(self):
+        worker = Worker(self.retrievingQuery)
+        self.threadpool.start(worker)
 
     def setUpTable(self):
         self.tableWidget.setColumnCount(3)
@@ -178,6 +195,10 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
     def execute(self):
         # manage first degree
         self.results = {}
+        self.retrievingQuery.setChecked(True)
+
+        # self.tableWidget.cellWidget(0, 0).clear()
+        # self.tableWidget.cellWidget(0, 0).addItem("--- SELECT ---")
 
         # retrieve S2 cells
         s2CellBindingObject = self.sparql_query.getS2CellsFromGeometry(sparql_endpoint=self.params["end_point"],
@@ -203,13 +224,15 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
             except Exception as e:
                 continue
 
-        self.populateFirstDegreeSubject()
-        return
+        self.entitiesRetrieved.setChecked(True)
+        self.retrievingQuery.setChecked(False)
+
 
     def get_results(self):
         return self.results
 
     def populateFirstDegreeSubject(self):
+        self.retrievingQuery.setChecked(True)
         classObject = self.sparql_query.getFirstDegreeClass(sparql_endpoint=self.params["end_point"],
                                                             entityList=self.EntityLi)
 
@@ -224,11 +247,15 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
 
         for key in self.spoDict[0]["s"]:
             self.tableWidget.cellWidget(0, 0).addItem(self.updateLabelPropDict(self.sparql_util.make_prefixed_iri(key)))
+        self.retrievingQuery.setChecked(False)
+        QgsMessageLog.logMessage("first degree connecting", "kwg_geoenrichment", Qgis.Info)
         self.tableWidget.cellWidget(0, 0).currentIndexChanged.connect(lambda: self.populateFirstDegreePredicate())
 
     def populateFirstDegreePredicate(self):
+        QgsMessageLog.logMessage("second degree", "kwg_geoenrichment", Qgis.Info)
         self.tableWidget.cellWidget(0, 1).clear()
         self.tableWidget.cellWidget(0, 1).addItem("--- SELECT ---")
+        self.retrievingQuery.setChecked(True)
 
         self.sub0 = self.labelPropDict[self.tableWidget.cellWidget(0, 0).currentText()]
         predicateObject = self.sparql_query.getFirstDegreePredicate(sparql_endpoint=self.params["end_point"],
@@ -246,6 +273,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         for key in self.spoDict[0]["p"]:
             self.tableWidget.cellWidget(0, 1).addItem(self.updateLabelPropDict(self.sparql_util.make_prefixed_iri(key)))
 
+        self.retrievingQuery.setChecked(False)
         self.tableWidget.cellWidget(0, 1).currentIndexChanged.connect(self.populateFirstDegreeObject)
         return
 
@@ -253,6 +281,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.pred0 = self.labelPropDict[self.tableWidget.cellWidget(0, 1).currentText()]
         self.tableWidget.cellWidget(0, 2).clear()
         self.tableWidget.cellWidget(0, 2).addItem("--- SELECT ---")
+        self.retrievingQuery.setChecked(True)
 
         firstDegreeObject = self.sparql_query.getFirstDegreeObject(sparql_endpoint=self.params["end_point"],
                                                                    entityList=self.EntityLi,
@@ -273,6 +302,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         for key in self.spoDict[0]["o"]:
             self.tableWidget.cellWidget(0, 2).addItem(self.updateLabelPropDict(self.sparql_util.make_prefixed_iri(key)))
 
+        self.retrievingQuery.setChecked(False)
         if not self.spoDict[0]["o"]:
             self.tableWidget.cellWidget(0, 2).addItem("LITERAL")
 
@@ -381,3 +411,20 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
             newLabel = label
         self.labelPropDict[newLabel] = label
         return newLabel
+
+
+class Worker(QRunnable, ):
+
+    def __init__(self, retrievingQuery):
+        super(Worker, self).__init__()
+        self.retrievingQuery = retrievingQuery
+
+    @pyqtSlot()
+    def run(self):
+        '''
+        Runnable code for executing S2 cells query
+        '''
+        if (self.retrievingQuery.isChecked()):
+            QgsMessageLog.logMessage("fetching...", "kwg_geoenrichment", Qgis.Info)
+        else:
+            QgsMessageLog.logMessage("done!", "kwg_geoenrichment", Qgis.Info)
