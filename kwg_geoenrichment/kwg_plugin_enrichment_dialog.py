@@ -219,14 +219,17 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
 
         # self.tableWidget.cellWidget(0, 0).clear()
         # self.tableWidget.cellWidget(0, 0).addItem("--- SELECT ---")
+        s2CellBindingObject = []
 
-        # retrieve S2 cells
-        s2CellBindingObject = self.sparql_query.getS2CellsFromGeometry(sparql_endpoint=self.params["end_point"],
-                                                                       wkt_literal=self.params["wkt_literal"])
+        for wkt in self.params["wkt_literal"]:
+            # retrieve S2 cells
+            response = self.sparql_query.getS2CellsFromGeometry(sparql_endpoint=self.params["end_point"],
+                                                                           wkt_literal=wkt)
 
-        if s2CellBindingObject == "error: s2c":
-            self.handleError(errCode="s2c")
-            return "s2c"
+            if response == "error: s2c":
+                self.handleError(errCode="s2c")
+                return "s2c"
+            s2CellBindingObject.extend(response)
 
         self.logger.debug(json.dumps(s2CellBindingObject))
         for obj in s2CellBindingObject:
