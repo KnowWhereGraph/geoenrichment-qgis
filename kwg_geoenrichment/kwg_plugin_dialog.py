@@ -69,6 +69,13 @@ class kwg_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         help_icon = self.path + "/resources/help-circle.png"
         self.toolButton.setIcon(QIcon(help_icon))
 
+        plus_svg = self.path + "/resources/plus.svg"
+        refresh_svg = self.path + "/resources/refresh.svg"
+        file_svg = self.path + "/resources/file.svg"
+        self.pushButton_gdb.setIcon(QIcon(file_svg))
+        self.pushButton_polygon.setIcon(QIcon(plus_svg))
+        self.pushButton_refresh.setIcon(QIcon(refresh_svg))
+
         self.toolButton.clicked.connect(self.displayHelp)
 
         bg_img = """
@@ -82,6 +89,7 @@ class kwg_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
             qss = fh.read()
             qss += bg_img
             self.setStyleSheet(qss)
+
 
     def displayHelp(self):
         if self.displayingHelp:

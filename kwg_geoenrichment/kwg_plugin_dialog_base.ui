@@ -7,56 +7,17 @@
     <x>0</x>
     <y>0</y>
     <width>842</width>
-    <height>448</height>
+    <height>479</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>KnowWhereGraph Geoenrichment</string>
   </property>
-  <widget class="QLabel" name="label_endPoint">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>20</y>
-     <width>171</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Choose a Knowledge Graph</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="pushButton_gdb">
-   <property name="geometry">
-    <rect>
-     <x>400</x>
-     <y>40</y>
-     <width>113</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Open GDB File</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="pushButton_polygon">
-   <property name="geometry">
-    <rect>
-     <x>520</x>
-     <y>40</y>
-     <width>113</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Select Area</string>
-   </property>
-  </widget>
   <widget class="QLabel" name="label_layerName">
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>340</y>
+     <y>370</y>
      <width>161</width>
      <height>16</height>
     </rect>
@@ -69,7 +30,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>360</y>
+     <y>390</y>
      <width>491</width>
      <height>31</height>
     </rect>
@@ -78,26 +39,11 @@
     <string>geo_results</string>
    </property>
   </widget>
-  <widget class="QComboBox" name="comboBox_endPoint">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>40</y>
-     <width>321</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <item>
-    <property name="text">
-     <string>KWG - (prod)</string>
-    </property>
-   </item>
-  </widget>
   <widget class="QPushButton" name="pushButton_content">
    <property name="geometry">
     <rect>
      <x>520</x>
-     <y>320</y>
+     <y>350</y>
      <width>111</width>
      <height>32</height>
     </rect>
@@ -112,7 +58,7 @@
      <x>50</x>
      <y>90</y>
      <width>561</width>
-     <height>121</height>
+     <height>111</height>
     </rect>
    </property>
   </widget>
@@ -120,7 +66,7 @@
    <property name="geometry">
     <rect>
      <x>520</x>
-     <y>360</y>
+     <y>390</y>
      <width>113</width>
      <height>32</height>
     </rect>
@@ -133,30 +79,17 @@
    <property name="geometry">
     <rect>
      <x>50</x>
-     <y>250</y>
+     <y>280</y>
      <width>401</width>
      <height>81</height>
     </rect>
-   </property>
-  </widget>
-  <widget class="QToolButton" name="toolButton">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>410</y>
-     <width>26</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>...</string>
    </property>
   </widget>
   <widget class="QPlainTextEdit" name="plainTextEdit">
    <property name="geometry">
     <rect>
      <x>650</x>
-     <y>30</y>
+     <y>60</y>
      <width>171</width>
      <height>381</height>
     </rect>
@@ -173,13 +106,106 @@ When you're ready to create your new Feature Class,  provide a name for the new 
    <property name="geometry">
     <rect>
      <x>50</x>
-     <y>230</y>
+     <y>260</y>
      <width>151</width>
      <height>16</height>
     </rect>
    </property>
    <property name="text">
     <string>Save selected features</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="comboBox_layers">
+   <property name="geometry">
+    <rect>
+     <x>14</x>
+     <y>40</y>
+     <width>371</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="toolTip">
+    <string>Select active layers from the project</string>
+   </property>
+   <item>
+    <property name="text">
+     <string>--- Active Layers ---</string>
+    </property>
+   </item>
+  </widget>
+  <widget class="QPushButton" name="pushButton_gdb">
+   <property name="geometry">
+    <rect>
+     <x>390</x>
+     <y>40</y>
+     <width>41</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="toolTip">
+    <string>Open a geopackage file</string>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pushButton_polygon">
+   <property name="geometry">
+    <rect>
+     <x>440</x>
+     <y>40</y>
+     <width>41</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="toolTip">
+    <string>Draw polygon of interest
+</string>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pushButton_refresh">
+   <property name="geometry">
+    <rect>
+     <x>490</x>
+     <y>40</y>
+     <width>41</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="toolTip">
+    <string>Refresh list of active layers</string>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="toolButton">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>430</y>
+     <width>41</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_2">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>20</y>
+     <width>261</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Select an active layer or draw a polygon</string>
    </property>
   </widget>
  </widget>
