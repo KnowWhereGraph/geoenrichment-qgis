@@ -282,6 +282,7 @@ class kwg_geoenrichment:
             self.first_start = False
 
         # set the content counter to 0 on re-run
+        QgsMessageLog.logMessage("resetting contetn counter", "kwg_geoenrichment", Qgis.Info)
         self.contentCounter = 0
 
         self.dlg = kwg_pluginDialog()
@@ -290,18 +291,12 @@ class kwg_geoenrichment:
 
         # show the dialog
         self.dlg.show()
-        self.content_flag = QCheckBox("content_flag")
-        self.content_dlg_display = QCheckBox("content_dlg_display")
 
         # disable GDB Button
         self.dlg.pushButton_gdb.clicked.connect(lambda: self.displayButtonHelp(isGDB=True))
 
         # get the geometry from the user
         self.dlg.pushButton_polygon.clicked.connect(self.drawPolygon)
-
-        # self.content_flag.stateChanged.connect(lambda: self.setUpCaller())
-        #
-        # self.content_dlg_display.stateChanged.connect(lambda: self.addContent())
 
         # handle tool run
         self.dlg.pushButton_run.clicked.connect(self.handleRun)
@@ -535,7 +530,6 @@ then select an entity on the map.'
             layer.dataProvider().addFeatures([feature])
             layer.commitChanges()
 
-
             pjt.addMapLayer(layer, False)
             if pjt.layerTreeRoot().findGroup(self.tr('Geometry')) is None:
                 pjt.layerTreeRoot().insertChildNode(
@@ -548,12 +542,13 @@ then select an entity on the map.'
             QgsMessageLog.logMessage("Your polygon has been saved to a layer", "kwg_geoenrichment", level=Qgis.Info)
 
             self.updateSelectContent()
-            QTimer.singleShot(1, self.setUpCaller)
+            # self.contentCounter = 0
+            # self.enrichmentObjBuffer = []
+            self.setUpCaller(counter = 0)
 
         self.tool.reset()
         self.resetSB()
         self.bGeom = None
-        self.content_flag.setChecked(True)
 
     def getInputs(self):
         params = {}
@@ -570,28 +565,38 @@ then select an entity on the map.'
         self.dlg.tableWidget.horizontalHeader().setVisible(False)
         self.dlg.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
-    def setUpCaller(self):
-        self.content_flag.disconnect()
+    def setUpCaller(self, counter = 0):
         params = self.getInputs()
         params["ifaceObj"] = self.iface
 
-        self.enrichmentObjBuffer.append(kwg_pluginEnrichmentDialog())
+        # QgsMessageLog.logMessage("content : " + str(counter), "kwg_geoenrichment", Qgis.Info)
 
-        # get contents (open another dialog box)
-        self.dlg.pushButton_content.clicked.connect(self.addContent)
+        if counter == 0:
+            self.enrichmentObjBuffer.append(kwg_pluginEnrichmentDialog())
 
-        self.enrichmentObjBuffer[self.contentCounter].setParams(params)
+            # get contents (open another dialog box)
+            self.dlg.pushButton_content.clicked.connect(self.addContent)
 
-        worker = Worker(self.enrichmentObjBuffer, self.contentCounter)
-        self.threadpool.start(worker)
+            self.enrichmentObjBuffer[self.contentCounter].setParams(params)
+
+            worker = Worker(self.enrichmentObjBuffer, self.contentCounter)
+            self.threadpool.start(worker)
+        else:
+            s2Cells = self.enrichmentObjBuffer[0].get_s2Cells()
+            entityLi = self.enrichmentObjBuffer[0].get_entityLi()
+            spoDict = self.enrichmentObjBuffer[0].get_spoDict()
+            self.enrichmentObjBuffer.append(kwg_pluginEnrichmentDialog(s2Cells=s2Cells, entityLi=entityLi, spoDict=spoDict, params=params))
 
 
     def addContent(self):
-        self.content_dlg_display.disconnect()
 
         if self.disableSelectContent:
             self.displayButtonHelp()
             return
+
+        # not first run
+        if self.contentCounter > 0:
+            self.setUpCaller(counter=self.contentCounter)
 
         self.dlg.pushButton_content.setText("Searching area...")
 

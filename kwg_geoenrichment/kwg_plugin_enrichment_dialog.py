@@ -44,7 +44,7 @@ FORM_CLASS, _ = uic.loadUiType(os.path.join(
 
 
 class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, s2Cells=[], entityLi=[], spoDict={}, params={}):
         """Constructor."""
         super(kwg_pluginEnrichmentDialog, self).__init__(parent)
         # Set up the user interface from Designer through FORM_CLASS.
@@ -70,9 +70,13 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         handler.setFormatter(formatter)  # Pass handler as a parameter, not assign
         self.logger.addHandler(handler)
         self.params = {}
-        self.spoDict = {}
-        self.s2Cells = []
-        self.EntityLi = []
+        self.spoDict = spoDict
+        self.s2Cells = s2Cells
+        self.EntityLi = entityLi
+        self.params=params
+        if bool(params):
+            self.ifaceObj = self.params["ifaceObj"]
+
         self.threadpool = QThreadPool()
 
         self.degreeCount = 0
@@ -125,6 +129,9 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
             qss = fh.read()
             qss += bg_img
             self.setStyleSheet(qss)
+
+        if bool(self.spoDict):
+            self.populateFirstDegreeSubject(spo=self.spoDict)
 
     def setParams(self, params):
         self.params.update(params)
@@ -201,6 +208,8 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
             comboBox_P.show()
             comboBox_O.show()
 
+            self.tableWidget.cellWidget(self.degreeCount, 0).clear()
+
             self.degreeCount += 1
 
     def execute(self):
@@ -241,19 +250,34 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
     def get_results(self):
         return self.results
 
-    def populateFirstDegreeSubject(self):
-        self.retrievingQuery.setChecked(True)
-        classObject = self.sparql_query.getFirstDegreeClass(sparql_endpoint=self.params["end_point"],
-                                                            entityList=self.EntityLi)
+    def get_s2Cells(self):
+        return self.s2Cells
 
+    def get_entityLi(self):
+        return self.EntityLi
+
+    def get_spoDict(self):
+        spo = {}
+        spo[0] = {}
+        spo[0]["s"] = self.spoDict[0]["s"]
+        return spo
+
+    def populateFirstDegreeSubject(self, spo={}):
+        self.retrievingQuery.setChecked(True)
         self.tableWidget.cellWidget(0, 0).clear()
         self.tableWidget.cellWidget(0, 0).addItem("--- SELECT ---")
 
-        # populate the spoDict
-        self.spoDict[0] = {}
-        self.spoDict[0]["s"] = {}
-        for obj in classObject:
-            self.spoDict[0]["s"][obj["type"]["value"]] = self.sparql_util.make_prefixed_iri(obj["label"]["value"])
+        if not bool(spo):
+            classObject = self.sparql_query.getFirstDegreeClass(sparql_endpoint=self.params["end_point"],
+                                                                entityList=self.EntityLi)
+
+            # populate the spoDict`
+            self.spoDict[0] = {}
+            self.spoDict[0]["s"] = {}
+            for obj in classObject:
+                self.spoDict[0]["s"][obj["type"]["value"]] = self.sparql_util.make_prefixed_iri(obj["label"]["value"])
+        else:
+            self.spoDict[0] = spo[0]
 
         for key in self.spoDict[0]["s"]:
             self.tableWidget.cellWidget(0, 0).addItem(self.updateLabelPropDict(self.sparql_util.make_prefixed_iri(key)))
