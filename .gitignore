@@ -146,3 +146,8 @@ cython_debug/
 # Installation files
 kwg_geoenrichment.zip
 *.autosave
+*.cpg
+*.dbf
+*.prj
+*.shp
+*.shx
