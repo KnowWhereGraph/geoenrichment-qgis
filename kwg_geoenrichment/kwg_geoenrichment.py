@@ -33,7 +33,8 @@ from qgis.PyQt.QtWidgets import QAction, QInputDialog, QLineEdit, QComboBox, QHe
 from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
     QgsCoordinateTransform, QgsCoordinateTransformContext, QgsMapLayer, \
     QgsFeatureRequest, QgsVectorLayer, QgsLayerTreeGroup, QgsRenderContext, \
-    QgsCoordinateReferenceSystem, QgsMessageLog, Qgis, QgsFields, QgsField, QgsVectorFileWriter, QgsLayerTreeLayer
+    QgsCoordinateReferenceSystem, QgsMessageLog, Qgis, QgsFields, QgsField, QgsVectorFileWriter, QgsLayerTreeLayer, \
+    QgsWkbTypes
 from time import sleep
 from multiprocessing import Process
 
@@ -282,10 +283,11 @@ class kwg_geoenrichment:
             self.first_start = False
 
         # set the content counter to 0 on re-run
-        QgsMessageLog.logMessage("resetting contetn counter", "kwg_geoenrichment", Qgis.Info)
         self.contentCounter = 0
 
         self.dlg = kwg_pluginDialog()
+
+        self.retrievePolygonLayers()
 
         self.enrichmentObjBuffer = []
 
@@ -544,18 +546,46 @@ then select an entity on the map.'
             self.updateSelectContent()
             # self.contentCounter = 0
             # self.enrichmentObjBuffer = []
-            self.setUpCaller(counter = 0)
+            self.setUpCaller(counter=0)
 
         self.tool.reset()
         self.resetSB()
         self.bGeom = None
 
-    def getInputs(self):
+    def retrievePolygonLayers(self):
+        layers = QgsProject.instance().mapLayers().values()
+
+        self.dlg.comboBox_layers.clear()
+        self.dlg.comboBox_layers.addItem("--- Active Layers ---")
+
+        for layer in layers:
+            if ( layer.type() == QgsMapLayer.VectorLayer and layer.geometryType() == QgsWkbTypes.PolygonGeometry):
+                self.dlg.comboBox_layers.addItem(layer.name())
+
+        self.dlg.comboBox_layers.currentIndexChanged.connect(lambda: self.handleLayerSelection())
+
+    def handleLayerSelection(self):
+        selectedLayername = self.dlg.comboBox_layers.currentText()
+
+        # enable the select content button
+        self.updateSelectContent()
+
+        ## uncomment this when ready
+        self.setUpCaller(counter=0, layerName=selectedLayername)
+
+    def getInputs(self, layerName=None):
         params = {}
-        endPointKey, endPointVal = self.dlg.comboBox_endPoint.currentText().split(" - ")
+
+        # make this dynamic depending on selection provided to the user or not
+        self.graph = "KWG - (prod)"
+
+        endPointKey, endPointVal = self.graph.split(" - ")
         params["end_point"] = self.kwg_endpoint_dict[endPointVal[1:-1]][endPointKey]
 
-        params["wkt_literal"] = self.performWKTConversion()
+        if layerName:
+            params["wkt_literal"] = self.performWKTConversion(layerName)
+        else:
+            params["wkt_literal"] = self.performWKTConversion()
 
         return params
 
@@ -565,8 +595,11 @@ then select an entity on the map.'
         self.dlg.tableWidget.horizontalHeader().setVisible(False)
         self.dlg.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
-    def setUpCaller(self, counter = 0):
-        params = self.getInputs()
+    def setUpCaller(self, counter = 0, layerName=None):
+        if layerName:
+            params = self.getInputs(layerName)
+        else:
+            params = self.getInputs()
         params["ifaceObj"] = self.iface
 
         # QgsMessageLog.logMessage("content : " + str(counter), "kwg_geoenrichment", Qgis.Info)
@@ -586,7 +619,6 @@ then select an entity on the map.'
             entityLi = self.enrichmentObjBuffer[0].get_entityLi()
             spoDict = self.enrichmentObjBuffer[0].get_spoDict()
             self.enrichmentObjBuffer.append(kwg_pluginEnrichmentDialog(s2Cells=s2Cells, entityLi=entityLi, spoDict=spoDict, params=params))
-
 
     def addContent(self):
 
@@ -672,26 +704,40 @@ then select an entity on the map.'
         self.dlg.close()
         self.contentCounter = 0
 
-    def performWKTConversion(self):
+    def performWKTConversion(self, layerName="geo_enrichment_polygon"):
         layers = QgsProject.instance().mapLayers().values()
 
+        wkt_li = []
+        wkt_rep_li = []
         # crs = QgsCoordinateReferenceSystem("EPSG:4326")
         for layer in layers:
-            if layer.name() == "geo_enrichment_polygon":
+            if layer.name() == layerName:
                 feat = layer.getFeatures()
                 for f in feat:
                     geom = f.geometry()
 
                     # TODO: handle the CRS
                     # geom = self.transformSourceCRStoDestinationCRS(geom)
-                    wkt = geom.asWkt()
-                break
+                    wkt_li.append(geom.asWkt())
 
-        wkt_literal_list = wkt.split(" ", 1)
-        wkt_rep = ""
-        wkt_rep = wkt_literal_list[0].upper() + wkt_literal_list[1]
+        for wkt in wkt_li:
+            wkt_literal_list = wkt.split(" ", 1)
+            wkt_rep_li.append(self.convertGeometry(wkt_literal_list[0].upper() + wkt_literal_list[1]))
 
-        return wkt_rep
+        QgsMessageLog.logMessage(str(wkt_rep_li), "kwg_geoenrichment", Qgis.Info)
+
+
+        return wkt_rep_li
+
+    def convertGeometry(self, wkt):
+        """
+        Converts a wkt from multipolygon to polygon
+        """
+
+        if "MULTIPOLYGON" in wkt:
+            new_wkt = "POLYGON((%s))"%wkt[15:-3]
+            return new_wkt
+        return wkt
 
     def transformSourceCRStoDestinationCRS(self, geom, src=3857, dest=4326):
         src_crs = QgsCoordinateReferenceSystem(src)
@@ -773,7 +819,6 @@ then select an entity on the map.'
 
         return error[0] == QgsVectorFileWriter.NoError
 
-
     def generateRecord(self, GeoQueryResult = {}, mergeRule = 1):
 
         util_obj = UTIL()
@@ -807,7 +852,6 @@ then select an entity on the map.'
                 self.logger.info("Geometry not found; expunging record")
         entityDict = self.generateFormattedEntityDict(entityDict, mergeRule)
         return objIRISet, entityDict
-
 
     def generateFormattedEntityDict(self, entityDict = {}, mergeRule = 1):
         for gtype in entityDict:
