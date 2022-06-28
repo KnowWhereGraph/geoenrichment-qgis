@@ -224,6 +224,10 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         s2CellBindingObject = self.sparql_query.getS2CellsFromGeometry(sparql_endpoint=self.params["end_point"],
                                                                        wkt_literal=self.params["wkt_literal"])
 
+        if s2CellBindingObject == "error: s2c":
+            self.handleError(errCode="s2c")
+            return "s2c"
+
         self.logger.debug(json.dumps(s2CellBindingObject))
         for obj in s2CellBindingObject:
             self.logger.debug(json.dumps(obj))
@@ -246,6 +250,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
 
         self.entitiesRetrieved.setChecked(True)
         self.retrievingQuery.setChecked(False)
+        return
 
     def get_results(self):
         return self.results
@@ -283,6 +288,10 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
             self.tableWidget.cellWidget(0, 0).addItem(self.updateLabelPropDict(self.sparql_util.make_prefixed_iri(key)))
         self.retrievingQuery.setChecked(False)
         self.tableWidget.cellWidget(0, 0).currentIndexChanged.connect(lambda: self.populateFirstDegreePredicate())
+
+
+    def handleError(self, errCode = ""):
+        QgsMessageLog.logMessage("error occured " + errCode, "kwg_geoernichment", Qgis.Info)
 
     def populateFirstDegreePredicate(self):
         self.tableWidget.cellWidget(0, 1).clear()

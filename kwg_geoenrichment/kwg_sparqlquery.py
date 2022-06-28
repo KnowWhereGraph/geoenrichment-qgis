@@ -56,11 +56,19 @@ class kwg_sparqlquery:
 
         query = queryPrefix + queryString
 
-        s2CellsQueryResult = SPARQLUtil.sparql_requests(query=query,
-                                                    sparql_endpoint=sparql_endpoint,
-                                                    doInference=False,
-                                                    request_method="get")
-        s2CellsQueryResultBindings = s2CellsQueryResult["results"]["bindings"]
+        try:
+
+            s2CellsQueryResult = SPARQLUtil.sparql_requests(query=query,
+                                                        sparql_endpoint=sparql_endpoint,
+                                                        request_method="get")
+
+            if s2CellsQueryResult is None:
+                return "error: s2c"
+
+            s2CellsQueryResultBindings = s2CellsQueryResult["results"]["bindings"]
+
+        except:
+            return "error: s2c"
 
         return s2CellsQueryResultBindings
 
@@ -80,12 +88,10 @@ class kwg_sparqlquery:
         queryPrefix = SPARQLUtil.make_sparql_prefix()
 
         EntityQueryResultBindings = []
-        s2CellsCurrentCounter = 0
 
-        while s2CellsCurrentCounter < len(s2Cells):
-
+        try:
             s2CellsPrefixed = ""
-            for s2Cell in s2Cells[s2CellsCurrentCounter:s2CellsCurrentCounter+100]:
+            for s2Cell in s2Cells:
                 s2CellsPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(s2Cell)
 
             queryString = """
@@ -101,9 +107,11 @@ class kwg_sparqlquery:
             EntityQueryResult = SPARQLUtil.sparql_requests(query=query,
                                                            sparql_endpoint=sparql_endpoint,
                                                            doInference=False,
-                                                           request_method="get")
+                                                           request_method="post")
             EntityQueryResultBindings.extend(EntityQueryResult["results"]["bindings"])
-            s2CellsCurrentCounter += 100
+
+        except:
+            return "error: ent"
 
         return EntityQueryResultBindings
 
@@ -124,12 +132,11 @@ class kwg_sparqlquery:
         queryPrefix = SPARQLUtil.make_sparql_prefix()
 
         FirstDegreeClassQueryResultBindings = []
-        entityListCurrentCounter = 0
 
-        while entityListCurrentCounter < len(entityList):
+        try:
 
             entityPrefixed = ""
-            for entity in entityList[entityListCurrentCounter:entityListCurrentCounter+100]:
+            for entity in entityList:
                 entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
 
             queryString = """
@@ -146,11 +153,11 @@ class kwg_sparqlquery:
             FirstDegreeClassQueryResult = SPARQLUtil.sparql_requests(query=query,
                                                                      sparql_endpoint=sparql_endpoint,
                                                                      doInference=False,
-                                                                     request_method="get")
+                                                                     request_method="post")
             FirstDegreeClassQueryResultBindings.extend(FirstDegreeClassQueryResult["results"]["bindings"])
-            entityListCurrentCounter += 100
-            self.logger.debug("FirstDegreeClassQueryResultBindings : " + str(entityListCurrentCounter) + " - "+ json.dumps(FirstDegreeClassQueryResultBindings))
 
+        except:
+            return "error: sub0"
         return FirstDegreeClassQueryResultBindings
 
     def getFirstDegreePredicate(self,
@@ -172,12 +179,11 @@ class kwg_sparqlquery:
         queryPrefix = SPARQLUtil.make_sparql_prefix()
 
         FirstDegreePredicateQueryResultBindings = []
-        entityListCurrentCounter = 0
 
-        while entityListCurrentCounter < len(entityList):
+        try:
 
             entityPrefixed = ""
-            for entity in entityList[entityListCurrentCounter:entityListCurrentCounter + 100]:
+            for entity in entityList:
                 entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
 
             queryString = """
@@ -194,9 +200,11 @@ class kwg_sparqlquery:
             FirstDegreePredicateQueryResult = SPARQLUtil.sparql_requests(query=query,
                                                                          sparql_endpoint=sparql_endpoint,
                                                                          doInference=False,
-                                                                         request_method="get")
+                                                                         request_method="post")
             FirstDegreePredicateQueryResultBindings.extend(FirstDegreePredicateQueryResult["results"]["bindings"])
-            entityListCurrentCounter += 100
+
+        except:
+            return  "error: pred0"
 
         return FirstDegreePredicateQueryResultBindings
 
@@ -221,12 +229,11 @@ class kwg_sparqlquery:
         queryPrefix = SPARQLUtil.make_sparql_prefix()
 
         FirstDegreeObjectQueryResultBindings = []
-        entityListCurrentCounter = 0
 
-        while entityListCurrentCounter < len(entityList):
+        try:
 
             entityPrefixed = ""
-            for entity in entityList[entityListCurrentCounter:entityListCurrentCounter + 100]:
+            for entity in entityList:
                 entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
 
             queryString = """
@@ -242,10 +249,10 @@ class kwg_sparqlquery:
             FirstDegreeObjectQueryResult = SPARQLUtil.sparql_requests(query=query,
                                                                       sparql_endpoint=sparql_endpoint,
                                                                       doInference=False,
-                                                                      request_method="get")
+                                                                      request_method="post")
             FirstDegreeObjectQueryResultBindings.extend(FirstDegreeObjectQueryResult["results"]["bindings"])
-            entityListCurrentCounter += 100
-
+        except:
+            return "error: obj0"
         return FirstDegreeObjectQueryResultBindings
 
     def getNDegreePredicate(self,
@@ -268,12 +275,11 @@ class kwg_sparqlquery:
         queryPrefix = SPARQLUtil.make_sparql_prefix()
 
         FirstNPredicateQueryResultBindings = []
-        entityListCurrentCounter = 0
 
-        while entityListCurrentCounter < len(entityList):
+        try:
 
             entityPrefixed = ""
-            for entity in entityList[entityListCurrentCounter:entityListCurrentCounter + 100]:
+            for entity in entityList:
                 entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
 
             propQuery = "select distinct ?p ?label where { \n";
@@ -294,9 +300,11 @@ class kwg_sparqlquery:
             FirstDegreePredicateQueryResult = SPARQLUtil.sparql_requests(query=query,
                                                                          sparql_endpoint=sparql_endpoint,
                                                                          doInference=False,
-                                                                         request_method="get")
+                                                                         request_method="post")
             FirstNPredicateQueryResultBindings.extend(FirstDegreePredicateQueryResult["results"]["bindings"])
-            entityListCurrentCounter += 100
+
+        except:
+            return "error: predN"
 
         return FirstNPredicateQueryResultBindings
 
@@ -321,12 +329,11 @@ class kwg_sparqlquery:
         queryPrefix = SPARQLUtil.make_sparql_prefix()
 
         NDegreeObjectQueryResultBindings = []
-        entityListCurrentCounter = 0
 
-        while entityListCurrentCounter < len(entityList):
+        try:
 
             entityPrefixed = ""
-            for entity in entityList[entityListCurrentCounter:entityListCurrentCounter + 100]:
+            for entity in entityList:
                 entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
 
             objQuery = "select distinct ?type ?label where {  \n";
@@ -348,10 +355,10 @@ class kwg_sparqlquery:
             NDegreeObjectQueryResult = SPARQLUtil.sparql_requests(query=query,
                                                                       sparql_endpoint=sparql_endpoint,
                                                                       doInference=False,
-                                                                      request_method="get")
+                                                                      request_method="post")
             NDegreeObjectQueryResultBindings.extend(NDegreeObjectQueryResult["results"]["bindings"])
-            entityListCurrentCounter += 100
-
+        except:
+            return "error: objN"
         return NDegreeObjectQueryResultBindings
 
     def getNDegreeResults(self,
@@ -367,11 +374,10 @@ class kwg_sparqlquery:
         queryPrefix = SPARQLUtil.make_sparql_prefix()
 
         NDegreeResultBindings = []
-        entityListCurrentCounter = 0
 
-        while entityListCurrentCounter < len(entityList):
+        try:
             entityPrefixed = ""
-            for entity in entityList[entityListCurrentCounter:entityListCurrentCounter + 100]:
+            for entity in entityList:
                 entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
 
             finalObject = "?o" + str(degree)
@@ -398,33 +404,6 @@ class kwg_sparqlquery:
             sub_query += "\t\t\t optional {?entity geo:hasGeometry ?geo. ?geo geo:asWKT ?wkt} values ?entity {%s}}" % (
                 entityPrefixed)
 
-                        # # content results query
-            # sub_query = """
-            #         select distinct ?entity ?entityLabel ?o ?wkt where {
-            #             ?entity a %s;
-            #                 rdfs:label ?entityLabel;
-            #         """ % (
-            #     selectedVals[0])
-            #
-            # if selectedVals[2] is not None and selectedVals[2] != "--- SELECT ---" and selectedVals[2] != "LITERAL":
-            #     sub_query += "%s ?o1." % (selectedVals[1])
-            # else:
-            #     sub_query += "%s ?o." % (selectedVals[1])
-            #
-            # start_counter = 1
-            # for i in range(1, degree + 1):
-            #     start_counter += 1
-            #     if selectedVals[start_counter] is not None and selectedVals[start_counter] != "--- SELECT ---" and selectedVals[start_counter] != "LITERAL":
-            #         sub_query += "\t\t\t?o" + str(i) + " a %s; " % (selectedVals[start_counter])
-            #         if i == degree:
-            #             sub_query += "rdfs:label ?o.\n"
-            #         else:
-            #             start_counter += 1
-            #             sub_query += selectedVals[start_counter] + " ?o" + str(i + 1) + ".\n"
-            #
-            # sub_query += "\t\t\t optional {?entity geo:hasGeometry ?geo. ?geo geo:asWKT ?wkt} values ?entity {%s}}" % (
-            #     entityPrefixed)
-
             query = queryPrefix + sub_query
             self.logger.info("programmed: " + query)
 
@@ -433,11 +412,11 @@ class kwg_sparqlquery:
             NDegreeObjectQueryResult = SPARQLUtil.sparql_requests(query=query,
                                                                   sparql_endpoint=sparql_endpoint,
                                                                   doInference=False,
-                                                                  request_method="get")
+                                                                  request_method="post")
             for obj in NDegreeObjectQueryResult["results"]["bindings"]:
                 NDegreeResultBindings.append(obj)
-            entityListCurrentCounter += 100
-
+        except:
+            return "error: res"
         return NDegreeResultBindings
 
 if __name__ == "__main__":

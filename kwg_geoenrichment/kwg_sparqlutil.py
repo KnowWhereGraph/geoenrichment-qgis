@@ -21,40 +21,10 @@ class kwg_sparqlutil:
         handler.setFormatter(formatter)  # Pass handler as a parameter, not assign
         self.logger.addHandler(handler)
 
-    # NAME_SPACE = "http://stko-roy.geog.ucsb.edu"
     NAME_SPACE = "http://stko-kwg.geog.ucsb.edu"
 
-    # _SPARQL_ENDPOINT = "https://stko-roy.geog.ucsb.edu:7200/repositories/kwg-seed-graph-v2"
-    _SPARQL_ENDPOINT = "https://stko-roy.geog.ucsb.edu/graphdb/repositories/plume_soil_wildfire"
+    _SPARQL_ENDPOINT = "https://stko-roy.geog.ucsb.edu/graphdb/repositories/KWG"
     _WIKIDATA_SPARQL_ENDPOINT = "https://query.wikidata.org/sparql"
-
-    # _PREFIX = {
-    #     "kwgr": "%s/lod/resource/" % (NAME_SPACE),
-    #     "kwg-ont": "%s/lod/ontology/" % (NAME_SPACE),
-    #     "geo": "http://www.opengis.net/ont/geosparql#",
-    #     "geof": "http://www.opengis.net/def/function/geosparql/",
-    #     "wd": "http://www.wikidata.org/entity/",
-    #     "wdt": "http://www.wikidata.org/prop/direct/",
-    #     "wikibase": "http://wikiba.se/ontology#",
-    #     "bd": "http://www.bigdata.com/rdf#",
-    #     "rdf": 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-    #     "rdfs": 'http://www.w3.org/2000/01/rdf-schema#',
-    #     "xsd": 'http://www.w3.org/2001/XMLSchema#',
-    #     "owl": "http://www.w3.org/2002/07/owl#",
-    #     "time": 'http://www.w3.org/2006/time#',
-    #     "dbo": "http://dbpedia.org/ontology/",
-    #     "dbr": "http://dbpedia.org/resource/",
-    #     "time": "http://www.w3.org/2006/time#",
-    #     "ssn": "http://www.w3.org/ns/ssn/",
-    #     "sosa": "http://www.w3.org/ns/sosa/",
-    #     "geo-pos": "http://www.w3.org/2003/01/geo/wgs84_pos#",
-    #     "omgeo": "http://www.ontotext.com/owlim/geo#",
-    #     "ff": "http://factforge.net/",
-    #     "om": "http://www.ontotext.com/owlim/",
-    #     "schema": "http://schema.org/",
-    #     "p": "http://www.wikidata.org/prop/",
-    #     "wdtn": "http://www.wikidata.org/prop/direct-normalized/"
-    # }
 
     _PREFIX = {
         "kwg-ont": "http://stko-kwg.geog.ucsb.edu/lod/ontology/",
@@ -78,7 +48,7 @@ class kwg_sparqlutil:
 
     _SPARQL_ENDPOINT_DICT = {
         "prod": {
-            "kwg-v2": "http://stko-kwg.geog.ucsb.edu:7200/repositories/kwg-v2"
+            "kwg-v2": "http://stko-kwg.geog.ucsb.edu:7200/repositories/KWG"
         },
         "test": {
             "plume_soil_wildfire": "http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire",
@@ -137,7 +107,6 @@ class kwg_sparqlutil:
         """
 
         """
-        # sparqlParam = {'query':'SELECT ?item ?itemLabel WHERE{ ?item wdt:P31 wd:Q146 . SERVICE wikibase:label { bd:serviceParam wikibase:language "en" }}', 'format':'json'}
 
         entityTypeJson = {
             "results": {
@@ -155,7 +124,6 @@ class kwg_sparqlutil:
 
         sparqlParam = {'query': query, 'format': 'json'}
         headers = {'Accept': 'application/sparql-results+json'}
-        # headers = {'Content-type': 'application/json', 'Accept': 'application/sparql-results+json'}
 
         try:
             if request_method == 'post':
