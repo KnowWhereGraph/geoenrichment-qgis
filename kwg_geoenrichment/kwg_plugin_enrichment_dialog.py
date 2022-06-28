@@ -147,8 +147,8 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
 
         # populate N degree subject based on the object property above
         if self.degreeCount > 0:
-            finalObject = self.labelPropDict[self.tableWidget.cellWidget(self.degreeCount - 1, 2).currentText()]
-            QgsMessageLog.logMessage(str(finalObject), "kwg_geoenrichment", Qgis.Info)
+            finalObject = self.tableWidget.cellWidget(self.degreeCount - 1, 2).currentText()
+            # QgsMessageLog.logMessage(str(finalObject), "kwg_geoenrichment", Qgis.Info)
 
             if finalObject is not None and finalObject != "--- SELECT ---" and finalObject != "LITERAL":
                 self.tableWidget.insertRow(self.degreeCount)
@@ -170,10 +170,10 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.spoDict[self.degreeCount] = {}
                 self.spoDict[self.degreeCount]["s"] = {}
                 for key in self.spoDict[self.degreeCount - 1]["o"]:
-                    self.tableWidget.cellWidget(self.degreeCount, 0).addItem(self.sparql_util.make_prefixed_iri(key))
+                    self.tableWidget.cellWidget(self.degreeCount, 0).addItem(self.updateLabelPropDict(self.sparql_util.make_prefixed_iri(key)))
                     self.spoDict[self.degreeCount]["s"][key] = self.spoDict[self.degreeCount - 1]["o"][key]
-                index = self.tableWidget.cellWidget(self.degreeCount - 1, 2).findText(self.labelPropDict[finalObject], QtCore.Qt.MatchFixedString)
-                QgsMessageLog.logMessage(str(index), "kwg_geoenrichment", Qgis.Info)
+                index = self.tableWidget.cellWidget(self.degreeCount - 1, 2).findText(finalObject, QtCore.Qt.MatchFixedString)
+
                 if index >= 0:
                     self.tableWidget.cellWidget(self.degreeCount, 0).setCurrentIndex(index)
                 self.populateNDegreePredicate()
