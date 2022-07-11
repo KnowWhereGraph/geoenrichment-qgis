@@ -29,7 +29,7 @@ from datetime import time
 from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, QVariant, QObject, pyqtSignal, QTimer, \
     QThreadPool, QRunnable, pyqtSlot
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QInputDialog, QLineEdit, QComboBox, QHeaderView, QMessageBox, QCheckBox
+from qgis.PyQt.QtWidgets import QAction, QInputDialog, QLineEdit, QComboBox, QHeaderView, QMessageBox, QCheckBox, QLabel
 from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
     QgsCoordinateTransform, QgsCoordinateTransformContext, QgsMapLayer, \
     QgsFeatureRequest, QgsVectorLayer, QgsLayerTreeGroup, QgsRenderContext, \
@@ -43,7 +43,7 @@ from typing import re
 import statistics
 
 # Import QDraw settings
-from PyQt5.uic.properties import QtCore
+from PyQt5.uic.properties import QtCore, QtGui
 
 from .drawtools import DrawPolygon, \
     SelectPoint
@@ -97,7 +97,6 @@ class kwg_geoenrichment:
         self.first_start = None
 
         self.threadpool = QThreadPool()
-        QgsMessageLog.logMessage(("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount()))
 
         # QDraw specific configs
         self.sb = self.iface.statusBarIface()
@@ -536,7 +535,6 @@ then select an entity on the map.'
             group.insertLayer(0, layer)
             self.iface.layerTreeView().refreshLayerSymbology(layer.id())
             self.iface.mapCanvas().refresh()
-            QgsMessageLog.logMessage("Your polygon has been saved to a layer", "kwg_geoenrichment", level=Qgis.Info)
 
             self.updateSelectContent()
             # self.contentCounter = 0
@@ -594,8 +592,6 @@ then select an entity on the map.'
         else:
             params = self.getInputs()
         params["ifaceObj"] = self.iface
-
-        # QgsMessageLog.logMessage("content : " + str(counter), "kwg_geoenrichment", Qgis.Info)
 
         if counter == 0:
             self.enrichmentObjBuffer.append(kwg_pluginEnrichmentDialog())
@@ -660,14 +656,68 @@ then select an entity on the map.'
     def saveContent(self):
         self.dlg.pushButton_content.setText("Select Content")
 
+        i = self.enrichmentObjBuffer[self.contentCounter - 1].degreeCount
+        selectedVal = []
+        for it in range(i):
+            if (self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(it, 0).currentText() != "--- SELECT ---"):
+                selectedVal.append(self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(it, 0).currentText())
+
+            if (self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(it, 1).currentText() != "--- SELECT ---"):
+                selectedVal.append(self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(it, 1).currentText())
+
+        if (self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(i - 1,
+                                                                                     2).currentText() != "--- SELECT ---"):
+            selectedVal.append(self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(i - 1, 2).currentText())
+
+
+        stringVal = " -> ".join(selectedVal)
+
+        x, y = self.getPosition(self.dlg.pushButton_content)
+
+        self.enrichmentObjBuffer[self.contentCounter - 1].close()
+
         # add properties and merge options
-        self.displaySelectedContent()
+        self.displaySelectedContent(selectedVal, x, y)
 
         self.enableRunButton()
         return
 
-    def displaySelectedContent(self):
-        pass
+    def getPosition(self, obj):
+        return obj.pos().x(), obj.pos().y()
+
+    def displaySelectedContent(self, selectedVal, x, y):
+
+        stringVal = " -> ".join(selectedVal)
+        width = self.dlg.comboBox_graph.width()
+
+        # add label
+        self.label = QLabel(stringVal, self.dlg)
+        self.label.move(x + 1, y)
+        self.label.setStyleSheet("background-color: #9AB4D2")
+
+        # add text box
+        self.lineEdit = QLineEdit(self.dlg)
+        self.lineEdit.move(x + 1, y + 25)
+        self.lineEdit.resize(200, 25)
+        self.lineEdit.setText(selectedVal[-1])
+
+        # add dropdown
+        self.comboBox = QComboBox(self.dlg)
+        for txt in [
+            "1 - Get the first value found",
+            "2 - Concate values together with a '|'",
+            "3 - Get the number of values found",
+            "4 - Get the average of all values (numeric)",
+            "5 - Get the highest value (numeric)",
+            "6 - Get the lowest value (numeric)",
+            "7 - Get the standard deviation of all values (numeric)",
+            "8 - Get the total of all values (numeric)"
+        ]:
+            self.comboBox.addItem(txt)
+        self.comboBox.move(x + 241, y + 25)
+        self.comboBox.resize(350, 25)
+
+        self.dlg.pushButton_content.move(x + 1, y + 55)
 
     def updatePropMergeItem(self, objName):
         self.dlg.tableWidget.insertRow(self.contentCounter - 1)
@@ -728,9 +778,6 @@ then select an entity on the map.'
         for wkt in wkt_li:
             wkt_literal_list = wkt.split(" ", 1)
             wkt_rep_li.append(self.convertGeometry(wkt_literal_list[0].upper() + wkt_literal_list[1]))
-
-        QgsMessageLog.logMessage(str(wkt_rep_li), "kwg_geoenrichment", Qgis.Info)
-
 
         return wkt_rep_li
 

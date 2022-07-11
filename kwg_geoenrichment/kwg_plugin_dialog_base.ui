@@ -31,7 +31,7 @@
     <rect>
      <x>30</x>
      <y>390</y>
-     <width>481</width>
+     <width>471</width>
      <height>31</height>
     </rect>
    </property>
@@ -55,7 +55,7 @@
   <widget class="QPushButton" name="pushButton_run">
    <property name="geometry">
     <rect>
-     <x>520</x>
+     <x>510</x>
      <y>390</y>
      <width>113</width>
      <height>32</height>
@@ -87,7 +87,7 @@ When you're ready to create your new Feature Class,  provide a name for the new 
     <rect>
      <x>30</x>
      <y>130</y>
-     <width>411</width>
+     <width>441</width>
      <height>32</height>
     </rect>
    </property>
@@ -103,7 +103,7 @@ When you're ready to create your new Feature Class,  provide a name for the new 
   <widget class="QPushButton" name="pushButton_gdb">
    <property name="geometry">
     <rect>
-     <x>449</x>
+     <x>480</x>
      <y>130</y>
      <width>41</width>
      <height>32</height>
@@ -119,7 +119,7 @@ When you're ready to create your new Feature Class,  provide a name for the new 
   <widget class="QPushButton" name="pushButton_polygon">
    <property name="geometry">
     <rect>
-     <x>500</x>
+     <x>530</x>
      <y>130</y>
      <width>41</width>
      <height>32</height>
@@ -136,7 +136,7 @@ When you're ready to create your new Feature Class,  provide a name for the new 
   <widget class="QPushButton" name="pushButton_refresh">
    <property name="geometry">
     <rect>
-     <x>550</x>
+     <x>580</x>
      <y>130</y>
      <width>41</width>
      <height>32</height>
@@ -180,7 +180,7 @@ When you're ready to create your new Feature Class,  provide a name for the new 
     <rect>
      <x>30</x>
      <y>70</y>
-     <width>561</width>
+     <width>591</width>
      <height>32</height>
     </rect>
    </property>
