@@ -9,15 +9,15 @@ class kwg_sparqlutil:
 
     def __init__(self):
         self.logger = logging.getLogger()
-        self.logger.setLevel(logging.DEBUG)  # or whatever
-        self.path = os.path.dirname(os.path.abspath(__file__))
-        if not os.path.exists(self.path + "/logs"):
-            os.makedirs(self.path + "/logs")
-        handler = logging.FileHandler(
-            self.path + '/logs/kwg_geoenrichment.log', 'w+',
-            'utf-8')  # or whatever
+        self.logger.setLevel(logging.DEBUG)
+        self.path = os.path.realpath(
+            os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
+        if not os.path.exists(os.path.join(self.path, 'logs')):
+            os.makedirs(os.path.join(self.path, 'logs'))
+        handler = logging.FileHandler(os.path.join(self.path, 'logs', 'kwg_geoenrichment.log'), 'w+', 'utf-8')
         formatter = logging.Formatter(
-            '%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')  # or whatever
+            '%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')
         handler.setFormatter(formatter)  # Pass handler as a parameter, not assign
         self.logger.addHandler(handler)
 

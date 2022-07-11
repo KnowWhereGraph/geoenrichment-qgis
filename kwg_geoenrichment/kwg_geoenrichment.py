@@ -58,14 +58,7 @@ from .qdrawsettings import QdrawSettings
 # Import the code for the dialog
 
 _SPARQL_ENDPOINT_DICT = {
-    "prod": {
-        "KWG-V2": "https://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V2",
-        "KWG-V3": "https://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V3",
-        "KWG": "https://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG",
-    },
-    "test": {
-        "plume_soil_wildfire": "http://stko-roy.geog.ucsb.edu:7202/repositories/plume_soil_wildfire",
-    }
+    "KnowWhereGraph": "https://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG",
 }
 
 class kwg_geoenrichment:
@@ -121,13 +114,15 @@ class kwg_geoenrichment:
         conf = ConfigParser()
         self._config = conf.read('config.ini')
         self.logger = logging.getLogger()
-        self.logger.setLevel(logging.DEBUG)  # or whatever
-        self.path = os.path.dirname(os.path.abspath(__file__))
-        if not os.path.exists(self.path + "/logs"):
-            os.makedirs(self.path + "/logs")
-        handler = logging.FileHandler(self.path + '/logs/kwg_geoenrichment.log', 'w+', 'utf-8')  # or whatever
+        self.logger.setLevel(logging.DEBUG)
+        self.path = os.path.realpath(
+            os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
+        if not os.path.exists(os.path.join(self.path, 'logs')):
+            os.makedirs(os.path.join(self.path, 'logs'))
+        handler = logging.FileHandler(os.path.join(self.path, 'logs', 'kwg_geoenrichment.log'), 'w+', 'utf-8')
         formatter = logging.Formatter(
-            '%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')  # or whatever
+            '%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')
         handler.setFormatter(formatter)  # Pass handler as a parameter, not assign
         self.logger.addHandler(handler)
 
@@ -304,7 +299,7 @@ class kwg_geoenrichment:
         self.dlg.pushButton_run.clicked.connect(self.handleRun)
 
         # show the table
-        self.setUPMergeTable()
+        # self.setUPMergeTable()
         return
 
     def drawPolygon(self):
@@ -576,11 +571,9 @@ then select an entity on the map.'
     def getInputs(self, layerName=None):
         params = {}
 
-        # make this dynamic depending on selection provided to the user or not
-        self.graph = "KWG - (prod)"
+        endPointKey = self.dlg.comboBox_graph.currentText()
 
-        endPointKey, endPointVal = self.graph.split(" - ")
-        params["end_point"] = self.kwg_endpoint_dict[endPointVal[1:-1]][endPointKey]
+        params["end_point"] = self.kwg_endpoint_dict[endPointKey]
 
         if layerName:
             params["wkt_literal"] = self.performWKTConversion(layerName)
@@ -642,27 +635,39 @@ then select an entity on the map.'
 
         return
 
+    # def saveContent(self):
+    # 
+    #     self.dlg.pushButton_content.setText("Select Content")
+    #     i = self.enrichmentObjBuffer[self.contentCounter - 1].degreeCount
+    #     selectedVal = []
+    #     for it in range(i):
+    #         selectedVal.append(self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(it, 0).currentText())
+    #         selectedVal.append(self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(it, 1).currentText())
+    #     selectedVal.append(self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(i - 1, 2).currentText())
+    # 
+    #     stringVal = " - ".join(selectedVal)
+    # 
+    #     self.enrichmentObjBuffer[self.contentCounter - 1].close()
+    #     self.dlg.listWidget.addItem(stringVal)
+    #     objectName = self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(i - 1, 2).currentText()
+    #     if objectName is None or objectName == "--- SELECT ---" or objectName == "LITERAL":
+    #         objectName = self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(i - 1,
+    #                                                                                               1).currentText()
+    #     self.updatePropMergeItem(objName=objectName)
+    #     self.enableRunButton()
+    #     return
+
     def saveContent(self):
-
         self.dlg.pushButton_content.setText("Select Content")
-        i = self.enrichmentObjBuffer[self.contentCounter - 1].degreeCount
-        selectedVal = []
-        for it in range(i):
-            selectedVal.append(self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(it, 0).currentText())
-            selectedVal.append(self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(it, 1).currentText())
-        selectedVal.append(self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(i - 1, 2).currentText())
 
-        stringVal = " - ".join(selectedVal)
+        # add properties and merge options
+        self.displaySelectedContent()
 
-        self.enrichmentObjBuffer[self.contentCounter - 1].close()
-        self.dlg.listWidget.addItem(stringVal)
-        objectName = self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(i - 1, 2).currentText()
-        if objectName is None or objectName == "--- SELECT ---" or objectName == "LITERAL":
-            objectName = self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(i - 1,
-                                                                                                  1).currentText()
-        self.updatePropMergeItem(objName=objectName)
         self.enableRunButton()
         return
+
+    def displaySelectedContent(self):
+        pass
 
     def updatePropMergeItem(self, objName):
         self.dlg.tableWidget.insertRow(self.contentCounter - 1)

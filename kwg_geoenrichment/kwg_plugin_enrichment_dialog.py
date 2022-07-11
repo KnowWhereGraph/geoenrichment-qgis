@@ -58,17 +58,17 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.logger = logging.getLogger()
         self.labelPropDict = dict()
         self.labelPropDict["LITERAL"] = "LITERAL"
-        self.path = os.path.dirname(os.path.abspath(__file__))
-        self.logger.setLevel(logging.DEBUG)  # or whatever
-        if not os.path.exists(self.path + "/logs"):
-            os.makedirs(self.path + "/logs")
-        handler = logging.FileHandler(
-            self.path + '/logs/kwg_geoenrichment.log', 'w+',
-            'utf-8')  # or whatever
+        self.path = os.path.realpath(
+            os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
+        if not os.path.exists(os.path.join(self.path, 'logs')):
+            os.makedirs(os.path.join(self.path, 'logs'))
+        handler = logging.FileHandler(os.path.join(self.path, 'logs', 'kwg_geoenrichment.log'), 'w+', 'utf-8')
         formatter = logging.Formatter(
-            '%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')  # or whatever
+            '%(asctime)s - %(levelname)s - %(filename)s:%(funcName)s - %(message)s')
         handler.setFormatter(formatter)  # Pass handler as a parameter, not assign
         self.logger.addHandler(handler)
+
         self.params = {}
         self.spoDict = spoDict
         self.s2Cells = s2Cells
@@ -88,12 +88,9 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.setFixedWidth(620)
         self.plainTextEdit.setHidden(True)
 
-        image_path = self.path + "/resources/background-landing.png"
-        loading_gif = self.path + "/resources/loading.gif"
-        help_icon = self.path + "/resources/help-circle.png"
-        self.toolButton.setIcon(QIcon(help_icon))
+        self.toolButton.setIcon(QIcon(":/plugins/kwg_geoenrichment/resources/help-circle.png"))
 
-        self.movie = QMovie(loading_gif)
+        self.movie = QMovie(":/plugins/kwg_geoenrichment/resources/loading.gif")
         self.loadingLabel.setMovie(self.movie)
         self.movie.start()
         self.loadingLabel.setScaledContents(True)
@@ -118,20 +115,11 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.sparql_query = kwg_sparqlquery()
         self.sparql_util = kwg_sparqlutil()
 
-        bg_img = """
-        QDialog {
-            background-image: url("%s");
-        }
-        """ % (image_path)
-
-        sshFile = self.path + "/style.qss"
-        with open(sshFile, "r") as fh:
-            qss = fh.read()
-            qss += bg_img
-            self.setStyleSheet(qss)
-
         if bool(self.spoDict):
             self.populateFirstDegreeSubject(spo=self.spoDict)
+
+        stylesheet = os.path.join(self.path, 'style.qss')
+        self.setStyleSheet(open(stylesheet, "r").read())
 
     def setParams(self, params):
         self.params.update(params)
