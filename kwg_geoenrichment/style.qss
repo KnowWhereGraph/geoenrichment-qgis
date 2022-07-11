@@ -1,3 +1,7 @@
+QDialog {
+            background-image: url(":/plugins/kwg_geoenrichment/resources/background-landing.png");
+        }
+
 QPushButton#pushButton_gdb {
                 border-radius: 3px;
                 background-color: grey;

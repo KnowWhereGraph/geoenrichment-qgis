@@ -1,20 +1,6 @@
 <RCC>
     <qresource prefix="/plugins/kwg_geoenrichment" >
         <file>icon.png</file>
-        <file>resources/icon_DrawC.png</file>
-        <file>resources/icon_DrawCp.png</file>
-        <file>resources/icon_DrawR.png</file>
-        <file>resources/icon_DrawL.png</file>
-        <file>resources/icon_DrawP.png</file>
-        <file>resources/icon_DrawT.png</file>
-        <file>resources/icon_DrawTP.png</file>
-        <file>resources/icon_DrawPt.png</file>
-        <file>resources/icon_DrawPtXY.png</file>
-        <file>resources/icon_DrawPtDMS.png</file>
-        <file>resources/icon_Settings.png</file>
-        <file>resources/enrich_Data.png</file>
-        <file>resources/graph_Query.png</file>
-        <file>resources/merge_Data.png</file>
         <file>resources/background-landing.png</file>
         <file>resources/help-circle.png</file>
         <file>resources/loading.gif</file>
