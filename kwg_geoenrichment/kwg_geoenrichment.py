@@ -284,6 +284,8 @@ class kwg_geoenrichment:
         self.retrievePolygonLayers()
 
         self.enrichmentObjBuffer = []
+        self.lineObjBuffer = []
+        self.comboBoxBuffer = []
 
         # show the dialog
         self.dlg.show()
@@ -536,10 +538,10 @@ then select an entity on the map.'
             self.iface.layerTreeView().refreshLayerSymbology(layer.id())
             self.iface.mapCanvas().refresh()
 
+            self.refreshLayer()
+            self.selectNewlyDrawnLayer()
+
             self.updateSelectContent()
-            # self.contentCounter = 0
-            # self.enrichmentObjBuffer = []
-            self.setUpCaller(counter=0)
 
         self.tool.reset()
         self.resetSB()
@@ -653,6 +655,21 @@ then select an entity on the map.'
     #     self.enableRunButton()
     #     return
 
+    def refreshLayer(self):
+        layers = QgsProject.instance().mapLayers().values()
+        currentItems = [self.dlg.comboBox_layers.itemText(i) for i in range(self.dlg.comboBox_layers.count())]
+
+
+        for layer in layers:
+            if (layer.type() == QgsMapLayer.VectorLayer and layer.geometryType() == QgsWkbTypes.PolygonGeometry):
+                if layer.name() not in currentItems:
+                    self.dlg.comboBox_layers.addItem(layer.name())
+
+    def selectNewlyDrawnLayer(self):
+        index = self.dlg.comboBox_layers.findText("geo_enrichment_polygon")
+        if index >= 0:
+            self.dlg.comboBox_layers.setCurrentIndex(index)
+
     def saveContent(self):
         self.dlg.pushButton_content.setText("Select Content")
 
@@ -677,7 +694,7 @@ then select an entity on the map.'
         self.enrichmentObjBuffer[self.contentCounter - 1].close()
 
         # add properties and merge options
-        self.displaySelectedContent(selectedVal, x, y)
+        self.displaySelectedContent(selectedVal, x, y, i=self.contentCounter - 1)
 
         self.enableRunButton()
         return
@@ -685,24 +702,27 @@ then select an entity on the map.'
     def getPosition(self, obj):
         return obj.pos().x(), obj.pos().y()
 
-    def displaySelectedContent(self, selectedVal, x, y):
+    def displaySelectedContent(self, selectedVal, x, y, i=0):
 
         stringVal = " -> ".join(selectedVal)
-        width = self.dlg.comboBox_graph.width()
 
         # add label
-        self.label = QLabel(stringVal, self.dlg)
-        self.label.move(x + 1, y)
-        self.label.setStyleSheet("background-color: #9AB4D2")
+        label = QLabel(stringVal, self.dlg)
+        label.move(x + 1, y)
+        label.setAccessibleName("label_%s" % (i))
+        label.setStyleSheet("background-color: #9AB4D2;")
 
         # add text box
-        self.lineEdit = QLineEdit(self.dlg)
-        self.lineEdit.move(x + 1, y + 25)
-        self.lineEdit.resize(200, 25)
-        self.lineEdit.setText(selectedVal[-1])
+        lineEdit = QLineEdit(self.dlg)
+        lineEdit.move(x + 1, y + 25)
+        lineEdit.resize(200, 25)
+        lineEdit.setText(selectedVal[-1])
+        lineEdit.setAccessibleName("lineEdit_%s" % (i))
+
+        self.lineObjBuffer.append(lineEdit)
 
         # add dropdown
-        self.comboBox = QComboBox(self.dlg)
+        comboBox = QComboBox(self.dlg)
         for txt in [
             "1 - Get the first value found",
             "2 - Concate values together with a '|'",
@@ -713,31 +733,14 @@ then select an entity on the map.'
             "7 - Get the standard deviation of all values (numeric)",
             "8 - Get the total of all values (numeric)"
         ]:
-            self.comboBox.addItem(txt)
-        self.comboBox.move(x + 241, y + 25)
-        self.comboBox.resize(350, 25)
+            comboBox.addItem(txt)
+        comboBox.move(x + 241, y + 25)
+        comboBox.resize(350, 25)
+        comboBox.setAccessibleName("comboBox_%s" % (i))
+
+        self.comboBoxBuffer.append(comboBox)
 
         self.dlg.pushButton_content.move(x + 1, y + 55)
-
-    def updatePropMergeItem(self, objName):
-        self.dlg.tableWidget.insertRow(self.contentCounter - 1)
-        objLine = QLineEdit()
-        objLine.setText(objName)
-        comboBox_M = QComboBox()
-        for txt in [
-                "1 - Get the first value found",
-                "2 - Concate values together with a '|'",
-                "3 - Get the number of values found",
-                "4 - Get the average of all values (numeric)",
-                "5 - Get the highest value (numeric)",
-                "6 - Get the lowest value (numeric)",
-                "7 - Get the standard deviation of all values (numeric)",
-                "8 - Get the total of all values (numeric)"
-            ]:
-            comboBox_M.addItem(txt)
-
-        self.dlg.tableWidget.setCellWidget(self.contentCounter - 1, 0, objLine)
-        self.dlg.tableWidget.setCellWidget(self.contentCounter - 1, 1, comboBox_M)
 
     def handleRun(self):
 
@@ -749,9 +752,9 @@ then select an entity on the map.'
             results = self.enrichmentObjBuffer[i].getResults()
             degreeCount = self.enrichmentObjBuffer[i].getDegree()
 
-            objName = self.dlg.tableWidget.cellWidget(i, 0).text()
+            objName = self.lineObjBuffer[i].text()
             layerName = self.dlg.lineEdit_layerName.text()
-            mergeRule = self.dlg.tableWidget.cellWidget(i, 1).currentText()
+            mergeRule = self.comboBoxBuffer[i].currentText()
             mergeRuleName = self.mergeRuleDict[mergeRule]
             mergeRuleNo = int(mergeRule.split(" - ")[0])
 
