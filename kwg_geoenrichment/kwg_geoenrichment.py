@@ -723,17 +723,18 @@ then select an entity on the map.'
             self.displayButtonHelp()
             return
 
+        results = []
+        objName = []
+        mergeRuleNo = []
         for i in range(self.contentCounter):
-            results = self.enrichmentObjBuffer[i].getResults()
-            degreeCount = self.enrichmentObjBuffer[i].getDegree()
+            results.append(self.enrichmentObjBuffer[i].getResults())
 
-            objName = self.lineObjBuffer[i].text()
+            objName.append(self.lineObjBuffer[i].text())
             layerName = self.dlg.lineEdit_layerName.text()
             mergeRule = self.comboBoxBuffer[i].currentText()
-            mergeRuleName = self.mergeRuleDict[mergeRule]
-            mergeRuleNo = int(mergeRule.split(" - ")[0])
+            mergeRuleNo.append(int(mergeRule.split(" - ")[0]))
 
-            self.createGeoPackage(results, objName, layerName, mergeRuleName, degreeCount, mergeRule=mergeRuleNo, out_path=self.path)
+        self.createGeoPackage(results, objName, layerName, mergeRule=mergeRuleNo, out_path=self.path)
         self.dlg.close()
         self.enrichmentObjBuffer = list()
 
@@ -778,7 +779,7 @@ then select an entity on the map.'
         geom_reproj = geom_converter.transform(geom)
         return geom_reproj
 
-    def createGeoPackage(self, GeoQueryResult, objName="O", layerName="geo_results", mergeRuleName="first", degreeCount = 0, mergeRule = 1,
+    def createGeoPackage(self, GeoQueryResult, objName=[], layerName="geo_results", mergeRule = [],
                          out_path=None):
         '''
         GeoQueryResult: a sparql query result json obj serialized as a list of dict()
@@ -793,28 +794,47 @@ then select an entity on the map.'
                           False: use selectedURL as the type of geo-entity
         '''
         # a set of unique WKT for each found places
-        out_path += objName + ".gpkg"
-        objIRISet = set()
-        objList = []
-        geom_type = None
+        out_path += ".gpkg"
 
-        util_obj = UTIL()
+        entityDict = {}
 
-        objIRISet, entityDict = self.generateRecord(GeoQueryResult, mergeRule)
+        for idx in range(len(objName)):
+            tempDict = self.generateRecord(GeoQueryResult[idx], mergeRule[idx])
+            for gtype in tempDict:
+                if gtype not in entityDict:
+                    entityDict[gtype] = {}
+                for eValue in tempDict[gtype]:
+                    if eValue not in entityDict[gtype]:
+                        entityDict[gtype][eValue] = {}
+                        entityDict[gtype][eValue]["label"] = tempDict[gtype][eValue]["label"]
+                        entityDict[gtype][eValue][objName[idx]] = tempDict[gtype][eValue]["o"]
+                        entityDict[gtype][eValue]["wkt"] = tempDict[gtype][eValue]["wkt"]
+                    else:
+                        entityDict[gtype][eValue][objName[idx]] = tempDict[gtype][eValue]["o"]
+                        entityDict[gtype][eValue]["wkt"] = self.updateWkt(gtype, entityDict[gtype][eValue]["wkt"], tempDict[gtype][eValue]["wkt"])
 
         for gtype in entityDict:
 
             layerFields = QgsFields()
             layerFields.append(QgsField('entity', QVariant.String))
             layerFields.append(QgsField('entityLabel', QVariant.String))
-            layerFields.append(QgsField(objName, QVariant.String))
+            for obj in objName:
+                layerFields.append(QgsField(obj, QVariant.String))
 
             objList = []
             for entity in entityDict[gtype]:
-                objList.append(
-                    [entity, entityDict[gtype][entity]["label"], entityDict[gtype][entity]["o"], entityDict[gtype][entity]["wkt"]])
+                record = []
+                record.append(entity)
+                record.append(entityDict[gtype][entity]["label"])
+                for obj in objName:
+                    if obj in entityDict[gtype][entity]:
+                        record.append(entityDict[gtype][entity][obj])
+                    else:
+                        record.append("")
+                record.append(entityDict[gtype][entity]["wkt"])
+                objList.append(record)
 
-            vl = QgsVectorLayer(gtype + "?crs=epsg:4326", "%s_%s_%s"%(layerName, objName, gtype), "memory")
+            vl = QgsVectorLayer(gtype + "?crs=epsg:4326", "%s_%s"%(layerName, gtype), "memory")
             pr = vl.dataProvider()
             pr.addAttributes(layerFields)
             vl.updateFields()
@@ -829,14 +849,14 @@ then select an entity on the map.'
                 else:
                     vl.startEditing()
                     for item in objList:
-                        entity_iri, entity_label, o, wkt_literal = item
+                        wkt_literal = item[-1]
                         wkt = wkt_literal.replace("<http://www.opengis.net/def/crs/OGC/1.3/CRS84>", "")
 
                         feat = QgsFeature()
                         geom = QgsGeometry.fromWkt(wkt)
 
                         feat.setGeometry(geom)
-                        feat.setAttributes(item[0:3])
+                        feat.setAttributes(item[0:-1])
 
                         vl.addFeature(feat)
                     vl.endEditCommand()
@@ -844,7 +864,7 @@ then select an entity on the map.'
                     vl.updateExtents()
 
                     options = QgsVectorFileWriter.SaveVectorOptions()
-                    options.layerName = "%s_%s_%s"%(layerName, objName, gtype)
+                    options.layerName = "%s_%s"%(layerName, gtype)
                     context = QgsProject.instance().transformContext()
                     error = QgsVectorFileWriter.writeAsVectorFormatV2(vl, out_path, context, options)
                     QgsProject.instance().addMapLayer(vl)
@@ -852,18 +872,12 @@ then select an entity on the map.'
         return error[0] == QgsVectorFileWriter.NoError
 
     def generateRecord(self, GeoQueryResult = {}, mergeRule = 1):
-
         util_obj = UTIL()
-        objIRISet = set()
         entityDict= {}
-
         for idx, item in enumerate(GeoQueryResult):
             wkt_literal = item["wkt"]["value"]
             geom_type = util_obj.get_geometry_type_from_wkt(wkt_literal)
             entityVal = item["entity"]["value"]
-
-            if len(objIRISet) == 0 or entityVal not in objIRISet:
-                objIRISet.add(entityVal)
 
             entityLabelVal = item["entityLabel"]["value"]
             entityOVal = item['o']["value"]
@@ -883,7 +897,15 @@ then select an entity on the map.'
             else:
                 self.logger.info("Geometry not found; expunging record")
         entityDict = self.generateFormattedEntityDict(entityDict, mergeRule)
-        return objIRISet, entityDict
+        return entityDict
+
+    def updateWkt(self, gtype, wkt1, wkt2):
+        if (wkt1.startswith("MULTI")):
+            wktstr = wkt1[:-1]
+            wktstr += "," + wkt2[len(gtype):] + ")"
+        else:
+            wktstr = "MULTI" + gtype.upper() + "(%s,%s)" % (wkt1[len(gtype):], wkt2[len(gtype):])
+        return wktstr
 
     def generateFormattedEntityDict(self, entityDict = {}, mergeRule = 1):
         for gtype in entityDict:

@@ -425,13 +425,13 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
 
         self.logger.debug("selectedVal + " + str(selectedVal))
 
-        thirdPropObj = self.sparql_query.getNDegreeResults(sparql_endpoint=self.params["end_point"],
+        finalResultsObj = self.sparql_query.getNDegreeResults(sparql_endpoint=self.params["end_point"],
                                                            entityList=self.EntityLi,
                                                            selectedVals=selectedVal,
                                                            degree=i)
 
-        self.logger.debug(str(len(thirdPropObj)))
-        return thirdPropObj
+        self.logger.debug(str(len(finalResultsObj)))
+        return finalResultsObj
 
     def displayHelp(self):
         if self.displayingHelp:
