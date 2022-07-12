@@ -259,6 +259,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         return spo
 
     def populateFirstDegreeSubject(self, spo={}):
+        self.entitiesRetrieved.stateChanged.disconnect()
         self.retrievingQuery.setChecked(True)
         self.tableWidget.cellWidget(0, 0).clear()
         self.tableWidget.cellWidget(0, 0).addItem("--- SELECT ---")

@@ -151,3 +151,4 @@ kwg_geoenrichment.zip
 *.prj
 *.shp
 *.shx
+*.gpkg

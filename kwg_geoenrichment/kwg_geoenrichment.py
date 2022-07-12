@@ -565,8 +565,7 @@ then select an entity on the map.'
         # enable the select content button
         self.updateSelectContent()
 
-        ## uncomment this when ready
-        self.setUpCaller(counter=0, layerName=selectedLayername)
+        self.setUpCaller(layerName=selectedLayername)
 
     def getInputs(self, layerName=None):
         params = {}
@@ -588,20 +587,19 @@ then select an entity on the map.'
         self.dlg.tableWidget.horizontalHeader().setVisible(False)
         self.dlg.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
-    def setUpCaller(self, counter = 0, layerName=None):
-        if layerName:
-            params = self.getInputs(layerName)
-        else:
-            params = self.getInputs()
-        params["ifaceObj"] = self.iface
+    def setUpCaller(self, layerName=None):
 
-        if counter == 0:
+        if self.contentCounter == 0:
+            if layerName:
+                self.params = self.getInputs(layerName)
+            else:
+                self.params = self.getInputs()
+            self.params["ifaceObj"] = self.iface
+
+            self.enrichmentObjBuffer = list()
             self.enrichmentObjBuffer.append(kwg_pluginEnrichmentDialog())
 
-            # get contents (open another dialog box)
-            self.dlg.pushButton_content.clicked.connect(self.addContent)
-
-            self.enrichmentObjBuffer[self.contentCounter].setParams(params)
+            self.enrichmentObjBuffer[self.contentCounter].setParams(self.params)
 
             worker = Worker(self.enrichmentObjBuffer, self.contentCounter)
             self.threadpool.start(worker)
@@ -609,7 +607,7 @@ then select an entity on the map.'
             s2Cells = self.enrichmentObjBuffer[0].get_s2Cells()
             entityLi = self.enrichmentObjBuffer[0].get_entityLi()
             spoDict = self.enrichmentObjBuffer[0].get_spoDict()
-            self.enrichmentObjBuffer.append(kwg_pluginEnrichmentDialog(s2Cells=s2Cells, entityLi=entityLi, spoDict=spoDict, params=params))
+            self.enrichmentObjBuffer.append(kwg_pluginEnrichmentDialog(s2Cells=s2Cells, entityLi=entityLi, spoDict=spoDict, params=self.params))
 
     def addContent(self):
 
@@ -619,7 +617,7 @@ then select an entity on the map.'
 
         # not first run
         if self.contentCounter > 0:
-            self.setUpCaller(counter=self.contentCounter)
+            self.setUpCaller()
 
         self.dlg.pushButton_content.setText("Searching area...")
 
@@ -630,35 +628,12 @@ then select an entity on the map.'
         self.enrichmentObjBuffer[self.contentCounter].pushButton_save.clicked.connect(self.saveContent)
 
         self.contentCounter += 1
-
         return
 
-    # def saveContent(self):
-    # 
-    #     self.dlg.pushButton_content.setText("Select Content")
-    #     i = self.enrichmentObjBuffer[self.contentCounter - 1].degreeCount
-    #     selectedVal = []
-    #     for it in range(i):
-    #         selectedVal.append(self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(it, 0).currentText())
-    #         selectedVal.append(self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(it, 1).currentText())
-    #     selectedVal.append(self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(i - 1, 2).currentText())
-    # 
-    #     stringVal = " - ".join(selectedVal)
-    # 
-    #     self.enrichmentObjBuffer[self.contentCounter - 1].close()
-    #     self.dlg.listWidget.addItem(stringVal)
-    #     objectName = self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(i - 1, 2).currentText()
-    #     if objectName is None or objectName == "--- SELECT ---" or objectName == "LITERAL":
-    #         objectName = self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(i - 1,
-    #                                                                                               1).currentText()
-    #     self.updatePropMergeItem(objName=objectName)
-    #     self.enableRunButton()
-    #     return
 
     def refreshLayer(self):
         layers = QgsProject.instance().mapLayers().values()
         currentItems = [self.dlg.comboBox_layers.itemText(i) for i in range(self.dlg.comboBox_layers.count())]
-
 
         for layer in layers:
             if (layer.type() == QgsMapLayer.VectorLayer and layer.geometryType() == QgsWkbTypes.PolygonGeometry):
@@ -987,6 +962,8 @@ then select an entity on the map.'
 
     def updateSelectContent(self):
         self.disableSelectContent = False
+        # get contents (open another dialog box)
+        self.dlg.pushButton_content.clicked.connect(self.addContent)
         self.dlg.pushButton_content.setStyleSheet("""
             #pushButton_content {
                 border-radius: 3px;
