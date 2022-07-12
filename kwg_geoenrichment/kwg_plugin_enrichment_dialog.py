@@ -109,7 +109,6 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.retrievingQuery.setChecked(False)
         self.retrievingQuery.stateChanged.connect(lambda: self.queryStateHandler())
 
-
         self.toolButton.clicked.connect(self.displayHelp)
 
         self.sparql_query = kwg_sparqlquery()
@@ -143,7 +142,6 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         # populate N degree subject based on the object property above
         if self.degreeCount > 0:
             finalObject = self.tableWidget.cellWidget(self.degreeCount - 1, 2).currentText()
-            # QgsMessageLog.logMessage(str(finalObject), "kwg_geoenrichment", Qgis.Info)
 
             if finalObject is not None and finalObject != "--- SELECT ---" and finalObject != "LITERAL":
                 self.tableWidget.insertRow(self.degreeCount)
@@ -205,8 +203,11 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.results = {}
         self.retrievingQuery.setChecked(True)
 
-        # self.tableWidget.cellWidget(0, 0).clear()
-        # self.tableWidget.cellWidget(0, 0).addItem("--- SELECT ---")
+        try:
+            self.tableWidget.cellWidget(0, 0).currentIndexChanged.disconnect()
+        except TypeError:
+            pass
+        self.tableWidget.cellWidget(0, 0).clear()
         s2CellBindingObject = []
 
         for wkt in self.params["wkt_literal"]:
@@ -241,6 +242,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
 
         self.entitiesRetrieved.setChecked(True)
         self.retrievingQuery.setChecked(False)
+        # self.populateFirstDegreeSubject()
         return
 
     def get_results(self):
@@ -259,7 +261,11 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         return spo
 
     def populateFirstDegreeSubject(self, spo={}):
-        self.entitiesRetrieved.stateChanged.disconnect()
+        # self.entitiesRetrieved.stateChanged.disconnect()
+        try:
+            self.tableWidget.cellWidget(0, 0).currentIndexChanged.disconnect()
+        except TypeError:
+            pass
         self.retrievingQuery.setChecked(True)
         self.tableWidget.cellWidget(0, 0).clear()
         self.tableWidget.cellWidget(0, 0).addItem("--- SELECT ---")
@@ -268,7 +274,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
             classObject = self.sparql_query.getFirstDegreeClass(sparql_endpoint=self.params["end_point"],
                                                                 entityList=self.EntityLi)
 
-            # populate the spoDict`
+            # populate the spoDict
             self.spoDict[0] = {}
             self.spoDict[0]["s"] = {}
             for obj in classObject:

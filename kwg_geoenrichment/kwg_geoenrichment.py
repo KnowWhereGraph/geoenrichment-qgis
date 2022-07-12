@@ -279,6 +279,11 @@ class kwg_geoenrichment:
         # set the content counter to 0 on re-run
         self.contentCounter = 0
 
+        try:
+            self.dlg.close()
+        except:
+            pass
+
         self.dlg = kwg_pluginDialog()
 
         self.retrievePolygonLayers()
@@ -299,8 +304,6 @@ class kwg_geoenrichment:
         # handle tool run
         self.dlg.pushButton_run.clicked.connect(self.handleRun)
 
-        # show the table
-        # self.setUPMergeTable()
         return
 
     def drawPolygon(self):
@@ -581,12 +584,6 @@ then select an entity on the map.'
 
         return params
 
-    def setUPMergeTable(self):
-        self.dlg.tableWidget.setColumnCount(2)
-        self.dlg.tableWidget.verticalHeader().setVisible(False)
-        self.dlg.tableWidget.horizontalHeader().setVisible(False)
-        self.dlg.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-
     def setUpCaller(self, layerName=None):
 
         if self.contentCounter == 0:
@@ -691,7 +688,10 @@ then select an entity on the map.'
         lineEdit = QLineEdit(self.dlg)
         lineEdit.move(x + 1, y + 25)
         lineEdit.resize(200, 25)
-        lineEdit.setText(selectedVal[-1])
+        if selectedVal[-1] == "LITERAL":
+            lineEdit.setText(selectedVal[-2])
+        else:
+            lineEdit.setText(selectedVal[-1])
         lineEdit.setAccessibleName("lineEdit_%s" % (i))
 
         self.lineObjBuffer.append(lineEdit)
@@ -735,6 +735,8 @@ then select an entity on the map.'
 
             self.createGeoPackage(results, objName, layerName, mergeRuleName, degreeCount, mergeRule=mergeRuleNo, out_path=self.path)
         self.dlg.close()
+        self.enrichmentObjBuffer = list()
+
         self.contentCounter = 0
 
     def performWKTConversion(self, layerName="geo_enrichment_polygon"):
