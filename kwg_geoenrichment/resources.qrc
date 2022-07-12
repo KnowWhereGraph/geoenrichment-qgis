@@ -7,5 +7,6 @@
         <file>resources/plus.svg</file>
         <file>resources/refresh.svg</file>
         <file>resources/file.svg</file>
+        <file>resources/delete.png</file>
     </qresource>
 </RCC>
