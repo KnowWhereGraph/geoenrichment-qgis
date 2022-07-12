@@ -29,7 +29,8 @@ from datetime import time
 from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, QVariant, QObject, pyqtSignal, QTimer, \
     QThreadPool, QRunnable, pyqtSlot
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QInputDialog, QLineEdit, QComboBox, QHeaderView, QMessageBox, QCheckBox, QLabel
+from qgis.PyQt.QtWidgets import QAction, QInputDialog, QLineEdit, QComboBox, QHeaderView, QMessageBox, QCheckBox, \
+    QLabel, QPushButton
 from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
     QgsCoordinateTransform, QgsCoordinateTransformContext, QgsMapLayer, \
     QgsFeatureRequest, QgsVectorLayer, QgsLayerTreeGroup, QgsRenderContext, \
@@ -291,6 +292,7 @@ class kwg_geoenrichment:
         self.enrichmentObjBuffer = []
         self.lineObjBuffer = []
         self.comboBoxBuffer = []
+        self.deleteObjBuffer = []
 
         # show the dialog
         self.dlg.show()
@@ -709,13 +711,27 @@ then select an entity on the map.'
             "8 - Get the total of all values (numeric)"
         ]:
             comboBox.addItem(txt)
-        comboBox.move(x + 241, y + 25)
-        comboBox.resize(350, 25)
+        comboBox.move(x + 221, y + 25)
+        comboBox.resize(320, 25)
         comboBox.setAccessibleName("comboBox_%s" % (i))
 
+        button = QPushButton(self.dlg)
+        icon = QIcon(":/plugins/kwg_geoenrichment/resources/delete.png")
+        button.setIcon(icon)
+        button.move(x + 559, y + 25)
+        button.resize(32, 25)
+        button.released.connect(lambda: self.manageContent(i))
+        button.setStyleSheet("background-color: transparent; color: #ffffff; border: none;")
+        comboBox.setObjectName("delete_%s" % (i))
+
+        self.deleteObjBuffer.append(button)
         self.comboBoxBuffer.append(comboBox)
 
         self.dlg.pushButton_content.move(x + 1, y + 55)
+
+    def manageContent(self, buttonIdx):
+        QgsMessageLog.logMessage('%s Delete Clicked!' % (buttonIdx))
+        pass
 
     def handleRun(self):
 
@@ -806,7 +822,7 @@ then select an entity on the map.'
                 for eValue in tempDict[gtype]:
                     if eValue not in entityDict[gtype]:
                         entityDict[gtype][eValue] = {}
-                        entityDict[gtype][eValue]["label"] = tempDict[gtype][eValue]["label"]
+                        entityDict[gtype][eValue]["entityLabel"] = tempDict[gtype][eValue]["entityLabel"]
                         entityDict[gtype][eValue][objName[idx]] = tempDict[gtype][eValue]["o"]
                         entityDict[gtype][eValue]["wkt"] = tempDict[gtype][eValue]["wkt"]
                     else:
@@ -825,7 +841,7 @@ then select an entity on the map.'
             for entity in entityDict[gtype]:
                 record = []
                 record.append(entity)
-                record.append(entityDict[gtype][entity]["label"])
+                record.append(entityDict[gtype][entity]["entityLabel"])
                 for obj in objName:
                     if obj in entityDict[gtype][entity]:
                         record.append(entityDict[gtype][entity][obj])
@@ -886,12 +902,12 @@ then select an entity on the map.'
                     entityDict[geom_type] = {}
                 if entityVal not in entityDict[geom_type]:
                     entityDict[geom_type][entityVal] = {}
-                    entityDict[geom_type][entityVal]["label"] = entityLabelVal
+                    entityDict[geom_type][entityVal]["entityLabel"] = entityLabelVal
                     entityDict[geom_type][entityVal]["o"] = []
                     entityDict[geom_type][entityVal]["o"].append(entityOVal)
                     entityDict[geom_type][entityVal]["wkt"] = wkt_literal
                 else:
-                    entityDict[geom_type][entityVal]["label"] = entityLabelVal
+                    entityDict[geom_type][entityVal]["entityLabel"] = entityLabelVal
                     entityDict[geom_type][entityVal]["o"].append(entityOVal)
                     entityDict[geom_type][entityVal]["wkt"] = wkt_literal
             else:
@@ -900,6 +916,8 @@ then select an entity on the map.'
         return entityDict
 
     def updateWkt(self, gtype, wkt1, wkt2):
+        if wkt1 == wkt2:
+            return  wkt1
         if (wkt1.startswith("MULTI")):
             wktstr = wkt1[:-1]
             wktstr += "," + wkt2[len(gtype):] + ")"

@@ -3,10 +3,9 @@ QDialog {
         }
 
 QPushButton#pushButton_gdb {
-                border-radius: 3px;
-                background-color: grey;
-                color: black;
-            }
+        background-color: transparent;
+        border: none;
+    }
 
 QPushButton#pushButton_content {
         border-radius: 3px;
@@ -21,12 +20,23 @@ QPushButton#pushButton_run {
     }
 
 QPushButton#pushButton_polygon {
-        border-radius: 3px;
-        background-color: #216FB3;
+        background-color: transparent;
         color: #ffffff;
-        height: 70px;
-        width: 255px;
+        border: none;
     }
+
+QPushButton#toolButton {
+        background-color: transparent;
+        color: #ffffff;
+        border: none;
+    }
+
+QPushButton#pushButton_refresh {
+        background-color: transparent;
+        color: #ffffff;
+        border: none;
+    }
+
 
 QPushButton#pushButton_learnMore {
         border-radius: 3px;
@@ -51,7 +61,6 @@ QLabel {
 QComboBox{
         background-color: #216FB3;
         color: #ffffff;
-        height: 70px;
     }
 
 QListWidget{
@@ -63,9 +72,9 @@ QLineEdit {
         width: 255px;
         background: linear-gradient(308.55deg, rgba(0,2,31,0) 0%, #00011F 100%), linear-gradient(359.14deg, rgba(0,2,31,0) 0%, #00011F 100%);
         color: white;
-}
+    }
 QPlainTextEdit {
         background:None;
         background-color: #36385B;
         color: white;
-}
+    }

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>874</width>
-    <height>291</height>
+    <height>315</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,8 +29,8 @@
   <widget class="QPushButton" name="pushButton_learnMore">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>210</y>
+     <x>30</x>
+     <y>220</y>
      <width>131</width>
      <height>32</height>
     </rect>
@@ -43,7 +43,7 @@
    <property name="geometry">
     <rect>
      <x>480</x>
-     <y>210</y>
+     <y>220</y>
      <width>111</width>
      <height>32</height>
     </rect>
@@ -68,7 +68,7 @@
      <x>620</x>
      <y>20</y>
      <width>231</width>
-     <height>251</height>
+     <height>281</height>
     </rect>
    </property>
    <property name="plainText">
@@ -83,7 +83,7 @@ You can return to this menu multiple times to either learn more about your selec
    <property name="geometry">
     <rect>
      <x>30</x>
-     <y>250</y>
+     <y>270</y>
      <width>26</width>
      <height>22</height>
     </rect>

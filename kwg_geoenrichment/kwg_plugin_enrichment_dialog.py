@@ -89,6 +89,7 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         self.plainTextEdit.setHidden(True)
 
         self.toolButton.setIcon(QIcon(":/plugins/kwg_geoenrichment/resources/help-circle.png"))
+        self.toolButton.setStyleSheet("background-color: transparent; color: #ffffff; border: none;")
 
         self.movie = QMovie(":/plugins/kwg_geoenrichment/resources/loading.gif")
         self.loadingLabel.setMovie(self.movie)
