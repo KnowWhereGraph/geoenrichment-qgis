@@ -26,25 +26,20 @@ import logging
 import os.path
 from configparser import ConfigParser
 from datetime import time
-from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, QVariant, QObject, pyqtSignal, QTimer, \
+from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, QVariant, \
     QThreadPool, QRunnable, pyqtSlot
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QInputDialog, QLineEdit, QComboBox, QHeaderView, QMessageBox, QCheckBox, \
-    QLabel, QPushButton
+from qgis.PyQt.QtWidgets import QAction, QInputDialog, QLineEdit, QComboBox, QMessageBox, \
+    QLabel, QPushButton, QFileDialog
 from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
     QgsCoordinateTransform, QgsCoordinateTransformContext, QgsMapLayer, \
     QgsFeatureRequest, QgsVectorLayer, QgsLayerTreeGroup, QgsRenderContext, \
     QgsCoordinateReferenceSystem, QgsMessageLog, Qgis, QgsFields, QgsField, QgsVectorFileWriter, QgsLayerTreeLayer, \
     QgsWkbTypes
-from time import sleep
-from multiprocessing import Process
 
 
 from typing import re
 import statistics
-
-# Import QDraw settings
-from PyQt5.uic.properties import QtCore, QtGui
 
 from .drawtools import DrawPolygon, \
     SelectPoint
@@ -298,7 +293,7 @@ class kwg_geoenrichment:
         self.dlg.show()
 
         # disable GDB Button
-        self.dlg.pushButton_gdb.clicked.connect(lambda: self.displayButtonHelp(isGDB=True))
+        self.dlg.pushButton_gdb.clicked.connect(lambda: self.handleGeoPackageFileBrowser())
 
         self.dlg.pushButton_refresh.clicked.connect(lambda: self.refreshLayer())
 
@@ -645,8 +640,8 @@ then select an entity on the map.'
                 if layer.name() not in currentItems:
                     self.dlg.comboBox_layers.addItem(layer.name())
 
-    def selectNewlyDrawnLayer(self):
-        index = self.dlg.comboBox_layers.findText("geo_enrichment_polygon")
+    def selectNewlyDrawnLayer(self, layerName="geo_enrichment_polygon"):
+        index = self.dlg.comboBox_layers.findText(layerName)
         if index >= 0:
             self.dlg.comboBox_layers.setCurrentIndex(index)
 
@@ -1057,6 +1052,24 @@ then select an entity on the map.'
             }
         """)
         self.dlg.show()
+
+    def handleGeoPackageFileBrowser(self):
+        filters = "Shape files (*.shp);;Geopackage files (*.gpkg)"
+        selected_filter = "Geopackage files (*.gpkg)"
+        layerName="testlayer_shp"
+        layer_tup = QFileDialog.getOpenFileName(self.dlg, "KWG File browser ", self.path, filters, selected_filter)
+        layer = QgsVectorLayer(layer_tup[0], layerName, "ogr")
+        self.logger.info(layer_tup[0])
+
+        if layer is not None:
+            pjt = QgsProject.instance()
+            pjt.addMapLayer(layer)
+            self.iface.mapCanvas().refresh()
+
+            self.dlg.comboBox_layers.currentIndexChanged.disconnect()
+            self.refreshLayer()
+            self.dlg.comboBox_layers.currentIndexChanged.connect(lambda: self.handleLayerSelection())
+            self.selectNewlyDrawnLayer(layerName=layerName)
 
 
 class Worker(QRunnable, ):
