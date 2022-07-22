@@ -300,6 +300,8 @@ class kwg_geoenrichment:
         # disable GDB Button
         self.dlg.pushButton_gdb.clicked.connect(lambda: self.displayButtonHelp(isGDB=True))
 
+        self.dlg.pushButton_refresh.clicked.connect(lambda: self.refreshLayer())
+
         # get the geometry from the user
         self.dlg.pushButton_polygon.clicked.connect(self.drawPolygon)
 

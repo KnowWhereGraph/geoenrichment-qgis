@@ -156,7 +156,7 @@ When you're ready to create your new Feature Class,  provide a name for the new 
     </rect>
    </property>
    <property name="toolTip">
-    <string>Refresh list of active layers</string>
+    <string>Refresh list of active polygon layers</string>
    </property>
    <property name="text">
     <string/>
