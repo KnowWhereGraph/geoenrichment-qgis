@@ -932,6 +932,23 @@ then select an entity on the map.'
         return wktstr
 
     def generateFormattedEntityDict(self, entityDict = {}, mergeRule = 1):
+        isAlpha = False
+        intMergeRules = [4, 5, 6, 7, 8]
+        for gtype in entityDict:
+            for eVal in entityDict[gtype]:
+                if (any(c.isalpha() for c in entityDict[gtype][eVal]["o"][0])):
+                    isAlpha = True
+                    break
+            else:
+                # Continue if the inner loop wasn't broken.
+                continue
+                # Inner loop was broken, break the outer.
+            break
+
+        if mergeRule in intMergeRules and isAlpha:
+            self.displayButtonHelp(isNonNumeric=True)
+            mergeRule = 2
+
         for gtype in entityDict:
             for eVal in entityDict[gtype]:
                 if mergeRule == 1:
@@ -997,12 +1014,17 @@ then select an entity on the map.'
             return float(num)
         raise ValueError('num is not a number. Got {}.'.format(num))  # optional
 
-    def displayButtonHelp(self, isGDB=False):
+    def displayButtonHelp(self, isGDB=False, isNonNumeric=False):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Warning)
         if isGDB:
-            msg.setText("Can't open a geo-database...")
-            msg.setWindowTitle("Open GDB Warning!")
+            msg.setWindowTitle("Geodatabase Open error!")
+            msg.setText("Can't open a geo-database!")
+            msg.setInformativeText("This feature is still under development.")
+        elif isNonNumeric:
+            msg.setWindowTitle("Merge rule error!")
+            msg.setText("Non-numeric operations found!")
+            msg.setInformativeText("Defaulting to concat '|' operation to store results.")
         else:
             msg.setText("Please select area of interest using the 'Select Area' button")
             msg.setWindowTitle("'Select Area' First!")
