@@ -56,25 +56,40 @@ QPushButton#pushButton_save {
 
 QLabel {
         color: white;
+        font-weight: bold;
     }
 
 QComboBox{
-        background-color: #216FB3;
-        color: #ffffff;
+        background-color: white;
+        color: black;
+        selection-background-color: #216FB3;
+    }
+
+QComboBox QAbstractItemView {
+        border: 1px solid grey;
+        background: white;
     }
 
 QListWidget{
         color: #ffffff;
         height: 70px;
     }
+
 QLineEdit {
         height: 70px;
         width: 255px;
-        background: linear-gradient(308.55deg, rgba(0,2,31,0) 0%, #00011F 100%), linear-gradient(359.14deg, rgba(0,2,31,0) 0%, #00011F 100%);
-        color: white;
+        background: None;
+        background-color: white;
+        color: black;
     }
+
 QPlainTextEdit {
-        background:None;
-        background-color: #36385B;
-        color: white;
+        background: None;
+        background-color: white;
+        color: black;
+    }
+
+QTableWidget {
+        background-color: transparent;
+        border: None;
     }

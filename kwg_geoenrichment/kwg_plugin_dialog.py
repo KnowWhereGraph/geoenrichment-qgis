@@ -29,6 +29,7 @@ from qgis.PyQt import uic
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QSplitter, QTextEdit, QFrame, QDockWidget, QListWidget, QMessageBox
+from PyQt5.uic.properties import QtCore
 
 from .resources import *
 
@@ -51,6 +52,7 @@ class kwg_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         self.displayingHelp = False
         self.setFixedWidth(650)
         self.plainTextEdit.setHidden(True)
+        self.plainTextEdit.setReadOnly(True)
 
         # logging
         self.logger = logging.getLogger()
@@ -68,9 +70,13 @@ class kwg_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         self.logger.addHandler(handler)
 
         self.toolButton.setIcon(QIcon(":/plugins/kwg_geoenrichment/resources/help-circle.png"))
+        self.toolButton.setIconSize(QtCore.QSize(32, 32))
         self.pushButton_gdb.setIcon(QIcon(":/plugins/kwg_geoenrichment/resources/file.svg"))
         self.pushButton_polygon.setIcon(QIcon(":/plugins/kwg_geoenrichment/resources/plus.svg"))
         self.pushButton_refresh.setIcon(QIcon(":/plugins/kwg_geoenrichment/resources/refresh.svg"))
+        self.pushButton_gdb.setIconSize(QtCore.QSize(24, 24))
+        self.pushButton_polygon.setIconSize(QtCore.QSize(24, 24))
+        self.pushButton_refresh.setIconSize(QtCore.QSize(24, 24))
 
         self.toolButton.clicked.connect(self.displayHelp)
 

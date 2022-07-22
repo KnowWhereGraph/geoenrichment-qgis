@@ -42,7 +42,7 @@
   <widget class="QPushButton" name="pushButton_content">
    <property name="geometry">
     <rect>
-     <x>30</x>
+     <x>37</x>
      <y>174</y>
      <width>111</width>
      <height>32</height>
@@ -75,11 +75,13 @@
     </rect>
    </property>
    <property name="plainText">
-    <string>To begin exploring, select an area of interest.  You can either upload a Geodatabase file with an existing polygon layer,  or choose &quot;Select Area&quot; to create a polygon layer representing your area of interest.
+    <string>The entire KnowWhereGraph is available to explore.  In the future,  the Choose Knowledge Graph list will allow you to select specific repositories in the KnowWhereGraph to explore.
 
-After selecting an area of interest, choose &quot;Select Content&quot; to learn about what happened in that area.  You may run this feature as many times as desired.
+To begin exploring,  select any polygonal feature layer as an area of interest.  You can even use the &quot;+&quot; button to manually draw a new polygon layer representing your area of interest.
 
-When you're ready to create your new Feature Class,  provide a name for the new layer and hit &quot;Run&quot;</string>
+After selecting an area of interest,  choose &quot;Select Content&quot; to learn about what happened in that area.  You may run this feature as many times as desired.
+
+When you're ready to create your new Feature Class,  provide a name for the new layer and hit &quot;Run&quot;.</string>
    </property>
   </widget>
   <widget class="QComboBox" name="comboBox_layers">
@@ -87,7 +89,7 @@ When you're ready to create your new Feature Class,  provide a name for the new 
     <rect>
      <x>30</x>
      <y>130</y>
-     <width>461</width>
+     <width>481</width>
      <height>32</height>
     </rect>
    </property>
@@ -103,7 +105,7 @@ When you're ready to create your new Feature Class,  provide a name for the new 
   <widget class="QPushButton" name="pushButton_gdb">
    <property name="geometry">
     <rect>
-     <x>497</x>
+     <x>577</x>
      <y>130</y>
      <width>41</width>
      <height>32</height>
@@ -115,28 +117,39 @@ When you're ready to create your new Feature Class,  provide a name for the new 
    <property name="text">
     <string/>
    </property>
+   <property name="iconSize">
+    <size>
+     <width>24</width>
+     <height>24</height>
+    </size>
+   </property>
   </widget>
   <widget class="QPushButton" name="pushButton_polygon">
    <property name="geometry">
     <rect>
-     <x>537</x>
+     <x>543</x>
      <y>130</y>
      <width>41</width>
      <height>32</height>
     </rect>
    </property>
    <property name="toolTip">
-    <string>Draw polygon of interest
-</string>
+    <string>Draw polygon of interest</string>
    </property>
    <property name="text">
     <string/>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>24</width>
+     <height>24</height>
+    </size>
    </property>
   </widget>
   <widget class="QPushButton" name="pushButton_refresh">
    <property name="geometry">
     <rect>
-     <x>580</x>
+     <x>510</x>
      <y>130</y>
      <width>41</width>
      <height>32</height>
@@ -147,6 +160,12 @@ When you're ready to create your new Feature Class,  provide a name for the new 
    </property>
    <property name="text">
     <string/>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>24</width>
+     <height>24</height>
+    </size>
    </property>
   </widget>
   <widget class="QPushButton" name="toolButton">
@@ -160,6 +179,12 @@ When you're ready to create your new Feature Class,  provide a name for the new 
    </property>
    <property name="text">
     <string/>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>32</width>
+     <height>32</height>
+    </size>
    </property>
   </widget>
   <widget class="QLabel" name="label_2">
@@ -185,7 +210,7 @@ When you're ready to create your new Feature Class,  provide a name for the new 
     </rect>
    </property>
    <property name="toolTip">
-    <string>Select active layers from the project</string>
+    <string>Select a knowledge graph</string>
    </property>
    <item>
     <property name="text">

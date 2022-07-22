@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>874</width>
+    <width>856</width>
     <height>315</height>
    </rect>
   </property>
@@ -58,14 +58,14 @@
      <x>30</x>
      <y>50</y>
      <width>561</width>
-     <height>151</height>
+     <height>141</height>
     </rect>
    </property>
   </widget>
   <widget class="QPlainTextEdit" name="plainTextEdit">
    <property name="geometry">
     <rect>
-     <x>620</x>
+     <x>610</x>
      <y>20</y>
      <width>231</width>
      <height>281</height>
@@ -74,22 +74,9 @@
    <property name="plainText">
     <string>Select a geography feature from the first box.  You may use successive boxes to explore additional information about that feature.
 
-Select &quot;Learn More&quot; to expand your exploration,  or &quot;Add Content&quot; to add the feature to your new Feature Class.
+Select &quot;Explore Further&quot; to expand your exploration,  or &quot;Add Content&quot; to add the feature to your new Feature Class.
 
 You can return to this menu multiple times to either learn more about your selected feature,  or to explore additional feature types.</string>
-   </property>
-  </widget>
-  <widget class="QToolButton" name="toolButton">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>270</y>
-     <width>26</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>...</string>
    </property>
   </widget>
   <widget class="QLabel" name="fetchingLabel">
@@ -116,6 +103,25 @@ You can return to this menu multiple times to either learn more about your selec
    </property>
    <property name="text">
     <string/>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="toolButton">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>270</y>
+     <width>41</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>32</width>
+     <height>32</height>
+    </size>
    </property>
   </widget>
  </widget>
