@@ -119,7 +119,9 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
             self.populateFirstDegreeSubject(spo=self.spoDict)
 
         stylesheet = os.path.join(self.path, 'style.qss')
-        self.setStyleSheet(open(stylesheet, "r").read())
+        fo = open(stylesheet, "r")
+        self.setStyleSheet(fo.read())
+        fo.close()
 
     def setParams(self, params):
         self.params.update(params)

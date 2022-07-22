@@ -75,7 +75,9 @@ class kwg_pluginDialog(QtWidgets.QDialog, FORM_CLASS):
         self.toolButton.clicked.connect(self.displayHelp)
 
         stylesheet = os.path.join(self.path, 'style.qss')
-        self.setStyleSheet(open(stylesheet, "r").read())
+        fo = open(stylesheet, "r")
+        self.setStyleSheet(fo.read())
+        fo.close()
 
 
     def displayHelp(self):
