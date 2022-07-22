@@ -313,6 +313,7 @@ class kwg_geoenrichment:
         if self.tool:
             self.tool.reset()
         self.tool = DrawPolygon(self.iface, self.settings.getColor())
+        self.contentCounter = 0
         self.tool.selectionDone.connect(lambda: self.draw())
         self.tool.move.connect(self.updateSB)
         self.iface.mapCanvas().setMapTool(self.tool)
@@ -543,10 +544,13 @@ then select an entity on the map.'
             self.iface.layerTreeView().refreshLayerSymbology(layer.id())
             self.iface.mapCanvas().refresh()
 
+            self.dlg.comboBox_layers.currentIndexChanged.disconnect()
             self.refreshLayer()
             self.selectNewlyDrawnLayer()
+            self.dlg.comboBox_layers.currentIndexChanged.connect(lambda: self.handleLayerSelection())
 
             self.updateSelectContent()
+            self.setUpCaller(layerName="geo_enrichment_polygon")
 
         self.tool.reset()
         self.resetSB()
