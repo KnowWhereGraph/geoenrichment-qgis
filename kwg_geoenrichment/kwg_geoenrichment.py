@@ -1018,8 +1018,8 @@ then select an entity on the map.'
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Warning)
         if isGDB:
-            msg.setWindowTitle("Geodatabase Open error!")
-            msg.setText("Can't open a geo-database!")
+            msg.setWindowTitle("Geopackage Open error!")    
+            msg.setText("Can't open a geopackage!")
             msg.setInformativeText("This feature is still under development.")
         elif isNonNumeric:
             msg.setWindowTitle("Merge rule error!")
