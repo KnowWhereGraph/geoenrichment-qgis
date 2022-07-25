@@ -213,31 +213,11 @@ class kwg_pluginEnrichmentDialog(QtWidgets.QDialog, FORM_CLASS):
         except TypeError:
             pass
         self.tableWidget.cellWidget(0, 0).clear()
-        s2CellBindingObject = []
+        entityBindingObject = []
 
         for wkt in self.params["wkt_literal"]:
-            # retrieve S2 cells
-            response = self.sparql_query.getS2CellsFromGeometry(sparql_endpoint=self.params["end_point"],
-                                                                           wkt_literal=wkt)
-
-            if response == "error: s2c":
-                self.handleError(errCode="s2c")
-                return "s2c"
-            s2CellBindingObject.extend(response)
-
-        self.logger.debug(json.dumps(s2CellBindingObject))
-        for obj in s2CellBindingObject:
-            self.logger.debug(json.dumps(obj))
-            try:
-                # self.logger.debug(obj["s2Cell"]["value"])
-                self.s2Cells.append(obj["s2Cell"]["value"])
-            except Exception as e:
-                self.logger.debug(e)
-                continue
-
-        # retrieve Entity associated with S2 cells
-        entityBindingObject = self.sparql_query.getEntityValuesFromS2Cells(sparql_endpoint=self.params["end_point"],
-                                                                           s2Cells=self.s2Cells)
+            entityBindingObject.extend(self.sparql_query.getEntityValuesFromGeometry(sparql_endpoint=self.params["end_point"],
+                                                                           wkt_literal=wkt))
 
         for obj in entityBindingObject:
             try:

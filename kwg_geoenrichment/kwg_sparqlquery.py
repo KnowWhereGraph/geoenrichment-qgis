@@ -24,64 +24,16 @@ class kwg_sparqlquery:
         handler.setFormatter(formatter)  # Pass handler as a parameter, not assign
         self.logger.addHandler(handler)
 
-    def getS2CellsFromGeometry(self,
+    def getEntityValuesFromGeometry(self,
                                sparql_endpoint="http://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V3",
                                wkt_literal="Polygon((-119.73822343857 34.4749685817967, -119.571162553598 34.4767458252538, -119.670688187198 34.3754429481962, -119.73822343857 34.4749685817967))"):
         """
-            Retrieves S2 cells based on the selected wkt literal
+            Retrieves Entities based on the selected wkt literal
             Arguments:
                 sparql_endpoint: the sparql end point for the graph database
                 wkt_literal: the wkt literal for the user selected polygon
             Returns:
-                The raw JSON response containing S2 cells retrieved from the specified graph end point
-        """
-
-        SPARQLUtil = kwg_sparqlutil()
-        queryPrefix = SPARQLUtil.make_sparql_prefix()
-
-        queryString = """
-        select ?s2Cell where {
-            ?adminRegion2 a kwg-ont:AdministrativeRegion_3.
-            ?adminRegion2 geo:hasGeometry ?arGeo.
-            ?arGeo geo:asWKT ?arWKT.
-            FILTER(geof:sfIntersects("%s"^^geo:wktLiteral, ?arWKT) || geof:sfWithin("%s"^^geo:wktLiteral, ?arWKT)).
-
-            ?adminRegion2 kwg-ont:sfContains ?s2Cell.
-            ?s2Cell a kwg-ont:KWGCellLevel13.
-            ?s2Cell geo:hasGeometry ?s2Geo.
-            ?s2Geo geo:asWKT ?s2WKT.
-            FILTER(geof:sfIntersects("%s"^^geo:wktLiteral, ?s2WKT) || geof:sfWithin("%s"^^geo:wktLiteral, ?s2WKT)).
-        }
-        """ % (wkt_literal, wkt_literal, wkt_literal, wkt_literal)
-
-        query = queryPrefix + queryString
-
-        try:
-
-            s2CellsQueryResult = SPARQLUtil.sparql_requests(query=query,
-                                                        sparql_endpoint=sparql_endpoint,
-                                                        request_method="get")
-
-            if s2CellsQueryResult is None:
-                return "error: s2c"
-
-            s2CellsQueryResultBindings = s2CellsQueryResult["results"]["bindings"]
-
-        except:
-            return "error: s2c"
-
-        return s2CellsQueryResultBindings
-
-    def getEntityValuesFromS2Cells(self,
-                                   sparql_endpoint="http://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V3",
-                                   s2Cells=[]):
-        """
-            Retrieves Entity values that are associated with the passed S2 cells
-            Arguments:
-                sparql_endpoint: the sparql end point for the graph database
-                s2Cells: list object of the S2 cells that belong to the user selected polygon
-            Returns:
-                The raw JSON response containing Entity values
+                The raw JSON response containing entities associated with S2Cells within the given geometry
         """
 
         SPARQLUtil = kwg_sparqlutil()
@@ -90,17 +42,31 @@ class kwg_sparqlquery:
         EntityQueryResultBindings = []
 
         try:
-            s2CellsPrefixed = ""
-            for s2Cell in s2Cells:
-                s2CellsPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(s2Cell)
-
             queryString = """
             select distinct ?entity where {
+                values ?userWKT {"%s"^^geo:wktLiteral}.
+    
+                ?adminRegion2 a kwg-ont:AdministrativeRegion_2.
+                ?adminRegion2 geo:hasGeometry ?arGeo2.
+                ?arGeo2 geo:asWKT ?arWKT2.
+                FILTER(geof:sfIntersects(?userWKT, ?arWKT2) || geof:sfWithin(?userWKT, ?arWKT2)).
+    
+                ?adminRegion3 kwg-ont:sfWithin ?adminRegion2.
+                ?adminRegion3 a kwg-ont:AdministrativeRegion_3.
+                ?adminRegion3 geo:hasGeometry ?arGeo3.
+                ?arGeo3 geo:asWKT ?arWKT3.
+                FILTER(geof:sfIntersects(?userWKT, ?arWKT3) || geof:sfWithin(?userWKT, ?arWKT3)).
+    
+                ?adminRegion3 kwg-ont:sfContains ?s2Cell.
+                ?s2Cell a kwg-ont:KWGCellLevel13.
+                ?s2Cell geo:hasGeometry ?s2Geo.
+                ?s2Geo geo:asWKT ?s2WKT.
+                FILTER(geof:sfIntersects(?userWKT, ?s2WKT) || geof:sfWithin(?userWKT, ?s2WKT)).
+    
                 {?entity ?p ?s2Cell.} union {?s2Cell ?p ?entity.}
                 ?entity a geo:Feature.
-                values ?s2Cell {%s}
             }
-            """ % (s2CellsPrefixed)
+            """ % (wkt_literal)
 
             query = queryPrefix + queryString
 
