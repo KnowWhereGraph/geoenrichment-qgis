@@ -490,13 +490,6 @@ then select an entity on the map.'
 
             name = "geo_enrichment_polygon"
             pjt = QgsProject.instance()
-            if pjt.layerTreeRoot().findGroup(self.tr('Geometry')) is not None:
-                group = pjt.layerTreeRoot().findGroup(
-                    self.tr('Geometry'))
-
-                for child in group.children():
-                    if isinstance(child, QgsLayerTreeLayer):
-                        QgsProject.instance().removeMapLayer(child.layerId())
 
             # save the buffer
             if self.drawShape == 'point':
@@ -531,14 +524,7 @@ then select an entity on the map.'
             layer.dataProvider().addFeatures([feature])
             layer.commitChanges()
 
-            pjt.addMapLayer(layer, False)
-            if pjt.layerTreeRoot().findGroup(self.tr('Geometry')) is None:
-                pjt.layerTreeRoot().insertChildNode(
-                    0, QgsLayerTreeGroup(self.tr('Geometry')))
-            group = pjt.layerTreeRoot().findGroup(
-                self.tr('Geometry'))
-            group.insertLayer(0, layer)
-            self.iface.layerTreeView().refreshLayerSymbology(layer.id())
+            pjt.addMapLayer(layer)
             self.iface.mapCanvas().refresh()
 
             self.dlg.comboBox_layers.currentIndexChanged.disconnect()
@@ -1056,8 +1042,9 @@ then select an entity on the map.'
     def handleGeoPackageFileBrowser(self):
         filters = "Shape files (*.shp);;Geopackage files (*.gpkg)"
         selected_filter = "Geopackage files (*.gpkg)"
+        # TODO
         layerName="testlayer_shp"
-        layer_tup = QFileDialog.getOpenFileName(self.dlg, "KWG File browser ", self.path, filters, selected_filter)
+        layer_tup = QFileDialog.getOpenFileName(self.dlg, "KWG File browser", self.path, filters, selected_filter)
         layer = QgsVectorLayer(layer_tup[0], layerName, "ogr")
         self.logger.info(layer_tup[0])
 
