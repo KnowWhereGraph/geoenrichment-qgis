@@ -22,6 +22,7 @@
  ***************************************************************************/
 """
 import json
+import ntpath
 import logging
 import os.path
 from configparser import ConfigParser
@@ -35,8 +36,7 @@ from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
     QgsCoordinateTransform, QgsCoordinateTransformContext, QgsMapLayer, \
     QgsFeatureRequest, QgsVectorLayer, QgsLayerTreeGroup, QgsRenderContext, \
     QgsCoordinateReferenceSystem, QgsMessageLog, Qgis, QgsFields, QgsField, QgsVectorFileWriter, QgsLayerTreeLayer, \
-    QgsWkbTypes
-
+    QgsWkbTypes, QgsDataProvider
 
 from typing import re
 import statistics
@@ -1042,21 +1042,48 @@ then select an entity on the map.'
     def handleGeoPackageFileBrowser(self):
         filters = "Shape files (*.shp);;Geopackage files (*.gpkg)"
         selected_filter = "Geopackage files (*.gpkg)"
+        isShapeFile = False
+        isGpkgFile = False
         # TODO
-        layerName="testlayer_shp"
-        layer_tup = QFileDialog.getOpenFileName(self.dlg, "KWG File browser", self.path, filters, selected_filter)
-        layer = QgsVectorLayer(layer_tup[0], layerName, "ogr")
-        self.logger.info(layer_tup[0])
+        file_tup = QFileDialog.getOpenFileName(self.dlg, "KWG File browser", self.path, filters, selected_filter)
+        self.logger.info(file_tup)
+        if file_tup is not None:
+            path = file_tup[0]
+            if path is not None:
+                if len(path.split(".")) > 1:
+                    isShapeFile = True if path.split(".")[1] == "shp" else False
+                    isGpkgFile = True if path.split(".")[1] == "gpkg" else False
+                    layerName = self.path_leaf(path)
+                    layer = QgsVectorLayer(path, layerName, "ogr")
 
-        if layer is not None:
-            pjt = QgsProject.instance()
-            pjt.addMapLayer(layer)
-            self.iface.mapCanvas().refresh()
+                    if isShapeFile: self.loadShapeFile(layer, layerName)
+                    if isGpkgFile: self.loadGpkgFile(path)
 
-            self.dlg.comboBox_layers.currentIndexChanged.disconnect()
-            self.refreshLayer()
-            self.dlg.comboBox_layers.currentIndexChanged.connect(lambda: self.handleLayerSelection())
-            self.selectNewlyDrawnLayer(layerName=layerName)
+    def loadShapeFile(self, layer='', layerName=None):
+        pjt = QgsProject.instance()
+        pjt.addMapLayer(layer)
+        self.iface.mapCanvas().refresh()
+
+        self.dlg.comboBox_layers.currentIndexChanged.disconnect()
+        self.refreshLayer()
+        self.dlg.comboBox_layers.currentIndexChanged.connect(lambda: self.handleLayerSelection())
+        self.selectNewlyDrawnLayer(layerName=self.path_leaf(layerName))
+
+    def loadGpkgFile(self, fileName):
+        layer = QgsVectorLayer(fileName, "test", "ogr")
+        subLayers = layer.dataProvider().subLayers()
+
+        for subLayer in subLayers:
+            name = subLayer.split(QgsDataProvider.SUBLAYER_SEPARATOR)[1]
+            uri = "%s|layername=%s" % (fileName, name,)
+            # Create layer
+            sub_vlayer = QgsVectorLayer(uri, name, 'ogr')
+            # Add layer to map
+            QgsProject.instance().addMapLayer(sub_vlayer)
+
+    def path_leaf(self, path):
+        head, tail = ntpath.split(path)
+        return tail or ntpath.basename(head)
 
 
 class Worker(QRunnable, ):
