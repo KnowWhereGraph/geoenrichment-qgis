@@ -1060,7 +1060,7 @@ then select an entity on the map.'
                     if isGpkgFile: self.loadGpkgFile(path)
 
     def loadShapeFile(self, layer='', layerName=None):
-        layer.setOpacity(0.4)
+        layer.setOpacity(0.50)
         pjt = QgsProject.instance()
         pjt.addMapLayer(layer)
         self.iface.mapCanvas().refresh()
@@ -1072,7 +1072,6 @@ then select an entity on the map.'
 
     def loadGpkgFile(self, fileName):
         layer = QgsVectorLayer(fileName, "test", "ogr")
-        layer.setOpacity(0.4)
         subLayers = layer.dataProvider().subLayers()
 
         for subLayer in subLayers:
@@ -1080,7 +1079,7 @@ then select an entity on the map.'
             uri = "%s|layername=%s" % (fileName, name,)
             # Create layer
             sub_vlayer = QgsVectorLayer(uri, name, 'ogr')
-            sub_vlayer.setOpacity(0.4)
+            sub_vlayer.setOpacity(0.50)
             # Add layer to map
             QgsProject.instance().addMapLayer(sub_vlayer)
 
