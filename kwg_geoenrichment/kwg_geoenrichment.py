@@ -55,6 +55,7 @@ from .qdrawsettings import QdrawSettings
 
 _SPARQL_ENDPOINT_DICT = {
     "KnowWhereGraph": "https://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG",
+    "KnowWhereGraph - Stage": "https://staging.knowwheregraph.org/graphdb/repositories/KWG"
 }
 
 class kwg_geoenrichment:
@@ -842,6 +843,9 @@ then select an entity on the map.'
             pr.addAttributes(layerFields)
             vl.updateFields()
 
+            if gtype == "LineString":
+                vl.renderer().symbol().setWidth(1.2)
+
             if len(objList) == 0:
                 QgsMessageLog.logMessage("No results found!",
                                          level=Qgis.Info)
@@ -914,7 +918,7 @@ then select an entity on the map.'
 
     def generateFormattedEntityDict(self, entityDict = {}, mergeRule = 1):
         isAlpha = False
-        intMergeRules = [4, 5, 6, 7, 8]
+        intMergeRules = [4, 5, 6, 7]
         for gtype in entityDict:
             for eVal in entityDict[gtype]:
                 if (any(c.isalpha() for c in entityDict[gtype][eVal]["o"][0])):

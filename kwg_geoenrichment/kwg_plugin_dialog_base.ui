@@ -217,6 +217,11 @@ When you're ready to create your new Feature Class,  provide a name for the new 
      <string>KnowWhereGraph</string>
     </property>
    </item>
+   <item>
+    <property name="text">
+     <string>KnowWhereGraph - Stage</string>
+    </property>
+   </item>
   </widget>
   <widget class="QLabel" name="label_3">
    <property name="geometry">
