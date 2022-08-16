@@ -22,29 +22,24 @@
  ***************************************************************************/
 """
 import json
+import ntpath
 import logging
 import os.path
 from configparser import ConfigParser
 from datetime import time
-from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, QVariant, QObject, pyqtSignal, QTimer, \
+from qgis.PyQt.QtCore import QTranslator, QSettings, QCoreApplication, QVariant, \
     QThreadPool, QRunnable, pyqtSlot
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QInputDialog, QLineEdit, QComboBox, QHeaderView, QMessageBox, QCheckBox, \
-    QLabel, QPushButton
+from qgis.PyQt.QtWidgets import QAction, QInputDialog, QLineEdit, QComboBox, QMessageBox, \
+    QLabel, QPushButton, QFileDialog
 from qgis.core import QgsFeature, QgsProject, QgsGeometry, \
     QgsCoordinateTransform, QgsCoordinateTransformContext, QgsMapLayer, \
     QgsFeatureRequest, QgsVectorLayer, QgsLayerTreeGroup, QgsRenderContext, \
     QgsCoordinateReferenceSystem, QgsMessageLog, Qgis, QgsFields, QgsField, QgsVectorFileWriter, QgsLayerTreeLayer, \
-    QgsWkbTypes
-from time import sleep
-from multiprocessing import Process
-
+    QgsWkbTypes, QgsDataProvider
 
 from typing import re
 import statistics
-
-# Import QDraw settings
-from PyQt5.uic.properties import QtCore, QtGui
 
 from .drawtools import DrawPolygon, \
     SelectPoint
@@ -60,6 +55,7 @@ from .qdrawsettings import QdrawSettings
 
 _SPARQL_ENDPOINT_DICT = {
     "KnowWhereGraph": "https://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG",
+    "KnowWhereGraph - Stage": "https://staging.knowwheregraph.org/graphdb/repositories/KWG"
 }
 
 class kwg_geoenrichment:
@@ -298,7 +294,7 @@ class kwg_geoenrichment:
         self.dlg.show()
 
         # disable GDB Button
-        self.dlg.pushButton_gdb.clicked.connect(lambda: self.displayButtonHelp(isGDB=True))
+        self.dlg.pushButton_gdb.clicked.connect(lambda: self.handleGeoPackageFileBrowser())
 
         self.dlg.pushButton_refresh.clicked.connect(lambda: self.refreshLayer())
 
@@ -495,13 +491,6 @@ then select an entity on the map.'
 
             name = "geo_enrichment_polygon"
             pjt = QgsProject.instance()
-            if pjt.layerTreeRoot().findGroup(self.tr('Geometry')) is not None:
-                group = pjt.layerTreeRoot().findGroup(
-                    self.tr('Geometry'))
-
-                for child in group.children():
-                    if isinstance(child, QgsLayerTreeLayer):
-                        QgsProject.instance().removeMapLayer(child.layerId())
 
             # save the buffer
             if self.drawShape == 'point':
@@ -536,14 +525,7 @@ then select an entity on the map.'
             layer.dataProvider().addFeatures([feature])
             layer.commitChanges()
 
-            pjt.addMapLayer(layer, False)
-            if pjt.layerTreeRoot().findGroup(self.tr('Geometry')) is None:
-                pjt.layerTreeRoot().insertChildNode(
-                    0, QgsLayerTreeGroup(self.tr('Geometry')))
-            group = pjt.layerTreeRoot().findGroup(
-                self.tr('Geometry'))
-            group.insertLayer(0, layer)
-            self.iface.layerTreeView().refreshLayerSymbology(layer.id())
+            pjt.addMapLayer(layer)
             self.iface.mapCanvas().refresh()
 
             self.dlg.comboBox_layers.currentIndexChanged.disconnect()
@@ -645,8 +627,8 @@ then select an entity on the map.'
                 if layer.name() not in currentItems:
                     self.dlg.comboBox_layers.addItem(layer.name())
 
-    def selectNewlyDrawnLayer(self):
-        index = self.dlg.comboBox_layers.findText("geo_enrichment_polygon")
+    def selectNewlyDrawnLayer(self, layerName="geo_enrichment_polygon"):
+        index = self.dlg.comboBox_layers.findText(layerName)
         if index >= 0:
             self.dlg.comboBox_layers.setCurrentIndex(index)
 
@@ -861,6 +843,9 @@ then select an entity on the map.'
             pr.addAttributes(layerFields)
             vl.updateFields()
 
+            if gtype == "LineString":
+                vl.renderer().symbol().setWidth(1.2)
+
             if len(objList) == 0:
                 QgsMessageLog.logMessage("No results found!",
                                          level=Qgis.Info)
@@ -933,7 +918,7 @@ then select an entity on the map.'
 
     def generateFormattedEntityDict(self, entityDict = {}, mergeRule = 1):
         isAlpha = False
-        intMergeRules = [4, 5, 6, 7, 8]
+        intMergeRules = [4, 5, 6, 7]
         for gtype in entityDict:
             for eVal in entityDict[gtype]:
                 if (any(c.isalpha() for c in entityDict[gtype][eVal]["o"][0])):
@@ -1057,6 +1042,54 @@ then select an entity on the map.'
             }
         """)
         self.dlg.show()
+
+    def handleGeoPackageFileBrowser(self):
+        filters = "Shape files (*.shp);;Geopackage files (*.gpkg)"
+        selected_filter = "Geopackage files (*.gpkg)"
+        isShapeFile = False
+        isGpkgFile = False
+        # TODO
+        file_tup = QFileDialog.getOpenFileName(self.dlg, "KWG File browser", self.path, filters, selected_filter)
+        self.logger.info(file_tup)
+        if file_tup is not None:
+            path = file_tup[0]
+            if path is not None:
+                if len(path.split(".")) > 1:
+                    isShapeFile = True if path.split(".")[1] == "shp" else False
+                    isGpkgFile = True if path.split(".")[1] == "gpkg" else False
+                    layerName = self.path_leaf(path)
+                    layer = QgsVectorLayer(path, layerName, "ogr")
+
+                    if isShapeFile: self.loadShapeFile(layer, layerName)
+                    if isGpkgFile: self.loadGpkgFile(path)
+
+    def loadShapeFile(self, layer='', layerName=None):
+        layer.setOpacity(0.50)
+        pjt = QgsProject.instance()
+        pjt.addMapLayer(layer)
+        self.iface.mapCanvas().refresh()
+
+        self.dlg.comboBox_layers.currentIndexChanged.disconnect()
+        self.refreshLayer()
+        self.dlg.comboBox_layers.currentIndexChanged.connect(lambda: self.handleLayerSelection())
+        self.selectNewlyDrawnLayer(layerName=self.path_leaf(layerName))
+
+    def loadGpkgFile(self, fileName):
+        layer = QgsVectorLayer(fileName, "test", "ogr")
+        subLayers = layer.dataProvider().subLayers()
+
+        for subLayer in subLayers:
+            name = subLayer.split(QgsDataProvider.SUBLAYER_SEPARATOR)[1]
+            uri = "%s|layername=%s" % (fileName, name,)
+            # Create layer
+            sub_vlayer = QgsVectorLayer(uri, name, 'ogr')
+            sub_vlayer.setOpacity(0.50)
+            # Add layer to map
+            QgsProject.instance().addMapLayer(sub_vlayer)
+
+    def path_leaf(self, path):
+        head, tail = ntpath.split(path)
+        return tail or ntpath.basename(head)
 
 
 class Worker(QRunnable, ):
