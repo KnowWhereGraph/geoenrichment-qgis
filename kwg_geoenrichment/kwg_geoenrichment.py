@@ -493,6 +493,7 @@ then select an entity on the map.'
         if ok and not warning:
 
             name = "geo_enrichment_polygon"
+            self.selectedLayername = "geo_enrichment_polygon"
             pjt = QgsProject.instance()
 
             # save the buffer
@@ -556,12 +557,12 @@ then select an entity on the map.'
         self.dlg.comboBox_layers.currentIndexChanged.connect(lambda: self.handleLayerSelection())
 
     def handleLayerSelection(self):
-        selectedLayername = self.dlg.comboBox_layers.currentText()
+        self.selectedLayername = self.dlg.comboBox_layers.currentText()
 
         # enable the select content button
         self.updateSelectContent()
 
-        self.setUpCaller(layerName=selectedLayername)
+        self.setUpCaller(layerName=self.selectedLayername)
 
     def getInputs(self, layerName=None):
         params = {}
@@ -802,7 +803,7 @@ then select an entity on the map.'
         return geom_reproj
 
     def createGeoPackage(self, GeoQueryResult, subtype='', objName=[], layerName="geo_results", mergeRule = [],
-                         out_path=None):
+                         out_path=None, input_Layer = None):
         '''
         GeoQueryResult: a sparql query result json obj serialized as a list of dict()
                     SPARQL query like this:
@@ -817,6 +818,9 @@ then select an entity on the map.'
         '''
         # a set of unique WKT for each found places
         out_path += ".gpkg"
+
+        if input_Layer == None:
+            input_Layer = self.selectedLayername
 
         entityDict = {}
 
@@ -880,6 +884,30 @@ then select an entity on the map.'
                         geom = QgsGeometry.fromWkt(wkt)
 
                         feat.setGeometry(geom)
+
+                        # check if we need to discard this polygon
+                        matchFound = False
+                        for layer in QgsProject.instance().mapLayers().values():
+                            if layer.name() == input_Layer:
+                                ft = layer.getFeatures()
+                                for f in ft:
+                                    geom_poly = f.geometry()
+
+                                    if gtype == "Point":
+                                        if geom_poly.contains(geom):
+                                            matchFound = True
+
+                                    if gtype == "LineString":
+                                        if geom_poly.intersects(geom):
+                                            matchFound = True
+
+                                    if gtype == "Polygon":
+                                        if geom_poly.intersects(geom):
+                                            matchFound = True
+
+                        if not matchFound:
+                            continue
+
                         feat.setAttributes(item[0:-1])
 
                         vl.addFeature(feat)
