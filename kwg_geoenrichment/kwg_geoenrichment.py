@@ -127,6 +127,9 @@ class kwg_geoenrichment:
         self.eventPlaceTypeDict = dict()
         self.kwg_endpoint_dict = _SPARQL_ENDPOINT_DICT
 
+        # content dict s-o
+        self.selectedValDict = {}
+
         # setting up button flags
         self.disableGDB = True
         self.disableSelectContent = True
@@ -649,6 +652,16 @@ then select an entity on the map.'
             selectedVal.append(self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(i - 1, 2).currentText())
 
 
+        if selectedVal[-1] == "LITERAL" or selectedVal[-1] == "--- SELECT ---":
+            if selectedVal[0] not in self.selectedValDict:
+                self.selectedValDict[selectedVal[0]] = []
+            self.selectedValDict[selectedVal[0]].append(selectedVal[-2])
+
+        else:
+            if selectedVal[0] not in self.selectedValDict:
+                self.selectedValDict[selectedVal[0]] = []
+            self.selectedValDict[selectedVal[0]] = selectedVal[-1]
+
         stringVal = " -> ".join(selectedVal)
 
         x, y = self.getPosition(self.dlg.pushButton_content)
@@ -727,18 +740,23 @@ then select an entity on the map.'
             self.displayButtonHelp()
             return
 
-        results = []
-        objName = []
-        mergeRuleNo = []
-        for i in range(self.contentCounter):
-            results.append(self.enrichmentObjBuffer[i].getResults())
+        subtype_count = 0
+        for subtype in self.selectedValDict:
+            results = []
+            objName = []
+            mergeRuleNo = []
 
-            objName.append(self.lineObjBuffer[i].text())
-            layerName = self.dlg.lineEdit_layerName.text()
-            mergeRule = self.comboBoxBuffer[i].currentText()
-            mergeRuleNo.append(int(mergeRule.split(" - ")[0]))
+            for i in range(len(self.selectedValDict[subtype])):
 
-        self.createGeoPackage(results, objName, layerName, mergeRule=mergeRuleNo, out_path=self.path)
+                results.append(self.enrichmentObjBuffer[subtype_count + i].getResults())
+
+                objName.append(self.lineObjBuffer[subtype_count + i].text())
+                layerName = self.dlg.lineEdit_layerName.text()
+                mergeRule = self.comboBoxBuffer[subtype_count + i].currentText()
+                mergeRuleNo.append(int(mergeRule.split(" - ")[0]))
+
+            subtype_count = subtype_count + len(self.selectedValDict[subtype])
+            self.createGeoPackage(results, subtype, objName, layerName, mergeRule=mergeRuleNo, out_path=self.path)
         self.dlg.close()
         self.enrichmentObjBuffer = list()
 
@@ -783,7 +801,7 @@ then select an entity on the map.'
         geom_reproj = geom_converter.transform(geom)
         return geom_reproj
 
-    def createGeoPackage(self, GeoQueryResult, objName=[], layerName="geo_results", mergeRule = [],
+    def createGeoPackage(self, GeoQueryResult, subtype='', objName=[], layerName="geo_results", mergeRule = [],
                          out_path=None):
         '''
         GeoQueryResult: a sparql query result json obj serialized as a list of dict()
@@ -818,7 +836,6 @@ then select an entity on the map.'
                         entityDict[gtype][eValue]["wkt"] = self.updateWkt(gtype, entityDict[gtype][eValue]["wkt"], tempDict[gtype][eValue]["wkt"])
 
         for gtype in entityDict:
-
             layerFields = QgsFields()
             layerFields.append(QgsField('entity', QVariant.String))
             layerFields.append(QgsField('entityLabel', QVariant.String))
@@ -838,7 +855,7 @@ then select an entity on the map.'
                 record.append(entityDict[gtype][entity]["wkt"])
                 objList.append(record)
 
-            vl = QgsVectorLayer(gtype + "?crs=epsg:4326", "%s_%s"%(layerName, gtype), "memory")
+            vl = QgsVectorLayer(gtype + "?crs=epsg:4326", "%s_%s_%s"%(layerName, subtype, gtype), "memory")
             pr = vl.dataProvider()
             pr.addAttributes(layerFields)
             vl.updateFields()
@@ -871,7 +888,7 @@ then select an entity on the map.'
                     vl.updateExtents()
 
                     options = QgsVectorFileWriter.SaveVectorOptions()
-                    options.layerName = "%s_%s"%(layerName, gtype)
+                    options.layerName = "%s_%s_%s"%(layerName, subtype, gtype)
                     context = QgsProject.instance().transformContext()
                     error = QgsVectorFileWriter.writeAsVectorFormatV2(vl, out_path, context, options)
                     QgsProject.instance().addMapLayer(vl)
