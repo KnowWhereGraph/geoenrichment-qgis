@@ -40,41 +40,57 @@ class kwg_sparqlquery:
         queryPrefix = SPARQLUtil.make_sparql_prefix()
 
         EntityQueryResultBindings = []
+        keepPaginating = True
+        offset = 0
 
         try:
-            queryString = """
-            select distinct ?entity where {
-                values ?userWKT {"%s"^^geo:wktLiteral}.
-    
-                ?adminRegion2 a kwg-ont:AdministrativeRegion_2.
-                ?adminRegion2 geo:hasGeometry ?arGeo2.
-                ?arGeo2 geo:asWKT ?arWKT2.
-                FILTER(geof:sfIntersects(?userWKT, ?arWKT2) || geof:sfWithin(?userWKT, ?arWKT2)).
-    
-                ?adminRegion3 kwg-ont:sfWithin ?adminRegion2.
-                ?adminRegion3 a kwg-ont:AdministrativeRegion_3.
-                ?adminRegion3 geo:hasGeometry ?arGeo3.
-                ?arGeo3 geo:asWKT ?arWKT3.
-                FILTER(geof:sfIntersects(?userWKT, ?arWKT3) || geof:sfWithin(?userWKT, ?arWKT3)).
-    
-                ?adminRegion3 kwg-ont:sfContains ?s2Cell.
-                ?s2Cell a kwg-ont:KWGCellLevel13.
-                ?s2Cell geo:hasGeometry ?s2Geo.
-                ?s2Geo geo:asWKT ?s2WKT.
-                FILTER(geof:sfIntersects(?userWKT, ?s2WKT) || geof:sfWithin(?userWKT, ?s2WKT)).
-    
-                {?entity ?p ?s2Cell.} union {?s2Cell ?p ?entity.}
-                ?entity a geo:Feature.
-            }
-            """ % (wkt_literal)
+            while keepPaginating:
+                queryString = """
+                select distinct ?entity where {
+                    values ?userWKT {"%s"^^geo:wktLiteral}.
+        
+                    ?adminRegion2 a kwg-ont:AdministrativeRegion_2.
+                    ?adminRegion2 geo:hasGeometry ?arGeo2.
+                    ?arGeo2 geo:asWKT ?arWKT2.
+                    FILTER(geof:sfIntersects(?userWKT, ?arWKT2) || geof:sfWithin(?userWKT, ?arWKT2)).
+        
+                    ?adminRegion3 kwg-ont:sfWithin ?adminRegion2.
+                    ?adminRegion3 a kwg-ont:AdministrativeRegion_3.
+                    ?adminRegion3 geo:hasGeometry ?arGeo3.
+                    ?arGeo3 geo:asWKT ?arWKT3.
+                    FILTER(geof:sfIntersects(?userWKT, ?arWKT3) || geof:sfWithin(?userWKT, ?arWKT3)).
+        
+                    ?adminRegion3 kwg-ont:sfContains ?s2Cell.
+                    ?s2Cell a kwg-ont:KWGCellLevel13.
+                    ?s2Cell geo:hasGeometry ?s2Geo.
+                    ?s2Geo geo:asWKT ?s2WKT.
+                    FILTER(geof:sfIntersects(?userWKT, ?s2WKT) || geof:sfWithin(?userWKT, ?s2WKT)).
+        
+                    {?entity ?p ?s2Cell.} union {?s2Cell ?p ?entity.}
+                    ?entity a geo:Feature.
+                }
+                """ % (wkt_literal)
 
-            query = queryPrefix + queryString
+                query = queryPrefix + queryString
+                query += "ORDER BY ?entity "
+                query += "LIMIT 10000 "
+                query += "OFFSET %s" % (offset)
 
-            EntityQueryResult = SPARQLUtil.sparql_requests(query=query,
-                                                           sparql_endpoint=sparql_endpoint,
-                                                           doInference=False,
-                                                           request_method="post")
-            EntityQueryResultBindings.extend(EntityQueryResult["results"]["bindings"])
+                EntityQueryResult = SPARQLUtil.sparql_requests(query=query,
+                                                               sparql_endpoint=sparql_endpoint,
+                                                               doInference=False,
+                                                               request_method="post")
+
+                try:
+                    if len(EntityQueryResult["results"]["bindings"]) == 10000:
+                        keepPaginating = True
+                        offset += len(EntityQueryResult["results"]["bindings"])
+                    else :
+                        keepPaginating = False
+                except Exception as e:
+                    return  "error: ent"
+
+                EntityQueryResultBindings.extend(EntityQueryResult["results"]["bindings"])
 
         except:
             return "error: ent"
@@ -98,29 +114,45 @@ class kwg_sparqlquery:
         queryPrefix = SPARQLUtil.make_sparql_prefix()
 
         FirstDegreeClassQueryResultBindings = []
+        keepPaginating = True
+        offset = 0
 
         try:
 
-            entityPrefixed = ""
-            for entity in entityList:
-                entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
+            while keepPaginating:
+                entityPrefixed = ""
+                for entity in entityList:
+                    entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
 
-            queryString = """
-                    select distinct ?type ?label where {
-                        ?entity a ?type.
-                        ?type rdfs:label ?label.
-                        values ?entity {%s}
-                    }
-                    """ % (entityPrefixed)
-            # self.logger.debug("Class0Debug: " + queryString)
+                queryString = """
+                        select distinct ?type ?label where {
+                            ?entity a ?type.
+                            ?type rdfs:label ?label.
+                            values ?entity {%s}
+                        }
+                        """ % (entityPrefixed)
+                # self.logger.debug("Class0Debug: " + queryString)
 
-            query = queryPrefix + queryString
+                query = queryPrefix + queryString
+                query += "ORDER BY ?entity "
+                query += "LIMIT 10000 "
+                query += "OFFSET %s" % (offset)
 
-            FirstDegreeClassQueryResult = SPARQLUtil.sparql_requests(query=query,
-                                                                     sparql_endpoint=sparql_endpoint,
-                                                                     doInference=False,
-                                                                     request_method="post")
-            FirstDegreeClassQueryResultBindings.extend(FirstDegreeClassQueryResult["results"]["bindings"])
+                FirstDegreeClassQueryResult = SPARQLUtil.sparql_requests(query=query,
+                                                                         sparql_endpoint=sparql_endpoint,
+                                                                         doInference=False,
+                                                                         request_method="post")
+
+                try:
+                    if len(FirstDegreeClassQueryResult["results"]["bindings"]) == 10000:
+                        keepPaginating = True
+                        offset += len(FirstDegreeClassQueryResult["results"]["bindings"])
+                    else :
+                        keepPaginating = False
+                except Exception as e:
+                    return  "error: sub0"
+
+                FirstDegreeClassQueryResultBindings.extend(FirstDegreeClassQueryResult["results"]["bindings"])
 
         except:
             return "error: sub0"
@@ -145,29 +177,44 @@ class kwg_sparqlquery:
         queryPrefix = SPARQLUtil.make_sparql_prefix()
 
         FirstDegreePredicateQueryResultBindings = []
+        keepPaginating = True
+        offset = 0
 
         try:
+            while keepPaginating:
+                entityPrefixed = ""
+                for entity in entityList:
+                    entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
 
-            entityPrefixed = ""
-            for entity in entityList:
-                entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
+                queryString = """
+                        select distinct ?p ?label where {
+                            ?entity a %s;
+                                ?p ?o.
+                            optional {?p rdfs:label ?label}
+                            values ?entity {%s}
+                        }
+                        """ % (firstDegreeClass, entityPrefixed)
 
-            queryString = """
-                    select distinct ?p ?label where {
-                        ?entity a %s;
-                            ?p ?o.
-                        optional {?p rdfs:label ?label}
-                        values ?entity {%s}
-                    }
-                    """ % (firstDegreeClass, entityPrefixed)
+                query = queryPrefix + queryString
+                query += "ORDER BY ?entity "
+                query += "LIMIT 10000 "
+                query += "OFFSET %s" % (offset)
 
-            query = queryPrefix + queryString
+                FirstDegreePredicateQueryResult = SPARQLUtil.sparql_requests(query=query,
+                                                                             sparql_endpoint=sparql_endpoint,
+                                                                             doInference=False,
+                                                                             request_method="post")
 
-            FirstDegreePredicateQueryResult = SPARQLUtil.sparql_requests(query=query,
-                                                                         sparql_endpoint=sparql_endpoint,
-                                                                         doInference=False,
-                                                                         request_method="post")
-            FirstDegreePredicateQueryResultBindings.extend(FirstDegreePredicateQueryResult["results"]["bindings"])
+                try:
+                    if len(FirstDegreePredicateQueryResult["results"]["bindings"]) == 10000:
+                        keepPaginating = True
+                        offset += len(FirstDegreePredicateQueryResult["results"]["bindings"])
+                    else :
+                        keepPaginating = False
+                except Exception as e:
+                    return  "error: pred0"
+
+                FirstDegreePredicateQueryResultBindings.extend(FirstDegreePredicateQueryResult["results"]["bindings"])
 
         except:
             return  "error: pred0"
@@ -195,28 +242,43 @@ class kwg_sparqlquery:
         queryPrefix = SPARQLUtil.make_sparql_prefix()
 
         FirstDegreeObjectQueryResultBindings = []
+        keepPaginating = True
+        offset = 0
 
         try:
+            while keepPaginating:
+                entityPrefixed = ""
+                for entity in entityList:
+                    entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
 
-            entityPrefixed = ""
-            for entity in entityList:
-                entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
+                queryString = """
+                        select distinct ?type ?label ?o where {
+                            ?entity a %s; %s ?o.
+                            ?o a ?type. ?type rdfs:label ?label.
+                            values ?entity {%s}
+                        }
+                        """ % (firstDegreeClass, firstDegreePredicate, entityPrefixed)
 
-            queryString = """
-                    select distinct ?type ?label ?o where {
-                        ?entity a %s; %s ?o.
-                        ?o a ?type. ?type rdfs:label ?label.
-                        values ?entity {%s}
-                    }
-                    """ % (firstDegreeClass, firstDegreePredicate, entityPrefixed)
+                query = queryPrefix + queryString
+                query += "ORDER BY ?entity "
+                query += "LIMIT 10000 "
+                query += "OFFSET %s" % (offset)
 
-            query = queryPrefix + queryString
+                FirstDegreeObjectQueryResult = SPARQLUtil.sparql_requests(query=query,
+                                                                          sparql_endpoint=sparql_endpoint,
+                                                                          doInference=False,
+                                                                          request_method="post")
 
-            FirstDegreeObjectQueryResult = SPARQLUtil.sparql_requests(query=query,
-                                                                      sparql_endpoint=sparql_endpoint,
-                                                                      doInference=False,
-                                                                      request_method="post")
-            FirstDegreeObjectQueryResultBindings.extend(FirstDegreeObjectQueryResult["results"]["bindings"])
+                try:
+                    if len(FirstDegreeObjectQueryResult["results"]["bindings"]) == 10000:
+                        keepPaginating = True
+                        offset += len(FirstDegreeObjectQueryResult["results"]["bindings"])
+                    else :
+                        keepPaginating = False
+                except Exception as e:
+                    return  "error: obj0"
+
+                FirstDegreeObjectQueryResultBindings.extend(FirstDegreeObjectQueryResult["results"]["bindings"])
         except:
             return "error: obj0"
         return FirstDegreeObjectQueryResultBindings
@@ -241,33 +303,48 @@ class kwg_sparqlquery:
         queryPrefix = SPARQLUtil.make_sparql_prefix()
 
         FirstNPredicateQueryResultBindings = []
+        keepPaginating = True
+        offset = 0
 
         try:
+            while keepPaginating:
+                entityPrefixed = ""
+                for entity in entityList:
+                    entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
 
-            entityPrefixed = ""
-            for entity in entityList:
-                entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
+                propQuery = "select distinct ?p ?label where { \n";
 
-            propQuery = "select distinct ?p ?label where { \n";
+                for i in range(1, degree+1):
+                    subjectStr = "?entity" if (i == 1)  else "?o" + str(i - 1)
+                    classStr = selectedVals[2 * (i-1)]
+                    predicateStr = "?p" if (i == degree) else selectedVals[2 * (i-1) + 1]
+                    objectStr = "?o" + str(i)
 
-            for i in range(1, degree+1):
-                subjectStr = "?entity" if (i == 1)  else "?o" + str(i - 1)
-                classStr = selectedVals[2 * (i-1)]
-                predicateStr = "?p" if (i == degree) else selectedVals[2 * (i-1) + 1]
-                objectStr = "?o" + str(i)
+                    propQuery += subjectStr + " a " + classStr + "; " + predicateStr + " " + objectStr + ". "
 
-                propQuery += subjectStr + " a " + classStr + "; " + predicateStr + " " + objectStr + ". "
+                propQuery += "optional {?p rdfs:label ?label} values ?entity { %s } }" % (entityPrefixed)
 
-            propQuery += "optional {?p rdfs:label ?label} values ?entity { %s } }" % (entityPrefixed)
+                query = queryPrefix + propQuery
+                query += "ORDER BY ?entity "
+                query += "LIMIT 10000 "
+                query += "OFFSET %s" % (offset)
+                self.logger.debug(query)
 
-            query = queryPrefix + propQuery
-            self.logger.debug(query)
+                FirstDegreePredicateQueryResult = SPARQLUtil.sparql_requests(query=query,
+                                                                             sparql_endpoint=sparql_endpoint,
+                                                                             doInference=False,
+                                                                             request_method="post")
 
-            FirstDegreePredicateQueryResult = SPARQLUtil.sparql_requests(query=query,
-                                                                         sparql_endpoint=sparql_endpoint,
-                                                                         doInference=False,
-                                                                         request_method="post")
-            FirstNPredicateQueryResultBindings.extend(FirstDegreePredicateQueryResult["results"]["bindings"])
+                try:
+                    if len(FirstDegreePredicateQueryResult["results"]["bindings"]) == 10000:
+                        keepPaginating = True
+                        offset += len(FirstDegreePredicateQueryResult["results"]["bindings"])
+                    else :
+                        keepPaginating = False
+                except Exception as e:
+                    return  "error: predN"
+
+                FirstNPredicateQueryResultBindings.extend(FirstDegreePredicateQueryResult["results"]["bindings"])
 
         except:
             return "error: predN"
@@ -295,34 +372,49 @@ class kwg_sparqlquery:
         queryPrefix = SPARQLUtil.make_sparql_prefix()
 
         NDegreeObjectQueryResultBindings = []
+        keepPaginating = True
+        offset = 0
 
         try:
+            while keepPaginating:
+                entityPrefixed = ""
+                for entity in entityList:
+                    entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
 
-            entityPrefixed = ""
-            for entity in entityList:
-                entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
+                objQuery = "select distinct ?type ?label where {  \n";
 
-            objQuery = "select distinct ?type ?label where {  \n";
+                for i in range(1, degree + 1):
+                    subjectStr = "?entity" if (i == 1) else "?o" + str(i - 1)
+                    classStr = selectedVals[2 * (i - 1)]
+                    predicateStr = selectedVals[2 * (i - 1) + 1]
+                    objectStr = "?o. ?o a ?type" if (i == degree) else "?o" + str(i)
 
-            for i in range(1, degree + 1):
-                subjectStr = "?entity" if (i == 1) else "?o" + str(i - 1)
-                classStr = selectedVals[2 * (i - 1)]
-                predicateStr = selectedVals[2 * (i - 1) + 1]
-                objectStr = "?o. ?o a ?type" if (i == degree) else "?o" + str(i)
+                    objQuery += subjectStr + " a " + classStr + "; " + predicateStr + " " + objectStr + ". "
 
-                objQuery += subjectStr + " a " + classStr + "; " + predicateStr + " " + objectStr + ". "
+                objQuery += "?type rdfs:label ?label. values ?entity { %s } }" % (entityPrefixed)
 
-            objQuery += "?type rdfs:label ?label. values ?entity { %s } }" % (entityPrefixed)
+                query = queryPrefix + objQuery
+                query += "ORDER BY ?entity "
+                query += "LIMIT 10000 "
+                query += "OFFSET %s" % (offset)
 
-            query = queryPrefix + objQuery
+                self.logger.debug(query)
 
-            self.logger.debug(query)
+                NDegreeObjectQueryResult = SPARQLUtil.sparql_requests(query=query,
+                                                                          sparql_endpoint=sparql_endpoint,
+                                                                          doInference=False,
+                                                                          request_method="post")
 
-            NDegreeObjectQueryResult = SPARQLUtil.sparql_requests(query=query,
-                                                                      sparql_endpoint=sparql_endpoint,
-                                                                      doInference=False,
-                                                                      request_method="post")
-            NDegreeObjectQueryResultBindings.extend(NDegreeObjectQueryResult["results"]["bindings"])
+                try:
+                    if len(NDegreeObjectQueryResult["results"]["bindings"]) == 10000:
+                        keepPaginating = True
+                        offset += len(NDegreeObjectQueryResult["results"]["bindings"])
+                    else :
+                        keepPaginating = False
+                except Exception as e:
+                    return  "error: objN"
+
+                NDegreeObjectQueryResultBindings.extend(NDegreeObjectQueryResult["results"]["bindings"])
         except:
             return "error: objN"
         return NDegreeObjectQueryResultBindings
@@ -340,47 +432,62 @@ class kwg_sparqlquery:
         queryPrefix = SPARQLUtil.make_sparql_prefix()
 
         NDegreeResultBindings = []
-
+        keepPaginating = True
+        offset = 0
         try:
-            entityPrefixed = ""
-            for entity in entityList:
-                entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
+            while keepPaginating:
+                entityPrefixed = ""
+                for entity in entityList:
+                    entityPrefixed += " " + self.sparqlUTIL.make_prefixed_iri(entity)
 
-            finalObject = "?o" + str(degree)
+                finalObject = "?o" + str(degree)
 
-            # content 2
-            sub_query = "select distinct ?entity ?entityLabel ?o %s ?wkt where { ?entity rdfs:label ?entityLabel. " % (finalObject)
-            for i in range (0, len(selectedVals)):
-                if i % 2 == 0:
-                    if i == 0:
-                        entityName = "?entity";
+                # content 2
+                sub_query = "select distinct ?entity ?entityLabel ?o %s ?wkt where { ?entity rdfs:label ?entityLabel. " % (finalObject)
+                for i in range (0, len(selectedVals)):
+                    if i % 2 == 0:
+                        if i == 0:
+                            entityName = "?entity";
+                        else:
+                            entityName =  "?o" if (i + 1 == len(selectedVals)) else "?o" + str(i//2)
+                        className = selectedVals[i]
+                        sub_query += entityName + " a " + className + ". "
                     else:
-                        entityName =  "?o" if (i + 1 == len(selectedVals)) else "?o" + str(i//2)
-                    className = selectedVals[i]
-                    sub_query += entityName + " a " + className + ". "
-                else:
-                    if i == 1:
-                        entityName = "?entity"
-                        nextEntityName = "?o" if (i + 1 == len(selectedVals)) else "?o1"
-                    else:
-                        entityName = "?o" + str(i//2)
-                        nextEntityName = "?o" if (i + 1 == len(selectedVals)) else "?o" + str (i//2 + 1)
-                    propName = selectedVals[i]
-                    sub_query += entityName + " " + propName + " " + nextEntityName + ". "
-            sub_query += "\t\t\t optional {?entity geo:hasGeometry ?geo. ?geo geo:asWKT ?wkt} values ?entity {%s}}" % (
-                entityPrefixed)
+                        if i == 1:
+                            entityName = "?entity"
+                            nextEntityName = "?o" if (i + 1 == len(selectedVals)) else "?o1"
+                        else:
+                            entityName = "?o" + str(i//2)
+                            nextEntityName = "?o" if (i + 1 == len(selectedVals)) else "?o" + str (i//2 + 1)
+                        propName = selectedVals[i]
+                        sub_query += entityName + " " + propName + " " + nextEntityName + ". "
+                sub_query += "\t\t\t optional {?entity geo:hasGeometry ?geo. ?geo geo:asWKT ?wkt} values ?entity {%s}}" % (
+                    entityPrefixed)
 
-            query = queryPrefix + sub_query
-            self.logger.info("programmed: " + query)
+                query = queryPrefix + sub_query
+                query += "ORDER BY ?entity "
+                query += "LIMIT 10000 "
+                query += "OFFSET %s" % (offset)
+                self.logger.info("programmed: " + query)
 
-            self.logger.debug(query)
+                self.logger.debug(query)
 
-            NDegreeObjectQueryResult = SPARQLUtil.sparql_requests(query=query,
-                                                                  sparql_endpoint=sparql_endpoint,
-                                                                  doInference=False,
-                                                                  request_method="post")
-            for obj in NDegreeObjectQueryResult["results"]["bindings"]:
-                NDegreeResultBindings.append(obj)
+                NDegreeObjectQueryResult = SPARQLUtil.sparql_requests(query=query,
+                                                                      sparql_endpoint=sparql_endpoint,
+                                                                      doInference=False,
+                                                                      request_method="post")
+
+                try:
+                    if len(NDegreeObjectQueryResult["results"]["bindings"]) == 10000:
+                        keepPaginating = True
+                        offset += len(NDegreeObjectQueryResult["results"]["bindings"])
+                    else :
+                        keepPaginating = False
+                except Exception as e:
+                    return  "error: res"
+
+                for obj in NDegreeObjectQueryResult["results"]["bindings"]:
+                    NDegreeResultBindings.append(obj)
         except:
             return "error: res"
         return NDegreeResultBindings

@@ -127,6 +127,9 @@ class kwg_geoenrichment:
         self.eventPlaceTypeDict = dict()
         self.kwg_endpoint_dict = _SPARQL_ENDPOINT_DICT
 
+        # content dict s-o
+        self.selectedValDict = {}
+
         # setting up button flags
         self.disableGDB = True
         self.disableSelectContent = True
@@ -286,6 +289,7 @@ class kwg_geoenrichment:
         self.retrievePolygonLayers()
 
         self.enrichmentObjBuffer = []
+        self.labelObjBuffer = []
         self.lineObjBuffer = []
         self.comboBoxBuffer = []
         self.deleteObjBuffer = []
@@ -490,6 +494,7 @@ then select an entity on the map.'
         if ok and not warning:
 
             name = "geo_enrichment_polygon"
+            self.selectedLayername = "geo_enrichment_polygon"
             pjt = QgsProject.instance()
 
             # save the buffer
@@ -553,12 +558,12 @@ then select an entity on the map.'
         self.dlg.comboBox_layers.currentIndexChanged.connect(lambda: self.handleLayerSelection())
 
     def handleLayerSelection(self):
-        selectedLayername = self.dlg.comboBox_layers.currentText()
+        self.selectedLayername = self.dlg.comboBox_layers.currentText()
 
         # enable the select content button
         self.updateSelectContent()
 
-        self.setUpCaller(layerName=selectedLayername)
+        self.setUpCaller(layerName=self.selectedLayername)
 
     def getInputs(self, layerName=None):
         params = {}
@@ -649,6 +654,16 @@ then select an entity on the map.'
             selectedVal.append(self.enrichmentObjBuffer[self.contentCounter - 1].tableWidget.cellWidget(i - 1, 2).currentText())
 
 
+        if selectedVal[-1] == "LITERAL" or selectedVal[-1] == "--- SELECT ---":
+            if selectedVal[0] not in self.selectedValDict:
+                self.selectedValDict[selectedVal[0]] = []
+            self.selectedValDict[selectedVal[0]].append(selectedVal[-2])
+
+        else:
+            if selectedVal[0] not in self.selectedValDict:
+                self.selectedValDict[selectedVal[0]] = []
+            self.selectedValDict[selectedVal[0]] = selectedVal[-1]
+
         stringVal = " -> ".join(selectedVal)
 
         x, y = self.getPosition(self.dlg.pushButton_content)
@@ -672,7 +687,10 @@ then select an entity on the map.'
         label = QLabel(stringVal, self.dlg)
         label.move(x + 1, y)
         label.setAccessibleName("label_%s" % (i))
+        label.setObjectName("label_%s" % (i))
         label.setStyleSheet("background-color: #9AB4D2;")
+
+        self.labelObjBuffer.append(label)
 
         # add text box
         lineEdit = QLineEdit(self.dlg)
@@ -683,6 +701,7 @@ then select an entity on the map.'
         else:
             lineEdit.setText(selectedVal[-1])
         lineEdit.setAccessibleName("lineEdit_%s" % (i))
+        lineEdit.setObjectName("lineEdit_%s" % (i))
 
         self.lineObjBuffer.append(lineEdit)
 
@@ -702,6 +721,7 @@ then select an entity on the map.'
         comboBox.move(x + 221, y + 25)
         comboBox.resize(320, 25)
         comboBox.setAccessibleName("comboBox_%s" % (i))
+        comboBox.setObjectName("comboBox_%s" % (i))
 
         button = QPushButton(self.dlg)
         icon = QIcon(":/plugins/kwg_geoenrichment/resources/delete.png")
@@ -710,7 +730,8 @@ then select an entity on the map.'
         button.resize(32, 25)
         button.released.connect(lambda: self.manageContent(i))
         button.setStyleSheet("background-color: transparent; color: #ffffff; border: none;")
-        comboBox.setObjectName("delete_%s" % (i))
+        button.setAccessibleName("delete_%s" % (i))
+        button.setObjectName("delete_%s" % (i))
 
         self.deleteObjBuffer.append(button)
         self.comboBoxBuffer.append(comboBox)
@@ -718,8 +739,36 @@ then select an entity on the map.'
         self.dlg.pushButton_content.move(x + 1, y + 55)
 
     def manageContent(self, buttonIdx):
-        QgsMessageLog.logMessage('%s Delete Clicked!' % (buttonIdx))
-        pass
+
+        # handle deletion for PYQT widgets
+        buttonDelete = self.dlg.findChild(QPushButton, "delete_%s" % (buttonIdx))
+        comboBoxDelete = self.dlg.findChild(QComboBox, "comboBox_%s" % (buttonIdx))
+        lineDelete = self.dlg.findChild(QLineEdit, "lineEdit_%s" % (buttonIdx))
+        labelDelete = self.dlg.findChild(QLabel, "label_%s" % (buttonIdx))
+        buttonDelete.deleteLater()
+        comboBoxDelete.deleteLater()
+        lineDelete.deleteLater()
+        labelDelete.deleteLater()
+
+        # update selected val dict
+        label_val = self.labelObjBuffer[buttonIdx].text().split(" -> ")[0]
+        line_val = self.lineObjBuffer[buttonIdx].text()
+        self.selectedValDict[label_val].remove(line_val)
+
+        # remove the objects from the buffer
+        del self.enrichmentObjBuffer[buttonIdx]
+        del self.labelObjBuffer[buttonIdx]
+        del self.lineObjBuffer[buttonIdx]
+        del self.comboBoxBuffer[buttonIdx]
+        del self.deleteObjBuffer[buttonIdx]
+
+        # decrement content counter
+        self.contentCounter -= 1
+        if self.contentCounter == 0:
+            self.disableRun = True
+
+        return
+
 
     def handleRun(self):
 
@@ -727,18 +776,23 @@ then select an entity on the map.'
             self.displayButtonHelp()
             return
 
-        results = []
-        objName = []
-        mergeRuleNo = []
-        for i in range(self.contentCounter):
-            results.append(self.enrichmentObjBuffer[i].getResults())
+        subtype_count = 0
+        for subtype in self.selectedValDict:
+            results = []
+            objName = []
+            mergeRuleNo = []
 
-            objName.append(self.lineObjBuffer[i].text())
-            layerName = self.dlg.lineEdit_layerName.text()
-            mergeRule = self.comboBoxBuffer[i].currentText()
-            mergeRuleNo.append(int(mergeRule.split(" - ")[0]))
+            for i in range(len(self.selectedValDict[subtype])):
 
-        self.createGeoPackage(results, objName, layerName, mergeRule=mergeRuleNo, out_path=self.path)
+                results.append(self.enrichmentObjBuffer[subtype_count + i].getResults())
+
+                objName.append(self.lineObjBuffer[subtype_count + i].text())
+                layerName = self.dlg.lineEdit_layerName.text()
+                mergeRule = self.comboBoxBuffer[subtype_count + i].currentText()
+                mergeRuleNo.append(int(mergeRule.split(" - ")[0]))
+
+            subtype_count = subtype_count + len(self.selectedValDict[subtype])
+            self.createGeoPackage(results, subtype, objName, layerName, mergeRule=mergeRuleNo, out_path=self.path)
         self.dlg.close()
         self.enrichmentObjBuffer = list()
 
@@ -783,8 +837,8 @@ then select an entity on the map.'
         geom_reproj = geom_converter.transform(geom)
         return geom_reproj
 
-    def createGeoPackage(self, GeoQueryResult, objName=[], layerName="geo_results", mergeRule = [],
-                         out_path=None):
+    def createGeoPackage(self, GeoQueryResult, subtype='', objName=[], layerName="geo_results", mergeRule = [],
+                         out_path=None, input_Layer = None):
         '''
         GeoQueryResult: a sparql query result json obj serialized as a list of dict()
                     SPARQL query like this:
@@ -799,6 +853,9 @@ then select an entity on the map.'
         '''
         # a set of unique WKT for each found places
         out_path += ".gpkg"
+
+        if input_Layer == None:
+            input_Layer = self.selectedLayername
 
         entityDict = {}
 
@@ -818,7 +875,6 @@ then select an entity on the map.'
                         entityDict[gtype][eValue]["wkt"] = self.updateWkt(gtype, entityDict[gtype][eValue]["wkt"], tempDict[gtype][eValue]["wkt"])
 
         for gtype in entityDict:
-
             layerFields = QgsFields()
             layerFields.append(QgsField('entity', QVariant.String))
             layerFields.append(QgsField('entityLabel', QVariant.String))
@@ -838,7 +894,7 @@ then select an entity on the map.'
                 record.append(entityDict[gtype][entity]["wkt"])
                 objList.append(record)
 
-            vl = QgsVectorLayer(gtype + "?crs=epsg:4326", "%s_%s"%(layerName, gtype), "memory")
+            vl = QgsVectorLayer(gtype + "?crs=epsg:4326", "%s_%s_%s"%(layerName, subtype, gtype), "memory")
             pr = vl.dataProvider()
             pr.addAttributes(layerFields)
             vl.updateFields()
@@ -863,6 +919,30 @@ then select an entity on the map.'
                         geom = QgsGeometry.fromWkt(wkt)
 
                         feat.setGeometry(geom)
+
+                        # check if we need to discard this polygon
+                        matchFound = False
+                        for layer in QgsProject.instance().mapLayers().values():
+                            if layer.name() == input_Layer:
+                                ft = layer.getFeatures()
+                                for f in ft:
+                                    geom_poly = f.geometry()
+
+                                    if gtype == "Point":
+                                        if geom_poly.contains(geom):
+                                            matchFound = True
+
+                                    if gtype == "LineString":
+                                        if geom_poly.intersects(geom):
+                                            matchFound = True
+
+                                    if gtype == "Polygon":
+                                        if geom_poly.intersects(geom):
+                                            matchFound = True
+
+                        if not matchFound:
+                            continue
+
                         feat.setAttributes(item[0:-1])
 
                         vl.addFeature(feat)
@@ -871,7 +951,7 @@ then select an entity on the map.'
                     vl.updateExtents()
 
                     options = QgsVectorFileWriter.SaveVectorOptions()
-                    options.layerName = "%s_%s"%(layerName, gtype)
+                    options.layerName = "%s_%s_%s"%(layerName, subtype, gtype)
                     context = QgsProject.instance().transformContext()
                     error = QgsVectorFileWriter.writeAsVectorFormatV2(vl, out_path, context, options)
                     QgsProject.instance().addMapLayer(vl)
