@@ -289,6 +289,7 @@ class kwg_geoenrichment:
         self.retrievePolygonLayers()
 
         self.enrichmentObjBuffer = []
+        self.labelObjBuffer = []
         self.lineObjBuffer = []
         self.comboBoxBuffer = []
         self.deleteObjBuffer = []
@@ -686,7 +687,10 @@ then select an entity on the map.'
         label = QLabel(stringVal, self.dlg)
         label.move(x + 1, y)
         label.setAccessibleName("label_%s" % (i))
+        label.setObjectName("label_%s" % (i))
         label.setStyleSheet("background-color: #9AB4D2;")
+
+        self.labelObjBuffer.append(label)
 
         # add text box
         lineEdit = QLineEdit(self.dlg)
@@ -697,6 +701,7 @@ then select an entity on the map.'
         else:
             lineEdit.setText(selectedVal[-1])
         lineEdit.setAccessibleName("lineEdit_%s" % (i))
+        lineEdit.setObjectName("lineEdit_%s" % (i))
 
         self.lineObjBuffer.append(lineEdit)
 
@@ -716,6 +721,7 @@ then select an entity on the map.'
         comboBox.move(x + 221, y + 25)
         comboBox.resize(320, 25)
         comboBox.setAccessibleName("comboBox_%s" % (i))
+        comboBox.setObjectName("comboBox_%s" % (i))
 
         button = QPushButton(self.dlg)
         icon = QIcon(":/plugins/kwg_geoenrichment/resources/delete.png")
@@ -724,7 +730,8 @@ then select an entity on the map.'
         button.resize(32, 25)
         button.released.connect(lambda: self.manageContent(i))
         button.setStyleSheet("background-color: transparent; color: #ffffff; border: none;")
-        comboBox.setObjectName("delete_%s" % (i))
+        button.setAccessibleName("delete_%s" % (i))
+        button.setObjectName("delete_%s" % (i))
 
         self.deleteObjBuffer.append(button)
         self.comboBoxBuffer.append(comboBox)
@@ -732,8 +739,36 @@ then select an entity on the map.'
         self.dlg.pushButton_content.move(x + 1, y + 55)
 
     def manageContent(self, buttonIdx):
-        QgsMessageLog.logMessage('%s Delete Clicked!' % (buttonIdx))
-        pass
+
+        # handle deletion for PYQT widgets
+        buttonDelete = self.dlg.findChild(QPushButton, "delete_%s" % (buttonIdx))
+        comboBoxDelete = self.dlg.findChild(QComboBox, "comboBox_%s" % (buttonIdx))
+        lineDelete = self.dlg.findChild(QLineEdit, "lineEdit_%s" % (buttonIdx))
+        labelDelete = self.dlg.findChild(QLabel, "label_%s" % (buttonIdx))
+        buttonDelete.deleteLater()
+        comboBoxDelete.deleteLater()
+        lineDelete.deleteLater()
+        labelDelete.deleteLater()
+
+        # update selected val dict
+        label_val = self.labelObjBuffer[buttonIdx].text().split(" -> ")[0]
+        line_val = self.lineObjBuffer[buttonIdx].text()
+        self.selectedValDict[label_val].remove(line_val)
+
+        # remove the objects from the buffer
+        del self.enrichmentObjBuffer[buttonIdx]
+        del self.labelObjBuffer[buttonIdx]
+        del self.lineObjBuffer[buttonIdx]
+        del self.comboBoxBuffer[buttonIdx]
+        del self.deleteObjBuffer[buttonIdx]
+
+        # decrement content counter
+        self.contentCounter -= 1
+        if self.contentCounter == 0:
+            self.disableRun = True
+
+        return
+
 
     def handleRun(self):
 
