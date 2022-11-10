@@ -2,7 +2,7 @@
 
 ### Download the plugin
 
-1. Navigate to INSERTRELEASESLINK to download the latest version
+1. Navigate to [Releases](https://github.com/KnowWhereGraph/geoenrichment-qgis/releases) to download the latest version
 2. Download and extract the zip file on your machine
 
 ### Installing the plugin
@@ -24,4 +24,4 @@
 4. Open the plugin either from the `Plugins` menu or the `toolbar`
 
 ### Report an issue
-- If you encounter any issue with the tool or have any feedback, please report on the [INSERTISSUESLINK]()
+- If you encounter any issue with the tool or have any feedback, please report on the [Github repository](https://github.com/KnowWhereGraph/geoenrichment-qgis/issues)
