@@ -54,8 +54,8 @@ from .qdrawsettings import QdrawSettings
 # Import the code for the dialog
 
 _SPARQL_ENDPOINT_DICT = {
-    "KnowWhereGraph": "https://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG",
-    "KnowWhereGraph - Stage": "https://staging.knowwheregraph.org/graphdb/repositories/KWG"
+    "KnowWhere Graph V2 (stable)": "https://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V2-Vienna",
+    "KnowWhere Graph V3 (beta)": "https://stko-kwg.geog.ucsb.edu/sparql"
 }
 
 class kwg_geoenrichment:

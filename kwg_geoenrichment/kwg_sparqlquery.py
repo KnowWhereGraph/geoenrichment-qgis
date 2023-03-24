@@ -45,6 +45,7 @@ class kwg_sparqlquery:
 
         try:
             while keepPaginating:
+                geoPrefix = "kwg-ont" if sparql_endpoint=="https://stko-kwg.geog.ucsb.edu/graphdb/repositories/KWG-V2-Vienna" else "geo"
                 queryString = """
                 select distinct ?entity where {
                     values ?userWKT {"%s"^^geo:wktLiteral}.
@@ -54,7 +55,7 @@ class kwg_sparqlquery:
                     ?arGeo2 geo:asWKT ?arWKT2.
                     FILTER(geof:sfIntersects(?userWKT, ?arWKT2) || geof:sfWithin(?userWKT, ?arWKT2)).
         
-                    ?adminRegion3 kwg-ont:sfWithin ?adminRegion2.
+                    ?adminRegion3 %s:sfWithin ?adminRegion2.
                     ?adminRegion3 a kwg-ont:AdministrativeRegion_3.
                     ?adminRegion3 geo:hasGeometry ?arGeo3.
                     ?arGeo3 geo:asWKT ?arWKT3.
@@ -69,7 +70,7 @@ class kwg_sparqlquery:
                     {?entity ?p ?s2Cell.} union {?s2Cell ?p ?entity.}
                     ?entity a geo:Feature.
                 }
-                """ % (wkt_literal)
+                """ % (wkt_literal, geoPrefix)
 
                 query = queryPrefix + queryString
                 query += "ORDER BY ?entity "
